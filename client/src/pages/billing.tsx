@@ -45,11 +45,7 @@ export default function BillingPage() {
 
   const checkoutMutation = useMutation({
     mutationFn: (priceId: string) =>
-      apiRequest("POST", "/api/billing/checkout", { priceId }).then(async r => {
-        const body = await r.json();
-        if (!r.ok) throw new Error(body.error || "Checkout failed");
-        return body;
-      }),
+      apiRequest("POST", "/api/billing/checkout", { priceId }).then(r => r.json()),
     onSuccess: (data) => {
       if (data.url) {
         // Use location.href so Stripe redirect isn't blocked as a popup
@@ -62,11 +58,7 @@ export default function BillingPage() {
   });
 
   const portalMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/billing/portal").then(async r => {
-      const body = await r.json();
-      if (!r.ok) throw new Error(body.error || "Portal error");
-      return body;
-    }),
+    mutationFn: () => apiRequest("POST", "/api/billing/portal").then(r => r.json()),
     onSuccess: (data) => {
       if (data.url) window.location.href = data.url;
     },
