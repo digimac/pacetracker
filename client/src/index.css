@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* PaceTracker — Bold dark slate + electric blue accent */
+    --background: 220 16% 8%;
+    --foreground: 210 20% 92%;
+
+    --card: 220 14% 11%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 220 14% 11%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 210 100% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 12% 16%;
+    --secondary-foreground: 210 15% 75%;
+
+    --muted: 220 12% 14%;
+    --muted-foreground: 215 10% 52%;
+
+    --accent: 210 100% 56%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 10% 18%;
+    --input: 220 10% 18%;
+    --ring: 210 100% 56%;
+
+    --radius: 0.5rem;
+
+    /* Success / Setback custom tokens */
+    --success: 142 71% 45%;
+    --success-fg: 0 0% 100%;
+    --setback: 0 72% 51%;
+    --setback-fg: 0 0% 100%;
+    --skip: 220 10% 35%;
+    --skip-fg: 215 10% 65%;
+
+    /* Sidebar */
+    --sidebar-background: 220 18% 6%;
+    --sidebar-foreground: 210 15% 80%;
+    --sidebar-primary: 210 100% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 12% 14%;
+    --sidebar-accent-foreground: 210 15% 80%;
+    --sidebar-border: 220 10% 14%;
+    --sidebar-ring: 210 100% 56%;
+  }
+
+  /* Light mode override */
+  .light {
+    --background: 210 20% 97%;
+    --foreground: 220 16% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 16% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 16% 12%;
+
+    --primary: 210 100% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 15% 92%;
+    --secondary-foreground: 220 16% 20%;
+
+    --muted: 210 15% 94%;
+    --muted-foreground: 215 10% 48%;
+
+    --accent: 210 100% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 15% 85%;
+    --input: 210 15% 85%;
+    --ring: 210 100% 40%;
+
+    --success: 142 71% 38%;
+    --success-fg: 0 0% 100%;
+    --setback: 0 72% 48%;
+    --setback-fg: 0 0% 100%;
+    --skip: 215 10% 72%;
+    --skip-fg: 220 10% 28%;
+
+    --sidebar-background: 210 20% 95%;
+    --sidebar-foreground: 220 16% 20%;
+    --sidebar-primary: 210 100% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 90%;
+    --sidebar-accent-foreground: 220 16% 20%;
+    --sidebar-border: 210 15% 82%;
+    --sidebar-ring: 210 100% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Cabinet Grotesk', 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Clash Display', 'Cabinet Grotesk', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Elevation utilities */
+@layer utilities {
+  .hover-elevate {
+    transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .hover-elevate:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px hsl(220 16% 4% / 0.4);
+  }
+
+  .active-elevate-2:active {
+    transform: scale(0.98) translateY(0);
+    box-shadow: 0 1px 4px hsl(220 16% 4% / 0.3);
+  }
+
+  .toggle-elevate {
+    transition: all 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .toggle-elevated {
+    box-shadow: 0 0 0 2px hsl(var(--primary));
+  }
+
+  .no-default-active-elevate:active {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Metric card states */
+  .metric-success {
+    background: hsl(142 71% 45% / 0.12);
+    border-color: hsl(142 71% 45% / 0.4);
+    box-shadow: 0 0 0 1px hsl(142 71% 45% / 0.2);
+  }
+  .metric-setback {
+    background: hsl(0 72% 51% / 0.12);
+    border-color: hsl(0 72% 51% / 0.4);
+    box-shadow: 0 0 0 1px hsl(0 72% 51% / 0.2);
+  }
+  .metric-skip {
+    background: hsl(var(--muted));
+    border-color: hsl(var(--border));
+  }
+
+  /* Score display ring */
+  .score-ring {
+    background: conic-gradient(hsl(var(--primary)) var(--pct, 0%), hsl(var(--border)) 0%);
+  }
+}
