@@ -107,13 +107,7 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-border">
-              <p className="text-xs text-muted-foreground text-center mb-3">Demo credentials</p>
-              <div className="bg-muted/50 rounded-lg p-3 text-xs space-y-1 font-mono">
-                <p><span className="text-muted-foreground">email: </span><span className="text-foreground">demo@sweetmomentum.app</span></p>
-                <p><span className="text-muted-foreground">pass: </span><span className="text-foreground">demo1234</span></p>
-              </div>
-            </div>
+
           </CardContent>
         </Card>
       </div>
