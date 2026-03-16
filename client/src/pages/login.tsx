@@ -49,7 +49,7 @@ export default function LoginPage() {
               <path d="M12 2v20M3 7l9 5 9-5" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
             </svg>
           </div>
-          <h1 className="text-xl font-bold tracking-tight">PACETRACKER</h1>
+          <h1 className="text-xl font-bold tracking-tight">SWEET MOMENTUM</h1>
           <p className="text-sm text-muted-foreground mt-1">Your daily performance system</p>
         </div>
 
@@ -110,7 +110,7 @@ export default function LoginPage() {
             <div className="mt-6 pt-4 border-t border-border">
               <p className="text-xs text-muted-foreground text-center mb-3">Demo credentials</p>
               <div className="bg-muted/50 rounded-lg p-3 text-xs space-y-1 font-mono">
-                <p><span className="text-muted-foreground">email: </span><span className="text-foreground">demo@pacetracker.app</span></p>
+                <p><span className="text-muted-foreground">email: </span><span className="text-foreground">demo@sweetmomentum.app</span></p>
                 <p><span className="text-muted-foreground">pass: </span><span className="text-foreground">demo1234</span></p>
               </div>
             </div>

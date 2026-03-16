@@ -59,13 +59,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-[hsl(var(--sidebar-border))]">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" aria-label="PaceTracker logo">
+            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" aria-label="Sweet Momentum logo">
               <path d="M12 2L3 7v10l9 5 9-5V7L12 2z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
               <path d="M12 2v20M3 7l9 5 9-5" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
             </svg>
           </div>
           <div>
-            <span className="font-bold text-sm tracking-tight text-[hsl(var(--sidebar-foreground))]">PACETRACKER</span>
+            <span className="font-bold text-sm tracking-tight text-[hsl(var(--sidebar-foreground))]">SWEET MOMENTUM</span>
             <p className="text-[10px] text-[hsl(var(--muted-foreground))] -mt-0.5 tracking-widest uppercase">Daily Metrics</p>
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)} data-testid="button-mobile-menu">
             <Menu className="w-5 h-5" />
           </Button>
-          <span className="font-bold text-sm tracking-tight">PACETRACKER</span>
+          <span className="font-bold text-sm tracking-tight">SWEET MOMENTUM</span>
           <Button variant="ghost" size="icon" onClick={toggleTheme}>
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>

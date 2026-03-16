@@ -49,14 +49,14 @@ export default function RegisterPage() {
               <path d="M12 2v20M3 7l9 5 9-5" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
             </svg>
           </div>
-          <h1 className="text-xl font-bold tracking-tight">PACETRACKER</h1>
+          <h1 className="text-xl font-bold tracking-tight">SWEET MOMENTUM</h1>
           <p className="text-sm text-muted-foreground mt-1">Start tracking your daily performance</p>
         </div>
 
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Create Account</CardTitle>
-            <CardDescription>Set up your PaceTracker profile</CardDescription>
+            <CardDescription>Set up your Sweet Momentum profile</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
