@@ -4,6 +4,7 @@ import MemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { runMigrations } from "./migrate";
 
 const app = express();
 const httpServer = createServer(app);
@@ -71,6 +72,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Run DB migrations on startup (no-op if DATABASE_URL not set)
+  await runMigrations();
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

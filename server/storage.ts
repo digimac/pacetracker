@@ -5,7 +5,9 @@ import {
   MetricScore, InsertMetricScore,
   UserSchedule, InsertUserSchedule,
   Subscription, InsertSubscription,
+  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions,
 } from "@shared/schema";
+import { eq, and, gte, lte, asc } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -42,15 +44,195 @@ export interface IStorage {
   isPro(userId: number): Promise<boolean>;
 }
 
+// ─── Drizzle (PostgreSQL) implementation ────────────────────────────────────
+
+export class DrizzleStorage implements IStorage {
+  private db: ReturnType<typeof import("drizzle-orm/neon-http").drizzle>;
+
+  constructor(db: ReturnType<typeof import("drizzle-orm/neon-http").drizzle>) {
+    this.db = db;
+  }
+
+  // Users
+  async getUserById(id: number): Promise<User | undefined> {
+    const rows = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    return rows[0];
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const rows = await this.db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+    return rows[0];
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const rows = await this.db.select().from(users).where(eq(users.username, username.toLowerCase())).limit(1);
+    return rows[0];
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const rows = await this.db.insert(users).values({
+      ...user,
+      email: user.email.toLowerCase(),
+      username: user.username.toLowerCase(),
+    }).returning();
+    return rows[0];
+  }
+
+  // Custom Metrics
+  async getCustomMetricsByUser(userId: number): Promise<CustomMetric[]> {
+    return this.db.select().from(customMetrics)
+      .where(and(eq(customMetrics.userId, userId), eq(customMetrics.isActive, true)))
+      .orderBy(asc(customMetrics.sortOrder));
+  }
+
+  async createCustomMetric(metric: InsertCustomMetric): Promise<CustomMetric> {
+    const rows = await this.db.insert(customMetrics).values(metric).returning();
+    return rows[0];
+  }
+
+  async updateCustomMetric(id: number, userId: number, updates: Partial<InsertCustomMetric>): Promise<CustomMetric | undefined> {
+    const rows = await this.db.update(customMetrics)
+      .set(updates)
+      .where(and(eq(customMetrics.id, id), eq(customMetrics.userId, userId)))
+      .returning();
+    return rows[0];
+  }
+
+  async deleteCustomMetric(id: number, userId: number): Promise<boolean> {
+    const rows = await this.db.update(customMetrics)
+      .set({ isActive: false })
+      .where(and(eq(customMetrics.id, id), eq(customMetrics.userId, userId)))
+      .returning();
+    return rows.length > 0;
+  }
+
+  // Daily Entries
+  async getDailyEntry(userId: number, date: string): Promise<DailyEntry | undefined> {
+    const rows = await this.db.select().from(dailyEntries)
+      .where(and(eq(dailyEntries.userId, userId), eq(dailyEntries.entryDate, date)))
+      .limit(1);
+    return rows[0];
+  }
+
+  async getDailyEntriesByRange(userId: number, startDate: string, endDate: string): Promise<DailyEntry[]> {
+    return this.db.select().from(dailyEntries)
+      .where(and(
+        eq(dailyEntries.userId, userId),
+        gte(dailyEntries.entryDate, startDate),
+        lte(dailyEntries.entryDate, endDate),
+      ))
+      .orderBy(asc(dailyEntries.entryDate));
+  }
+
+  async createDailyEntry(entry: InsertDailyEntry): Promise<DailyEntry> {
+    const rows = await this.db.insert(dailyEntries).values(entry).returning();
+    return rows[0];
+  }
+
+  async updateDailyEntry(id: number, updates: Partial<InsertDailyEntry>): Promise<DailyEntry | undefined> {
+    const rows = await this.db.update(dailyEntries)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(dailyEntries.id, id))
+      .returning();
+    return rows[0];
+  }
+
+  // Metric Scores
+  async getMetricScoresByEntry(entryId: number): Promise<MetricScore[]> {
+    return this.db.select().from(metricScores).where(eq(metricScores.entryId, entryId));
+  }
+
+  async getMetricScoresByUserAndDate(userId: number, date: string): Promise<MetricScore[]> {
+    const entry = await this.getDailyEntry(userId, date);
+    if (!entry) return [];
+    return this.getMetricScoresByEntry(entry.id);
+  }
+
+  async upsertMetricScores(entryId: number, userId: number, scores: { metricKey: string; metricLabel: string; rating: string }[]): Promise<MetricScore[]> {
+    // Delete existing scores for this entry, then re-insert
+    await this.db.delete(metricScores).where(eq(metricScores.entryId, entryId));
+    if (scores.length === 0) return [];
+    const rows = await this.db.insert(metricScores)
+      .values(scores.map(s => ({ entryId, userId, metricKey: s.metricKey, metricLabel: s.metricLabel, rating: s.rating })))
+      .returning();
+    return rows;
+  }
+
+  // User Schedule
+  async getUserSchedule(userId: number): Promise<UserSchedule | undefined> {
+    const rows = await this.db.select().from(userSchedule).where(eq(userSchedule.userId, userId)).limit(1);
+    return rows[0];
+  }
+
+  async upsertUserSchedule(schedule: InsertUserSchedule & { userId: number }): Promise<UserSchedule> {
+    const rows = await this.db.insert(userSchedule)
+      .values({ ...schedule, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: userSchedule.userId,
+        set: { ...schedule, updatedAt: new Date() },
+      })
+      .returning();
+    return rows[0];
+  }
+
+  // Subscriptions
+  async getSubscription(userId: number): Promise<Subscription | undefined> {
+    const rows = await this.db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1);
+    return rows[0];
+  }
+
+  async upsertSubscription(data: Partial<Subscription> & { userId: number }): Promise<Subscription> {
+    const rows = await this.db.insert(subscriptions)
+      .values({
+        userId: data.userId,
+        stripeCustomerId: data.stripeCustomerId ?? null,
+        stripeSubscriptionId: data.stripeSubscriptionId ?? null,
+        stripePriceId: data.stripePriceId ?? null,
+        plan: data.plan ?? "free",
+        status: data.status ?? "inactive",
+        currentPeriodEnd: data.currentPeriodEnd ?? null,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: subscriptions.userId,
+        set: {
+          ...(data.stripeCustomerId !== undefined && { stripeCustomerId: data.stripeCustomerId }),
+          ...(data.stripeSubscriptionId !== undefined && { stripeSubscriptionId: data.stripeSubscriptionId }),
+          ...(data.stripePriceId !== undefined && { stripePriceId: data.stripePriceId }),
+          ...(data.plan !== undefined && { plan: data.plan }),
+          ...(data.status !== undefined && { status: data.status }),
+          ...(data.currentPeriodEnd !== undefined && { currentPeriodEnd: data.currentPeriodEnd }),
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return rows[0];
+  }
+
+  async getSubscriptionByStripeCustomerId(customerId: string): Promise<Subscription | undefined> {
+    const rows = await this.db.select().from(subscriptions)
+      .where(eq(subscriptions.stripeCustomerId, customerId))
+      .limit(1);
+    return rows[0];
+  }
+
+  async isPro(userId: number): Promise<boolean> {
+    const sub = await this.getSubscription(userId);
+    if (!sub) return false;
+    return sub.status === "active" && sub.plan !== "free";
+  }
+}
+
+// ─── In-memory fallback (used in local dev without DATABASE_URL) ─────────────
+
 export class MemStorage implements IStorage {
-  private users: Map<number, User> = new Map();
+  private usersMap: Map<number, User> = new Map();
   private customMetrics: Map<number, CustomMetric> = new Map();
   private dailyEntries: Map<number, DailyEntry> = new Map();
   private metricScores: Map<number, MetricScore> = new Map();
   private userSchedules: Map<number, UserSchedule> = new Map();
   private subscriptionsMap: Map<number, Subscription> = new Map();
   private subscriptionIdCounter = 1;
-
   private userIdCounter = 1;
   private customMetricIdCounter = 1;
   private dailyEntryIdCounter = 1;
@@ -58,7 +240,6 @@ export class MemStorage implements IStorage {
   private userScheduleIdCounter = 1;
 
   constructor() {
-    // Seed a demo user
     this.seedDemoUser();
   }
 
@@ -76,9 +257,8 @@ export class MemStorage implements IStorage {
       displayName: "Demo User",
       createdAt: new Date(),
     };
-    this.users.set(user.id, user);
+    this.usersMap.set(user.id, user);
 
-    // Seed schedule
     const schedule: UserSchedule = {
       id: this.userScheduleIdCounter++,
       userId: user.id,
@@ -92,13 +272,11 @@ export class MemStorage implements IStorage {
     };
     this.userSchedules.set(user.id, schedule);
 
-    // Seed 7 days of example data
     const today = new Date();
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split("T")[0];
-
       const entry: DailyEntry = {
         id: this.dailyEntryIdCounter++,
         userId: user.id,
@@ -108,10 +286,8 @@ export class MemStorage implements IStorage {
         updatedAt: new Date(),
       };
       this.dailyEntries.set(entry.id, entry);
-
       const coreMetrics = ["TIME", "GOAL", "TEAM", "TASK", "VIEW", "PACE"];
-      const ratings = ["success", "success", "success", "success", "setback", "success"];
-      coreMetrics.forEach((key, idx) => {
+      coreMetrics.forEach((key) => {
         const score: MetricScore = {
           id: this.metricScoreIdCounter++,
           entryId: entry.id,
@@ -125,36 +301,26 @@ export class MemStorage implements IStorage {
     }
   }
 
-  // Users
-  async getUserById(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
+  async getUserById(id: number): Promise<User | undefined> { return this.usersMap.get(id); }
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(u => u.email.toLowerCase() === email.toLowerCase());
+    return Array.from(this.usersMap.values()).find(u => u.email.toLowerCase() === email.toLowerCase());
   }
-
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(u => u.username.toLowerCase() === username.toLowerCase());
+    return Array.from(this.usersMap.values()).find(u => u.username.toLowerCase() === username.toLowerCase());
   }
-
   async createUser(user: InsertUser): Promise<User> {
     const newUser: User = { ...user, id: this.userIdCounter++, createdAt: new Date() };
-    this.users.set(newUser.id, newUser);
+    this.usersMap.set(newUser.id, newUser);
     return newUser;
   }
-
-  // Custom Metrics
   async getCustomMetricsByUser(userId: number): Promise<CustomMetric[]> {
     return Array.from(this.customMetrics.values()).filter(m => m.userId === userId && m.isActive);
   }
-
   async createCustomMetric(metric: InsertCustomMetric): Promise<CustomMetric> {
     const newMetric: CustomMetric = { ...metric, id: this.customMetricIdCounter++ };
     this.customMetrics.set(newMetric.id, newMetric);
     return newMetric;
   }
-
   async updateCustomMetric(id: number, userId: number, updates: Partial<InsertCustomMetric>): Promise<CustomMetric | undefined> {
     const metric = this.customMetrics.get(id);
     if (!metric || metric.userId !== userId) return undefined;
@@ -162,31 +328,25 @@ export class MemStorage implements IStorage {
     this.customMetrics.set(id, updated);
     return updated;
   }
-
   async deleteCustomMetric(id: number, userId: number): Promise<boolean> {
     const metric = this.customMetrics.get(id);
     if (!metric || metric.userId !== userId) return false;
     this.customMetrics.set(id, { ...metric, isActive: false });
     return true;
   }
-
-  // Daily Entries
   async getDailyEntry(userId: number, date: string): Promise<DailyEntry | undefined> {
     return Array.from(this.dailyEntries.values()).find(e => e.userId === userId && e.entryDate === date);
   }
-
   async getDailyEntriesByRange(userId: number, startDate: string, endDate: string): Promise<DailyEntry[]> {
-    return Array.from(this.dailyEntries.values()).filter(e =>
-      e.userId === userId && e.entryDate >= startDate && e.entryDate <= endDate
-    ).sort((a, b) => a.entryDate.localeCompare(b.entryDate));
+    return Array.from(this.dailyEntries.values())
+      .filter(e => e.userId === userId && e.entryDate >= startDate && e.entryDate <= endDate)
+      .sort((a, b) => a.entryDate.localeCompare(b.entryDate));
   }
-
   async createDailyEntry(entry: InsertDailyEntry): Promise<DailyEntry> {
     const newEntry: DailyEntry = { ...entry, id: this.dailyEntryIdCounter++, createdAt: new Date(), updatedAt: new Date() };
     this.dailyEntries.set(newEntry.id, newEntry);
     return newEntry;
   }
-
   async updateDailyEntry(id: number, updates: Partial<InsertDailyEntry>): Promise<DailyEntry | undefined> {
     const entry = this.dailyEntries.get(id);
     if (!entry) return undefined;
@@ -194,24 +354,17 @@ export class MemStorage implements IStorage {
     this.dailyEntries.set(id, updated);
     return updated;
   }
-
-  // Metric Scores
   async getMetricScoresByEntry(entryId: number): Promise<MetricScore[]> {
     return Array.from(this.metricScores.values()).filter(s => s.entryId === entryId);
   }
-
   async getMetricScoresByUserAndDate(userId: number, date: string): Promise<MetricScore[]> {
     const entry = await this.getDailyEntry(userId, date);
     if (!entry) return [];
     return this.getMetricScoresByEntry(entry.id);
   }
-
   async upsertMetricScores(entryId: number, userId: number, scores: { metricKey: string; metricLabel: string; rating: string }[]): Promise<MetricScore[]> {
-    // Remove existing scores for this entry
     const toDelete = Array.from(this.metricScores.values()).filter(s => s.entryId === entryId);
     toDelete.forEach(s => this.metricScores.delete(s.id));
-
-    // Insert new scores
     const newScores: MetricScore[] = scores.map(s => ({
       id: this.metricScoreIdCounter++,
       entryId,
@@ -223,12 +376,7 @@ export class MemStorage implements IStorage {
     newScores.forEach(s => this.metricScores.set(s.id, s));
     return newScores;
   }
-
-  // Subscriptions
-  async getSubscription(userId: number): Promise<Subscription | undefined> {
-    return this.subscriptionsMap.get(userId);
-  }
-
+  async getSubscription(userId: number): Promise<Subscription | undefined> { return this.subscriptionsMap.get(userId); }
   async upsertSubscription(data: Partial<Subscription> & { userId: number }): Promise<Subscription> {
     const existing = this.subscriptionsMap.get(data.userId);
     if (existing) {
@@ -250,22 +398,15 @@ export class MemStorage implements IStorage {
     this.subscriptionsMap.set(data.userId, newSub);
     return newSub;
   }
-
   async getSubscriptionByStripeCustomerId(customerId: string): Promise<Subscription | undefined> {
     return Array.from(this.subscriptionsMap.values()).find(s => s.stripeCustomerId === customerId);
   }
-
   async isPro(userId: number): Promise<boolean> {
     const sub = this.subscriptionsMap.get(userId);
     if (!sub) return false;
     return sub.status === "active" && sub.plan !== "free";
   }
-
-  // User Schedule
-  async getUserSchedule(userId: number): Promise<UserSchedule | undefined> {
-    return this.userSchedules.get(userId);
-  }
-
+  async getUserSchedule(userId: number): Promise<UserSchedule | undefined> { return this.userSchedules.get(userId); }
   async upsertUserSchedule(schedule: InsertUserSchedule & { userId: number }): Promise<UserSchedule> {
     const existing = this.userSchedules.get(schedule.userId);
     if (existing) {
@@ -279,4 +420,16 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// ─── Export the right implementation based on environment ────────────────────
+
+function createStorage(): IStorage {
+  if (process.env.DATABASE_URL) {
+    const { db } = require("./db");
+    console.log("[storage] Using PostgreSQL (DrizzleStorage)");
+    return new DrizzleStorage(db);
+  }
+  console.log("[storage] DATABASE_URL not set — using MemStorage (data resets on restart)");
+  return new MemStorage();
+}
+
+export const storage = createStorage();
