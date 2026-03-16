@@ -179,7 +179,7 @@ export default function BillingPage() {
               <Button
                 className="w-full"
                 size="sm"
-                onClick={() => billing?.prices.monthly && checkoutMutation.mutate(billing.prices.monthly)}
+                onClick={() => checkoutMutation.mutate(billing?.prices.monthly || "")}
                 disabled={checkoutMutation.isPending || (billing?.isPro && billing.plan === "pro_monthly")}
                 data-testid="button-subscribe-monthly"
               >
@@ -221,7 +221,7 @@ export default function BillingPage() {
               <Button
                 className="w-full"
                 size="sm"
-                onClick={() => billing?.prices.annual && checkoutMutation.mutate(billing.prices.annual)}
+                onClick={() => checkoutMutation.mutate(billing?.prices.annual || "")}
                 disabled={checkoutMutation.isPending || (billing?.isPro && billing.plan === "pro_annual")}
                 data-testid="button-subscribe-annual"
               >

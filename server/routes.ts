@@ -247,10 +247,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Billing — Create Checkout Session
   app.post("/api/billing/checkout", requireAuth, async (req, res) => {
     try {
-      const { priceId } = z.object({ priceId: z.string() }).parse(req.body);
+      const { priceId } = z.object({ priceId: z.string().min(1, "Price ID is required") }).parse(req.body);
       const user = await storage.getUserById(req.session!.userId!);
       if (!user) return res.status(404).json({ error: "User not found" });
-      if (!stripe) return res.status(503).json({ error: "Billing not configured. Set STRIPE_SECRET_KEY on the server." });
+      if (!stripe) return res.status(503).json({ error: "Stripe is not configured on the server. Check STRIPE_SECRET_KEY." });
+      if (!priceId.startsWith("price_")) return res.status(400).json({ error: "Invalid price ID. Check STRIPE_PRICE_MONTHLY / STRIPE_PRICE_ANNUAL env vars." });
       const url = await createCheckoutSession(req.session!.userId!, priceId, user.email);
       res.json({ url });
     } catch (e: any) {
