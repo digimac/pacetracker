@@ -45,23 +45,32 @@ export default function BillingPage() {
 
   const checkoutMutation = useMutation({
     mutationFn: (priceId: string) =>
-      apiRequest("POST", "/api/billing/checkout", { priceId }).then(r => r.json()),
+      apiRequest("POST", "/api/billing/checkout", { priceId }).then(async r => {
+        const body = await r.json();
+        if (!r.ok) throw new Error(body.error || "Checkout failed");
+        return body;
+      }),
     onSuccess: (data) => {
       if (data.url) {
-        window.open(data.url, "_blank", "noopener,noreferrer");
+        // Use location.href so Stripe redirect isn't blocked as a popup
+        window.location.href = data.url;
       } else if (data.error) {
-        toast({ title: "Billing not live yet", description: data.error, variant: "destructive" });
+        toast({ title: "Billing error", description: data.error, variant: "destructive" });
       }
     },
-    onError: () => toast({ title: "Error", description: "Could not start checkout", variant: "destructive" }),
+    onError: (e: any) => toast({ title: "Checkout error", description: e.message || "Could not start checkout. Please try again.", variant: "destructive" }),
   });
 
   const portalMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/billing/portal").then(r => r.json()),
+    mutationFn: () => apiRequest("POST", "/api/billing/portal").then(async r => {
+      const body = await r.json();
+      if (!r.ok) throw new Error(body.error || "Portal error");
+      return body;
+    }),
     onSuccess: (data) => {
-      if (data.url) window.open(data.url, "_blank", "noopener,noreferrer");
+      if (data.url) window.location.href = data.url;
     },
-    onError: () => toast({ title: "Error", description: "Could not open billing portal", variant: "destructive" }),
+    onError: (e: any) => toast({ title: "Portal error", description: e.message || "Could not open billing portal", variant: "destructive" }),
   });
 
   const monthlyPrice = billing?.prices.monthlyAmount ? `$${(billing.prices.monthlyAmount / 100).toFixed(2)}` : "$9.99";
