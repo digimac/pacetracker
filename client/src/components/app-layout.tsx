@@ -11,9 +11,8 @@ import {
   Moon,
   Sun,
   LogOut,
-  Target,
   Menu,
-  X,
+  CreditCard,
 } from "lucide-react";
 import { useState } from "react";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
@@ -22,6 +21,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { label: "Today", icon: CalendarCheck, path: "/today" },
   { label: "History", icon: History, path: "/history" },
+  { label: "Billing", icon: CreditCard, path: "/billing" },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
 

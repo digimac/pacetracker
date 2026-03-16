@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import type { CustomMetric, UserSchedule } from "@shared/schema";
-import { Plus, Trash2, Save, Clock } from "lucide-react";
+import { Plus, Trash2, Save, Clock, Lock, Zap } from "lucide-react";
 import { useAuth } from "@/App";
 
 const METRIC_EMOJIS = ["⭐", "💪", "🧠", "📚", "🥗", "🏃", "😴", "💧", "🎯", "🌱"];
@@ -26,6 +27,13 @@ const CORE_METRIC_INFO = [
 export default function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
+  const { data: billing } = useQuery<{ isPro: boolean }>({  
+    queryKey: ["/api/billing/status"],
+    queryFn: () => apiRequest("GET", "/api/billing/status").then(r => r.json()),
+  });
+  const isPro = billing?.isPro ?? false;
 
   // Schedule
   const { data: schedule } = useQuery<UserSchedule | null>({
@@ -144,15 +152,34 @@ export default function SettingsPage() {
       </Card>
 
       {/* Custom Metrics */}
-      <Card>
+      <Card className={!isPro ? "opacity-90" : ""}>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
             Custom Metrics
-            <Badge className="text-[10px]">{customMetrics.length}/4</Badge>
+            {isPro ? (
+              <Badge className="text-[10px]">{customMetrics.length}/4</Badge>
+            ) : (
+              <Badge className="text-[10px] bg-yellow-500/20 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" /> Pro
+              </Badge>
+            )}
           </CardTitle>
           <CardDescription className="text-xs">Add up to 4 personal metrics (exercise, nutrition, reading, etc.)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          {!isPro && (
+            <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4 flex items-start gap-3">
+              <Lock className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-yellow-400 mb-1">Pro Feature</p>
+                <p className="text-xs text-muted-foreground mb-3">Custom metrics are available on the Pro plan. Upgrade to add up to 4 personal metrics like exercise, nutrition, reading, or deep work.</p>
+                <Button size="sm" onClick={() => setLocation("/billing")} className="h-7 text-xs gap-1.5">
+                  <Zap className="w-3 h-3" />
+                  Upgrade to Pro
+                </Button>
+              </div>
+            </div>
+          )}
           {customMetrics.length > 0 ? (
             <div className="space-y-2">
               {customMetrics.map(m => (
@@ -178,7 +205,7 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground py-2">No custom metrics added yet.</p>
           )}
 
-          {canAddMore && (
+          {canAddMore && isPro && (
             <div className="pt-2 border-t border-border space-y-3">
               <p className="text-xs font-medium text-muted-foreground">Add New Metric</p>
               <div className="flex flex-wrap gap-1 mb-2">

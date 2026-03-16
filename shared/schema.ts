@@ -60,6 +60,23 @@ export const insertMetricScoreSchema = createInsertSchema(metricScores).omit({ i
 export type InsertMetricScore = z.infer<typeof insertMetricScoreSchema>;
 export type MetricScore = typeof metricScores.$inferSelect;
 
+// Subscription / billing
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripePriceId: text("stripe_price_id"),
+  plan: text("plan").default("free"), // "free" | "pro_monthly" | "pro_annual"
+  status: text("status").default("inactive"), // "active" | "inactive" | "canceled" | "trialing"
+  currentPeriodEnd: timestamp("current_period_end"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, updatedAt: true });
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type Subscription = typeof subscriptions.$inferSelect;
+
 // User schedule / profile settings
 export const userSchedule = pgTable("user_schedule", {
   id: serial("id").primaryKey(),

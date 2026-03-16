@@ -12,7 +12,26 @@ import DashboardPage from "@/pages/dashboard";
 import TodayPage from "@/pages/today";
 import HistoryPage from "@/pages/history";
 import SettingsPage from "@/pages/settings";
+import BillingPage from "@/pages/billing";
 import AppLayout from "@/components/app-layout";
+import { queryClient } from "@/lib/queryClient";
+
+function BillingSuccessPage() {
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/billing/status"] });
+    setTimeout(() => setLocation("/billing"), 3000);
+  }, []);
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="text-center">
+        <div className="text-5xl mb-4">🎉</div>
+        <h2 className="text-xl font-black mb-2">Welcome to Pro!</h2>
+        <p className="text-muted-foreground text-sm">Your subscription is now active. Redirecting you back...</p>
+      </div>
+    </div>
+  );
+}
 
 // Theme context
 interface ThemeContextType {
@@ -69,6 +88,9 @@ function Router() {
         <Route path="/dashboard" component={DashboardPage} />
         <Route path="/today" component={TodayPage} />
         <Route path="/history" component={HistoryPage} />
+        <Route path="/billing" component={BillingPage} />
+        <Route path="/billing/success" component={BillingSuccessPage} />
+        <Route path="/billing/cancel" component={BillingPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route component={DashboardPage} />
       </Switch>

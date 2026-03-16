@@ -1,6 +1,7 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema } from "@shared/schema";
 import { z } from "zod";
@@ -98,6 +99,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/metrics/custom", requireAuth, async (req, res) => {
     try {
       const userId = req.session!.userId!;
+      const isPro = await storage.isPro(userId);
+      if (!isPro) return res.status(403).json({ error: "Custom metrics require a Pro subscription" });
       const existing = await storage.getCustomMetricsByUser(userId);
       if (existing.length >= 4) return res.status(400).json({ error: "Maximum 4 custom metrics allowed" });
       const data = insertCustomMetricSchema.parse({ ...req.body, userId });
@@ -179,6 +182,64 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     res.json(result);
   });
+
+  // Billing — Subscription status
+  app.get("/api/billing/status", requireAuth, async (req, res) => {
+    const sub = await storage.getSubscription(req.session!.userId!);
+    const isPro = await storage.isPro(req.session!.userId!);
+    res.json({
+      isPro,
+      plan: sub?.plan || "free",
+      status: sub?.status || "inactive",
+      currentPeriodEnd: sub?.currentPeriodEnd || null,
+      prices: {
+        monthly: PRICE_MONTHLY,
+        annual: PRICE_ANNUAL,
+        monthlyAmount: 999,
+        annualAmount: 9900,
+      },
+    });
+  });
+
+  // Billing — Create Checkout Session
+  app.post("/api/billing/checkout", requireAuth, async (req, res) => {
+    try {
+      const { priceId } = z.object({ priceId: z.string() }).parse(req.body);
+      const user = await storage.getUserById(req.session!.userId!);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      if (!stripe) return res.status(503).json({ error: "Billing not configured. Set STRIPE_SECRET_KEY on the server." });
+      const url = await createCheckoutSession(req.session!.userId!, priceId, user.email);
+      res.json({ url });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Billing — Customer Portal
+  app.post("/api/billing/portal", requireAuth, async (req, res) => {
+    try {
+      if (!stripe) return res.status(503).json({ error: "Billing not configured" });
+      const url = await createBillingPortalSession(req.session!.userId!);
+      res.json({ url });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Billing — Stripe Webhook (raw body needed)
+  app.post("/api/billing/webhook",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+      const sig = req.headers["stripe-signature"] as string;
+      try {
+        await handleWebhook(req.body as Buffer, sig);
+        res.json({ received: true });
+      } catch (e: any) {
+        console.error("Webhook error:", e.message);
+        res.status(400).send(`Webhook Error: ${e.message}`);
+      }
+    }
+  );
 
   // User Schedule
   app.get("/api/schedule", requireAuth, async (req, res) => {

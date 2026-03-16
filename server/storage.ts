@@ -4,6 +4,7 @@ import {
   DailyEntry, InsertDailyEntry,
   MetricScore, InsertMetricScore,
   UserSchedule, InsertUserSchedule,
+  Subscription, InsertSubscription,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -33,6 +34,12 @@ export interface IStorage {
   // User Schedule
   getUserSchedule(userId: number): Promise<UserSchedule | undefined>;
   upsertUserSchedule(schedule: InsertUserSchedule & { userId: number }): Promise<UserSchedule>;
+
+  // Subscriptions
+  getSubscription(userId: number): Promise<Subscription | undefined>;
+  upsertSubscription(data: Partial<Subscription> & { userId: number }): Promise<Subscription>;
+  getSubscriptionByStripeCustomerId(customerId: string): Promise<Subscription | undefined>;
+  isPro(userId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -41,6 +48,8 @@ export class MemStorage implements IStorage {
   private dailyEntries: Map<number, DailyEntry> = new Map();
   private metricScores: Map<number, MetricScore> = new Map();
   private userSchedules: Map<number, UserSchedule> = new Map();
+  private subscriptionsMap: Map<number, Subscription> = new Map();
+  private subscriptionIdCounter = 1;
 
   private userIdCounter = 1;
   private customMetricIdCounter = 1;
@@ -213,6 +222,43 @@ export class MemStorage implements IStorage {
     }));
     newScores.forEach(s => this.metricScores.set(s.id, s));
     return newScores;
+  }
+
+  // Subscriptions
+  async getSubscription(userId: number): Promise<Subscription | undefined> {
+    return this.subscriptionsMap.get(userId);
+  }
+
+  async upsertSubscription(data: Partial<Subscription> & { userId: number }): Promise<Subscription> {
+    const existing = this.subscriptionsMap.get(data.userId);
+    if (existing) {
+      const updated: Subscription = { ...existing, ...data, updatedAt: new Date() };
+      this.subscriptionsMap.set(data.userId, updated);
+      return updated;
+    }
+    const newSub: Subscription = {
+      id: this.subscriptionIdCounter++,
+      userId: data.userId,
+      stripeCustomerId: data.stripeCustomerId || null,
+      stripeSubscriptionId: data.stripeSubscriptionId || null,
+      stripePriceId: data.stripePriceId || null,
+      plan: data.plan || "free",
+      status: data.status || "inactive",
+      currentPeriodEnd: data.currentPeriodEnd || null,
+      updatedAt: new Date(),
+    };
+    this.subscriptionsMap.set(data.userId, newSub);
+    return newSub;
+  }
+
+  async getSubscriptionByStripeCustomerId(customerId: string): Promise<Subscription | undefined> {
+    return Array.from(this.subscriptionsMap.values()).find(s => s.stripeCustomerId === customerId);
+  }
+
+  async isPro(userId: number): Promise<boolean> {
+    const sub = this.subscriptionsMap.get(userId);
+    if (!sub) return false;
+    return sub.status === "active" && sub.plan !== "free";
   }
 
   // User Schedule
