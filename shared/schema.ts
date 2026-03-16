@@ -93,3 +93,15 @@ export const userSchedule = pgTable("user_schedule", {
 export const insertUserScheduleSchema = createInsertSchema(userSchedule).omit({ id: true, updatedAt: true });
 export type InsertUserSchedule = z.infer<typeof insertUserScheduleSchema>;
 export type UserSchedule = typeof userSchedule.$inferSelect;
+
+// Password reset tokens
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;

@@ -5,7 +5,8 @@ import {
   MetricScore, InsertMetricScore,
   UserSchedule, InsertUserSchedule,
   Subscription, InsertSubscription,
-  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions,
+  PasswordResetToken,
+  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, passwordResetTokens,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc } from "drizzle-orm";
 
@@ -42,6 +43,12 @@ export interface IStorage {
   upsertSubscription(data: Partial<Subscription> & { userId: number }): Promise<Subscription>;
   getSubscriptionByStripeCustomerId(customerId: string): Promise<Subscription | undefined>;
   isPro(userId: number): Promise<boolean>;
+
+  // Password Reset
+  createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<PasswordResetToken>;
+  getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  markPasswordResetTokenUsed(id: number): Promise<void>;
+  updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
 }
 
 // ─── Drizzle (PostgreSQL) implementation ────────────────────────────────────
@@ -220,6 +227,33 @@ export class DrizzleStorage implements IStorage {
     const sub = await this.getSubscription(userId);
     if (!sub) return false;
     return sub.status === "active" && sub.plan !== "free";
+  }
+
+  // Password Reset
+  async createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<PasswordResetToken> {
+    const rows = await this.db.insert(passwordResetTokens)
+      .values({ userId, token, expiresAt })
+      .returning();
+    return rows[0];
+  }
+
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    const rows = await this.db.select().from(passwordResetTokens)
+      .where(eq(passwordResetTokens.token, token))
+      .limit(1);
+    return rows[0];
+  }
+
+  async markPasswordResetTokenUsed(id: number): Promise<void> {
+    await this.db.update(passwordResetTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetTokens.id, id));
+  }
+
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+    await this.db.update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, userId));
   }
 }
 
@@ -406,6 +440,27 @@ export class MemStorage implements IStorage {
     if (!sub) return false;
     return sub.status === "active" && sub.plan !== "free";
   }
+
+  // Password Reset (in-memory)
+  private resetTokens: Map<number, PasswordResetToken> = new Map();
+  private resetTokenIdCounter = 1;
+  async createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<PasswordResetToken> {
+    const rec: PasswordResetToken = { id: this.resetTokenIdCounter++, userId, token, expiresAt, usedAt: null, createdAt: new Date() };
+    this.resetTokens.set(rec.id, rec);
+    return rec;
+  }
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    return Array.from(this.resetTokens.values()).find(t => t.token === token);
+  }
+  async markPasswordResetTokenUsed(id: number): Promise<void> {
+    const t = this.resetTokens.get(id);
+    if (t) this.resetTokens.set(id, { ...t, usedAt: new Date() });
+  }
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+    const user = this.usersMap.get(userId);
+    if (user) this.usersMap.set(userId, { ...user, password: hashedPassword });
+  }
+
   async getUserSchedule(userId: number): Promise<UserSchedule | undefined> { return this.userSchedules.get(userId); }
   async upsertUserSchedule(schedule: InsertUserSchedule & { userId: number }): Promise<UserSchedule> {
     const existing = this.userSchedules.get(schedule.userId);

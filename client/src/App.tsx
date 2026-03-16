@@ -8,6 +8,8 @@ import { useEffect, useState, createContext, useContext } from "react";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
 import DashboardPage from "@/pages/dashboard";
 import TodayPage from "@/pages/today";
 import HistoryPage from "@/pages/history";
@@ -55,9 +57,11 @@ function Router() {
   const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
 
+  const publicPaths = ["/register", "/forgot-password", "/reset-password"];
+
   useEffect(() => {
     if (!isLoading) {
-      if (!user && location !== "/register") setLocation("/login");
+      if (!user && !publicPaths.includes(location)) setLocation("/login");
       if (user && (location === "/login" || location === "/register" || location === "/")) setLocation("/dashboard");
     }
   }, [user, isLoading, location]);
@@ -77,6 +81,8 @@ function Router() {
     return (
       <Switch>
         <Route path="/register" component={RegisterPage} />
+        <Route path="/forgot-password" component={ForgotPasswordPage} />
+        <Route path="/reset-password" component={ResetPasswordPage} />
         <Route component={LoginPage} />
       </Switch>
     );

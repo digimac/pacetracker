@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
+import { sendPasswordResetEmail } from "./email";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema } from "@shared/schema";
 import { z } from "zod";
@@ -80,6 +81,48 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Auth: Logout
   app.post("/api/auth/logout", (req, res) => {
     req.session!.destroy(() => res.json({ ok: true }));
+  });
+
+  // Auth: Forgot Password — request a reset link
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      const user = await storage.getUserByEmail(email);
+      // Always return 200 to prevent email enumeration
+      if (!user) return res.json({ ok: true });
+
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      await storage.createPasswordResetToken(user.id, token, expiresAt);
+      await sendPasswordResetEmail(user.email, token);
+
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Auth: Reset Password — consume token and set new password
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, password } = z.object({
+        token: z.string().min(1),
+        password: z.string().min(8, "Password must be at least 8 characters"),
+      }).parse(req.body);
+
+      const record = await storage.getPasswordResetToken(token);
+      if (!record) return res.status(400).json({ error: "Invalid or expired reset link" });
+      if (record.usedAt) return res.status(400).json({ error: "This reset link has already been used" });
+      if (new Date() > record.expiresAt) return res.status(400).json({ error: "This reset link has expired. Please request a new one." });
+
+      const hashed = hashPassword(password);
+      await storage.updateUserPassword(record.userId, hashed);
+      await storage.markPasswordResetTokenUsed(record.id);
+
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
   });
 
   // Auth: Me
