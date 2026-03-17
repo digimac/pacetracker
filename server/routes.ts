@@ -7,7 +7,7 @@ import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema } from "@shared/schema";
 import { z } from "zod";
 import { getCoordsForTimezone } from "./timezone-coords";
-import { getCoordsForCity } from "./city-coords";
+import { geocodeCity } from "./geocode";
 
 // Admin email — the one account with full admin privileges
 const ADMIN_EMAIL = "track@sweetmo.io";
@@ -462,9 +462,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           ]);
           if (!latestEntry) return null;
 
-          // Prefer city+country coords; fall back to timezone coords
-          let coords: [number, number] | null = getCoordsForCity(u.city, u.country);
           const timezone = sched?.timezone || null;
+
+          // Prefer dynamic geocoding (city+country); fall back to timezone coords
+          let coords: [number, number] | null = await geocodeCity(u.city, u.country);
           if (!coords && timezone) {
             coords = getCoordsForTimezone(timezone);
           }
