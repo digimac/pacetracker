@@ -98,6 +98,7 @@ export type UserSchedule = typeof userSchedule.$inferSelect;
 export const metricContent = pgTable("metric_content", {
   id: serial("id").primaryKey(),
   metricKey: text("metric_key").notNull().unique(), // "TIME" | "GOAL" | "TEAM" | "TASK" | "VIEW" | "PACE"
+  subtext: text("subtext"),
   story: text("story"),
   imageUrl: text("image_url"),
   quote: text("quote"),

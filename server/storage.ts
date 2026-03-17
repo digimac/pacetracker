@@ -251,6 +251,7 @@ export class DrizzleStorage implements IStorage {
       .onConflictDoUpdate({
         target: metricContent.metricKey,
         set: {
+          subtext: data.subtext,
           story: data.story,
           imageUrl: data.imageUrl,
           quote: data.quote,
@@ -489,6 +490,7 @@ export class MemStorage implements IStorage {
     const merged: MetricContent = {
       id: existing?.id ?? this.metricContentIdCounter++,
       metricKey: data.metricKey,
+      subtext: data.subtext ?? null,
       story: data.story ?? null,
       imageUrl: data.imageUrl ?? null,
       quote: data.quote ?? null,

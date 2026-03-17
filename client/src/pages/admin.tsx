@@ -149,7 +149,7 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
 
           {/* Save button */}
           <Button
-            onClick={() => onSave({ metricKey, story, imageUrl, quote, quoteAuthor })}
+            onClick={() => onSave({ metricKey, subtext, story, imageUrl, quote, quoteAuthor })}
             disabled={isSaving}
             className="w-full"
             data-testid={`btn-save-${metricKey.toLowerCase()}`}
@@ -183,7 +183,7 @@ export default function AdminPage() {
   contentArray.forEach(c => { contentMap[c.metricKey] = c; });
 
   const saveMutation = useMutation({
-    mutationFn: (data: { metricKey: string; story: string; imageUrl: string; quote: string; quoteAuthor: string }) => {
+    mutationFn: (data: { metricKey: string; subtext: string; story: string; imageUrl: string; quote: string; quoteAuthor: string }) => {
       setSavingKey(data.metricKey);
       return apiRequest("POST", "/api/admin/metric-content", data).then(r => r.json());
     },

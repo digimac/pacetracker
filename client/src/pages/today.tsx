@@ -251,7 +251,7 @@ export default function TodayPage() {
               key={m.key}
               metricKey={m.key}
               label={m.label}
-              description={m.description}
+              description={metricContentMap[m.key]?.subtext || m.description}
               rating={ratings[m.key] || "skip"}
               onRate={handleRate}
               showInfo={true}
