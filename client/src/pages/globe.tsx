@@ -18,7 +18,10 @@ const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
 type ScorePoint = {
   userId: number;
   displayName: string;
-  timezone: string;
+  timezone: string | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
   coordinates: [number, number]; // [lon, lat]
   score: number;
   wins: number;
@@ -130,7 +133,9 @@ function ScoreMarker({
             textAnchor="middle"
             style={{ fontSize: "6.5px", fill: "#64748b", fontFamily: "inherit" }}
           >
-            {point.timezone}
+            {point.city && point.country
+              ? `${point.city}${point.region ? `, ${point.region}` : ""} · ${point.country}`
+              : point.timezone || ""}
           </text>
         </g>
       )}

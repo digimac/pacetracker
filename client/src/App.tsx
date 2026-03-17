@@ -45,7 +45,7 @@ export const ThemeContext = createContext<ThemeContextType>({ theme: "dark", tog
 export const useTheme = () => useContext(ThemeContext);
 
 // Auth context
-interface AuthUser { id: number; email: string; username: string; displayName: string; firstName?: string | null; lastName?: string | null; }
+interface AuthUser { id: number; email: string; username: string; displayName: string; firstName?: string | null; lastName?: string | null; city?: string | null; region?: string | null; country?: string | null; }
 interface AuthContextType {
   user: AuthUser | null;
   setUser: (u: AuthUser | null) => void;

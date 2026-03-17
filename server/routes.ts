@@ -7,6 +7,7 @@ import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema } from "@shared/schema";
 import { z } from "zod";
 import { getCoordsForTimezone } from "./timezone-coords";
+import { getCoordsForCity } from "./city-coords";
 
 // Admin email — the one account with full admin privileges
 const ADMIN_EMAIL = "track@sweetmo.io";
@@ -68,7 +69,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         dailyGoal: "",
       });
 
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Registration failed" });
     }
@@ -83,7 +84,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(401).json({ error: "Invalid email or password" });
       }
       req.session!.userId = user.id;
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Login failed" });
     }
@@ -141,20 +142,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!req.session?.userId) return res.status(401).json({ error: "Unauthorized" });
     const user = await storage.getUserById(req.session.userId);
     if (!user) return res.status(401).json({ error: "User not found" });
-    res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName } });
+    res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
   });
 
   // Profile update — first name / last name
   app.patch("/api/auth/profile", requireAuth, async (req, res) => {
     try {
       const userId = req.session!.userId!;
-      const { firstName, lastName } = z.object({
+      const { firstName, lastName, city, region, country } = z.object({
         firstName: z.string().max(100).optional().nullable(),
         lastName: z.string().max(100).optional().nullable(),
+        city: z.string().max(100).optional().nullable(),
+        region: z.string().max(100).optional().nullable(),
+        country: z.string().max(100).optional().nullable(),
       }).parse(req.body);
-      const user = await storage.updateUserProfile(userId, { firstName: firstName ?? null, lastName: lastName ?? null });
+      const user = await storage.updateUserProfile(userId, {
+        firstName: firstName ?? null,
+        lastName: lastName ?? null,
+        city: city ?? null,
+        region: region ?? null,
+        country: country ?? null,
+      });
       if (!user) return res.status(404).json({ error: "User not found" });
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }
@@ -450,9 +460,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             storage.getUserSchedule(u.id),
             storage.getLatestDailyEntry(u.id),
           ]);
+          if (!latestEntry) return null;
+
+          // Prefer city+country coords; fall back to timezone coords
+          let coords: [number, number] | null = getCoordsForCity(u.city, u.country);
           const timezone = sched?.timezone || null;
-          const coords = timezone ? getCoordsForTimezone(timezone) : null;
-          if (!coords || !latestEntry) return null;
+          if (!coords && timezone) {
+            coords = getCoordsForTimezone(timezone);
+          }
+          if (!coords) return null;
 
           const scores = await storage.getMetricScoresByEntry(latestEntry.id);
           const wins = scores.filter(s => s.rating === "success").length;
@@ -463,6 +479,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             userId: u.id,
             displayName: u.displayName,
             timezone,
+            city: u.city || null,
+            region: u.region || null,
+            country: u.country || null,
             coordinates: coords, // [lon, lat]
             score,
             wins,

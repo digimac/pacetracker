@@ -32,10 +32,13 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // Profile — first / last name
+  // Profile — name + location
   const [profileForm, setProfileForm] = useState({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
+    city: user?.city || "",
+    region: user?.region || "",
+    country: user?.country || "",
   });
 
   // Keep form in sync if user context loads after mount
@@ -43,8 +46,11 @@ export default function SettingsPage() {
     setProfileForm({
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
+      city: user?.city || "",
+      region: user?.region || "",
+      country: user?.country || "",
     });
-  }, [user?.firstName, user?.lastName]);
+  }, [user?.firstName, user?.lastName, user?.city, user?.region, user?.country]);
 
   const saveProfile = useMutation({
     mutationFn: () => apiRequest("PATCH", "/api/auth/profile", profileForm).then(r => r.json()),
@@ -179,6 +185,41 @@ export default function SettingsPage() {
               />
             </div>
           </div>
+          {/* Location */}
+          <div className="pt-2 border-t border-border space-y-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Location</p>
+            <p className="text-[11px] text-muted-foreground/70 -mt-1">Used to pinpoint your dot on the Score Map. General location only — not exact.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5 col-span-2">
+                <Label className="text-xs">City</Label>
+                <Input
+                  placeholder="e.g. New York"
+                  value={profileForm.city}
+                  onChange={e => setProfileForm(f => ({ ...f, city: e.target.value }))}
+                  data-testid="input-city"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">State / Province</Label>
+                <Input
+                  placeholder="e.g. NY"
+                  value={profileForm.region}
+                  onChange={e => setProfileForm(f => ({ ...f, region: e.target.value }))}
+                  data-testid="input-region"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Country</Label>
+                <Input
+                  placeholder="e.g. USA"
+                  value={profileForm.country}
+                  onChange={e => setProfileForm(f => ({ ...f, country: e.target.value }))}
+                  data-testid="input-country"
+                />
+              </div>
+            </div>
+          </div>
+
           <Button
             onClick={() => saveProfile.mutate()}
             disabled={saveProfile.isPending}
@@ -188,7 +229,7 @@ export default function SettingsPage() {
             data-testid="btn-save-profile"
           >
             <Save className="w-3.5 h-3.5 mr-2" />
-            {saveProfile.isPending ? "Saving..." : "Save Name"}
+            {saveProfile.isPending ? "Saving..." : "Save Profile"}
           </Button>
         </CardContent>
       </Card>
