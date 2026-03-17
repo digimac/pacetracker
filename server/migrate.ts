@@ -1,12 +1,9 @@
 import path from "path";
 
 /**
- * Runs Drizzle migrations at server startup.
+ * Runs Drizzle migrations at server startup using standard pg driver.
+ * Compatible with any PostgreSQL host (Render, Neon, Supabase, etc.)
  * Safe to call unconditionally — skips if DATABASE_URL is not set.
- *
- * In production (dist/index.cjs), migrations are copied to dist/migrations/
- * by the build script. __dirname resolves to the dist/ folder.
- * In development, migrations/ lives at the repo root (process.cwd()).
  */
 export async function runMigrations(): Promise<void> {
   if (!process.env.DATABASE_URL) {
@@ -15,25 +12,30 @@ export async function runMigrations(): Promise<void> {
   }
 
   try {
-    const { neon } = await import("@neondatabase/serverless");
-    const { drizzle } = await import("drizzle-orm/neon-http");
-    const { migrate } = await import("drizzle-orm/neon-http/migrator");
+    const { Pool } = await import("pg");
+    const { drizzle } = await import("drizzle-orm/node-postgres");
+    const { migrate } = await import("drizzle-orm/node-postgres/migrator");
 
-    const sql = neon(process.env.DATABASE_URL);
-    const db = drizzle(sql);
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL.includes("localhost")
+        ? false
+        : { rejectUnauthorized: false },
+    });
 
-    // Production: migrations are copied to dist/migrations/ by the build script
-    // Development: migrations live at the repo root
-    const isProd = process.env.NODE_ENV === "production";
-    const migrationsFolder = isProd
-      ? path.join(__dirname, "migrations")   // dist/migrations/
-      : path.join(process.cwd(), "migrations"); // <repo-root>/migrations/
+    const db = drizzle(pool);
+
+    // In production the build copies migrations/ next to dist/index.cjs → dist/migrations/
+    // __dirname inside the esbuild CJS bundle = the dist/ directory
+    const migrationsFolder = path.join(__dirname, "migrations");
 
     console.log("[migrate] Running migrations from:", migrationsFolder);
     await migrate(db, { migrationsFolder });
     console.log("[migrate] Migrations complete ✓");
+
+    await pool.end();
   } catch (err: any) {
     console.error("[migrate] Migration failed:", err.message);
-    // Don't crash the server on migration failure
+    // Don't crash the server — log and continue
   }
 }

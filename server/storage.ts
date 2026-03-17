@@ -54,9 +54,9 @@ export interface IStorage {
 // ─── Drizzle (PostgreSQL) implementation ────────────────────────────────────
 
 export class DrizzleStorage implements IStorage {
-  private db: ReturnType<typeof import("drizzle-orm/neon-http").drizzle>;
+  private db: any;
 
-  constructor(db: ReturnType<typeof import("drizzle-orm/neon-http").drizzle>) {
+  constructor(db: any) {
     this.db = db;
   }
 
