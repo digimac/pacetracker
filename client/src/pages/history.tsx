@@ -282,9 +282,12 @@ function DayDrawer({
 
           {/* Notes */}
           <div className="pt-1">
-            <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-2">Notes</p>
+            <div className="flex items-baseline justify-between mb-2">
+              <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Notes</p>
+              <span className="text-[10px] text-muted-foreground/50">Optional · saved with score</span>
+            </div>
             <Textarea
-              placeholder="Reflect on this day..."
+              placeholder="How did this day go? Add a reflection..."
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}

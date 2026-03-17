@@ -204,9 +204,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       let entry = await storage.getDailyEntry(userId, dateStr);
       if (!entry) {
-        entry = await storage.createDailyEntry({ userId, entryDate: dateStr, notes: notes || null });
+        // Only persist notes on creation if something was actually written
+        entry = await storage.createDailyEntry({ userId, entryDate: dateStr, notes: notes?.trim() || null });
       } else if (notes !== undefined) {
-        await storage.updateDailyEntry(entry.id, { notes });
+        // Only overwrite existing notes if the user typed something,
+        // or explicitly sent null to clear — never overwrite with empty string
+        if (notes.trim() !== "" || notes === null) {
+          await storage.updateDailyEntry(entry.id, { notes: notes.trim() || null });
+        }
       }
 
       const saved = await storage.upsertMetricScores(entry.id, userId, scores);

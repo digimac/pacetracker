@@ -298,9 +298,12 @@ export default function TodayPage() {
 
       {/* Notes */}
       <section className="mb-6">
-        <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2">Daily Notes</h2>
+        <div className="flex items-baseline justify-between mb-2">
+          <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Daily Notes</h2>
+          <span className="text-[10px] text-muted-foreground/50">Optional · saved with your score</span>
+        </div>
         <Textarea
-          placeholder="Reflect on today's performance..."
+          placeholder="How did today go? Add a reflection once you've scored the day..."
           value={notes}
           onChange={e => setNotes(e.target.value)}
           rows={3}
