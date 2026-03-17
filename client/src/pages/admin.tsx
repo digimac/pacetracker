@@ -38,6 +38,7 @@ type Member = {
   planStatus: string;
   isPro: boolean;
   timezone: string | null;
+  latestScore: { date: string; score: number; wins: number; losses: number } | null;
 };
 
 /** Masks a string: first char visible, rest replaced with *** */
@@ -318,6 +319,28 @@ function MembersTab() {
                     {new Date(m.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                   </span>
                 </div>
+
+                {/* Latest score */}
+                {m.latestScore && (
+                  <div className="flex items-center gap-2 pt-1 mt-1 border-t border-border">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0">Last Score</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-black ${
+                        m.latestScore.score > 0 ? "text-green-400"
+                        : m.latestScore.score < 0 ? "text-red-400"
+                        : "text-muted-foreground"
+                      }`}>
+                        {m.latestScore.score > 0 ? `+${m.latestScore.score}` : m.latestScore.score}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {m.latestScore.wins}W / {m.latestScore.losses}L
+                      </span>
+                      <span className="text-[10px] text-muted-foreground/50">
+                        {new Date(m.latestScore.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}

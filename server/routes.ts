@@ -338,11 +338,27 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const allUsers = await storage.getAllUsers();
       const members = await Promise.all(
         allUsers.map(async (u) => {
-          const [sub, sched] = await Promise.all([
+          const [sub, sched, latestEntry] = await Promise.all([
             storage.getSubscription(u.id),
             storage.getUserSchedule(u.id),
+            storage.getLatestDailyEntry(u.id),
           ]);
           const isPro = sub?.status === "active" && !!sub.currentPeriodEnd && sub.currentPeriodEnd > new Date();
+
+          // Compute score for the most recent day
+          let latestScore: { date: string; score: number; wins: number; losses: number } | null = null;
+          if (latestEntry) {
+            const scores = await storage.getMetricScoresByEntry(latestEntry.id);
+            const wins = scores.filter(s => s.rating === "success").length;
+            const losses = scores.filter(s => s.rating === "setback").length;
+            latestScore = {
+              date: latestEntry.entryDate,
+              score: wins - losses,
+              wins,
+              losses,
+            };
+          }
+
           return {
             id: u.id,
             username: u.username,
@@ -353,6 +369,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             planStatus: sub?.status || "inactive",
             isPro,
             timezone: sched?.timezone || null,
+            latestScore,
           };
         })
       );

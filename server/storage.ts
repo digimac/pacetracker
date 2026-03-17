@@ -9,7 +9,7 @@ import {
   PasswordResetToken,
   users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, passwordResetTokens,
 } from "@shared/schema";
-import { eq, and, gte, lte, asc } from "drizzle-orm";
+import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -27,6 +27,7 @@ export interface IStorage {
 
   // Daily Entries
   getDailyEntry(userId: number, date: string): Promise<DailyEntry | undefined>;
+  getLatestDailyEntry(userId: number): Promise<DailyEntry | undefined>;
   getDailyEntriesByRange(userId: number, startDate: string, endDate: string): Promise<DailyEntry[]>;
   createDailyEntry(entry: InsertDailyEntry): Promise<DailyEntry>;
   updateDailyEntry(id: number, updates: Partial<InsertDailyEntry>): Promise<DailyEntry | undefined>;
@@ -128,6 +129,14 @@ export class DrizzleStorage implements IStorage {
   async getDailyEntry(userId: number, date: string): Promise<DailyEntry | undefined> {
     const rows = await this.db.select().from(dailyEntries)
       .where(and(eq(dailyEntries.userId, userId), eq(dailyEntries.entryDate, date)))
+      .limit(1);
+    return rows[0];
+  }
+
+  async getLatestDailyEntry(userId: number): Promise<DailyEntry | undefined> {
+    const rows = await this.db.select().from(dailyEntries)
+      .where(eq(dailyEntries.userId, userId))
+      .orderBy(desc(dailyEntries.entryDate))
       .limit(1);
     return rows[0];
   }
@@ -412,6 +421,12 @@ export class MemStorage implements IStorage {
   }
   async getDailyEntry(userId: number, date: string): Promise<DailyEntry | undefined> {
     return Array.from(this.dailyEntries.values()).find(e => e.userId === userId && e.entryDate === date);
+  }
+  async getLatestDailyEntry(userId: number): Promise<DailyEntry | undefined> {
+    const entries = Array.from(this.dailyEntries.values())
+      .filter(e => e.userId === userId)
+      .sort((a, b) => b.entryDate.localeCompare(a.entryDate));
+    return entries[0];
   }
   async getDailyEntriesByRange(userId: number, startDate: string, endDate: string): Promise<DailyEntry[]> {
     return Array.from(this.dailyEntries.values())
