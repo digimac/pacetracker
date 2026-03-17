@@ -18,6 +18,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  updateUserProfile(userId: number, updates: { firstName: string | null; lastName: string | null }): Promise<User | undefined>;
 
   // Custom Metrics
   getCustomMetricsByUser(userId: number): Promise<CustomMetric[]>;
@@ -95,6 +96,11 @@ export class DrizzleStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return this.db.select().from(users).orderBy(asc(users.createdAt));
+  }
+
+  async updateUserProfile(userId: number, updates: { firstName: string | null; lastName: string | null }): Promise<User | undefined> {
+    const rows = await this.db.update(users).set(updates).where(eq(users.id, userId)).returning();
+    return rows[0];
   }
 
   // Custom Metrics
@@ -397,6 +403,13 @@ export class MemStorage implements IStorage {
   }
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.usersMap.values()).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+  async updateUserProfile(userId: number, updates: { firstName: string | null; lastName: string | null }): Promise<User | undefined> {
+    const user = this.usersMap.get(userId);
+    if (!user) return undefined;
+    const updated = { ...user, ...updates };
+    this.usersMap.set(userId, updated);
+    return updated;
   }
   async getCustomMetricsByUser(userId: number): Promise<CustomMetric[]> {
     return Array.from(this.customMetrics.values()).filter(m => m.userId === userId && m.isActive);

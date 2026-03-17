@@ -14,6 +14,7 @@ import { Plus, Trash2, Save, Clock, Lock, Zap, Globe } from "lucide-react";
 import { useAuth } from "@/App";
 import { TIMEZONE_OPTIONS, getBrowserTimezone } from "@/hooks/use-user-timezone";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMutation } from "@tanstack/react-query";
 
 const METRIC_EMOJIS = ["⭐", "💪", "🧠", "📚", "🥗", "🏃", "😴", "💧", "🎯", "🌱"];
 
@@ -27,9 +28,32 @@ const CORE_METRIC_INFO = [
 ];
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  // Profile — first / last name
+  const [profileForm, setProfileForm] = useState({
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+  });
+
+  // Keep form in sync if user context loads after mount
+  useEffect(() => {
+    setProfileForm({
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+    });
+  }, [user?.firstName, user?.lastName]);
+
+  const saveProfile = useMutation({
+    mutationFn: () => apiRequest("PATCH", "/api/auth/profile", profileForm).then(r => r.json()),
+    onSuccess: (data) => {
+      if (data.user) setUser(data.user);
+      toast({ title: "Profile saved" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
 
   const { data: billing } = useQuery<{ isPro: boolean }>({  
     queryKey: ["/api/billing/status"],
@@ -125,9 +149,9 @@ export default function SettingsPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-bold uppercase tracking-wider">Profile</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-center gap-3 py-2">
-            <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-bold text-primary">
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-bold text-primary flex-shrink-0">
               {user?.displayName?.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -135,6 +159,37 @@ export default function SettingsPage() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">First Name</Label>
+              <Input
+                placeholder="First"
+                value={profileForm.firstName}
+                onChange={e => setProfileForm(f => ({ ...f, firstName: e.target.value }))}
+                data-testid="input-first-name"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Last Name</Label>
+              <Input
+                placeholder="Last"
+                value={profileForm.lastName}
+                onChange={e => setProfileForm(f => ({ ...f, lastName: e.target.value }))}
+                data-testid="input-last-name"
+              />
+            </div>
+          </div>
+          <Button
+            onClick={() => saveProfile.mutate()}
+            disabled={saveProfile.isPending}
+            variant="outline"
+            size="sm"
+            className="w-full"
+            data-testid="btn-save-profile"
+          >
+            <Save className="w-3.5 h-3.5 mr-2" />
+            {saveProfile.isPending ? "Saving..." : "Save Name"}
+          </Button>
         </CardContent>
       </Card>
 

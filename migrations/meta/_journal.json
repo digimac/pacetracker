@@ -29,6 +29,13 @@
       "when": 1773701000000,
       "tag": "0003_metric_subtext",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773702000000,
+      "tag": "0004_user_name_fields",
+      "breakpoints": true
     }
   ]
 }

@@ -33,6 +33,8 @@ type Member = {
   username: string;
   email: string;
   displayName: string;
+  firstName: string | null;
+  lastName: string | null;
   createdAt: string;
   plan: string;
   planStatus: string;
@@ -297,6 +299,14 @@ function MembersTab() {
 
               {/* Masked details grid */}
               <div className="grid grid-cols-1 gap-1.5 pt-1 border-t border-border">
+                {(m.firstName || m.lastName) && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0">Name</span>
+                    <span className="text-xs text-foreground/80">
+                      {[m.firstName, m.lastName].filter(Boolean).join(" ")}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0">Username</span>
                   <span className="text-xs font-mono text-foreground/80">{mask(m.username)}</span>

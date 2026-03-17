@@ -67,7 +67,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         dailyGoal: "",
       });
 
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Registration failed" });
     }
@@ -82,7 +82,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(401).json({ error: "Invalid email or password" });
       }
       req.session!.userId = user.id;
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Login failed" });
     }
@@ -140,7 +140,23 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!req.session?.userId) return res.status(401).json({ error: "Unauthorized" });
     const user = await storage.getUserById(req.session.userId);
     if (!user) return res.status(401).json({ error: "User not found" });
-    res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName } });
+    res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName } });
+  });
+
+  // Profile update — first name / last name
+  app.patch("/api/auth/profile", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const { firstName, lastName } = z.object({
+        firstName: z.string().max(100).optional().nullable(),
+        lastName: z.string().max(100).optional().nullable(),
+      }).parse(req.body);
+      const user = await storage.updateUserProfile(userId, { firstName: firstName ?? null, lastName: lastName ?? null });
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName } });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
   });
 
   // Custom Metrics
@@ -364,6 +380,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             username: u.username,
             email: u.email,
             displayName: u.displayName,
+            firstName: u.firstName || null,
+            lastName: u.lastName || null,
             createdAt: u.createdAt,
             plan: sub?.plan || "free",
             planStatus: sub?.status || "inactive",
