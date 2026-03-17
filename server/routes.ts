@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
 import { sendPasswordResetEmail } from "./email";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
-import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema } from "@shared/schema";
+import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
 import { z } from "zod";
 import { getCoordsForTimezone } from "./timezone-coords";
 import { geocodeCity } from "./geocode";
@@ -445,6 +445,41 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const data = insertUserScheduleSchema.parse({ ...req.body, userId });
       const schedule = await storage.upsertUserSchedule({ ...data, userId });
       res.json(schedule);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Site Pages — public read (authenticated users)
+  app.get("/api/pages/:pageKey", requireAuth, async (req, res) => {
+    try {
+      const page = await storage.getSitePage(req.params.pageKey);
+      if (!page) return res.status(404).json({ error: "Page not found" });
+      res.json(page);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/pages", requireAuth, async (req, res) => {
+    try {
+      const pages = await storage.getAllSitePages();
+      res.json(pages);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Site Pages — admin write
+  app.put("/api/admin/pages/:pageKey", requireAdmin, async (req, res) => {
+    try {
+      const pageKey = req.params.pageKey;
+      if (!["story", "tracking", "connect"].includes(pageKey)) {
+        return res.status(400).json({ error: "Invalid page key" });
+      }
+      const data = insertSitePageSchema.parse({ ...req.body, pageKey });
+      const page = await storage.upsertSitePage(data);
+      res.json(page);
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }

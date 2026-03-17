@@ -6,8 +6,9 @@ import {
   UserSchedule, InsertUserSchedule,
   Subscription, InsertSubscription,
   MetricContent, InsertMetricContent,
+  SitePage, InsertSitePage,
   PasswordResetToken,
-  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, passwordResetTokens,
+  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
 
@@ -52,6 +53,11 @@ export interface IStorage {
   getAllMetricContent(): Promise<MetricContent[]>;
   getMetricContent(metricKey: string): Promise<MetricContent | undefined>;
   upsertMetricContent(data: InsertMetricContent): Promise<MetricContent>;
+
+  // Site Pages
+  getSitePage(pageKey: string): Promise<SitePage | undefined>;
+  getAllSitePages(): Promise<SitePage[]>;
+  upsertSitePage(data: InsertSitePage): Promise<SitePage>;
 
   // Password Reset
   createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<PasswordResetToken>;
@@ -276,6 +282,36 @@ export class DrizzleStorage implements IStorage {
           imageUrl: data.imageUrl,
           quote: data.quote,
           quoteAuthor: data.quoteAuthor,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return rows[0];
+  }
+
+  // Site Pages
+  async getSitePage(pageKey: string): Promise<SitePage | undefined> {
+    const rows = await this.db.select().from(sitePages).where(eq(sitePages.pageKey, pageKey)).limit(1);
+    return rows[0];
+  }
+  async getAllSitePages(): Promise<SitePage[]> {
+    return this.db.select().from(sitePages);
+  }
+  async upsertSitePage(data: InsertSitePage): Promise<SitePage> {
+    const rows = await this.db.insert(sitePages)
+      .values({ ...data, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: sitePages.pageKey,
+        set: {
+          title: data.title,
+          subtitle: data.subtitle,
+          heroImageUrl: data.heroImageUrl,
+          body: data.body,
+          sections: data.sections,
+          contactEmail: data.contactEmail,
+          socialLinks: data.socialLinks,
+          ctaLabel: data.ctaLabel,
+          ctaUrl: data.ctaUrl,
           updatedAt: new Date(),
         },
       })
@@ -535,6 +571,18 @@ export class MemStorage implements IStorage {
     };
     this.metricContentMap.set(data.metricKey, merged);
     return merged;
+  }
+
+  // Site Pages (in-memory)
+  private sitePagesMap: Map<string, SitePage> = new Map();
+  private sitePageIdCounter = 1;
+  async getSitePage(pageKey: string): Promise<SitePage | undefined> { return this.sitePagesMap.get(pageKey); }
+  async getAllSitePages(): Promise<SitePage[]> { return Array.from(this.sitePagesMap.values()); }
+  async upsertSitePage(data: InsertSitePage): Promise<SitePage> {
+    const existing = this.sitePagesMap.get(data.pageKey);
+    const page: SitePage = { ...existing, ...data, id: existing?.id ?? this.sitePageIdCounter++, updatedAt: new Date() } as SitePage;
+    this.sitePagesMap.set(data.pageKey, page);
+    return page;
   }
 
   // Password Reset (in-memory)

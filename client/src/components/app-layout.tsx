@@ -15,6 +15,9 @@ import {
   CreditCard,
   ShieldCheck,
   Globe,
+  BookOpen,
+  Monitor,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -107,6 +110,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+
+          {/* Content pages — all users */}
+          <div className="pt-2 mt-2 border-t border-[hsl(var(--sidebar-border))]">
+            {([
+              { label: "The Story", icon: BookOpen, path: "/story" },
+              { label: "Daily Tracking", icon: Monitor, path: "/tracking" },
+              { label: "Connect", icon: MessageSquare, path: "/connect" },
+            ] as const).map(({ label, icon: Icon, path }) => {
+              const active = location === path;
+              return (
+                <Link key={path} href={path}>
+                  <a
+                    data-testid={`nav-${label.toLowerCase().replace(/ /g, "-")}`}
+                    className={`
+                      flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                      ${active
+                        ? "bg-primary text-primary-foreground"
+                        : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                      }
+                    `}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {label}
+                  </a>
+                </Link>
+              );
+            })}
+          </div>
 
           {/* Globe — Pro only */}
           {isPro && (

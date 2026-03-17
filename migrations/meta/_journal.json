@@ -43,6 +43,13 @@
       "when": 1773703000000,
       "tag": "0005_user_location_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773704000000,
+      "tag": "0006_site_pages",
+      "breakpoints": true
     }
   ]
 }

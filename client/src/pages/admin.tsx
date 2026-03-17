@@ -11,9 +11,271 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ShieldCheck, Save, ImageIcon, Quote, BookOpen,
   ChevronDown, ChevronUp, Loader2, Users, Settings2,
-  Crown, Clock, Globe,
+  Crown, Clock, Globe, FileText, Plus, Trash2, Link,
 } from "lucide-react";
 import type { MetricContent } from "@shared/schema";
+
+type SitePage = {
+  id: number;
+  pageKey: string;
+  title: string;
+  subtitle: string | null;
+  heroImageUrl: string | null;
+  body: string | null;
+  sections: string | null;
+  contactEmail: string | null;
+  socialLinks: string | null;
+  ctaLabel: string | null;
+  ctaUrl: string | null;
+  updatedAt: string;
+};
+
+type PageSection = { heading: string; text: string; imageUrl?: string };
+type SocialLink = { platform: string; url: string; label?: string };
+
+const PAGE_DEFS = [
+  { key: "story",    label: "Story of Momentum", icon: BookOpen,  accent: "text-violet-400", border: "border-violet-500/30", color: "from-violet-500/10 to-violet-600/5" },
+  { key: "tracking", label: "Daily Tracking",     icon: Clock,     accent: "text-emerald-400", border: "border-emerald-500/30", color: "from-emerald-500/10 to-emerald-600/5" },
+  { key: "connect",  label: "Connect",            icon: Globe,     accent: "text-blue-400", border: "border-blue-500/30", color: "from-blue-500/10 to-blue-600/5" },
+];
+
+// ─── Page Editor ─────────────────────────────────────────────────────────────
+
+function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existing, onSave, isSaving }: {
+  pageKey: string;
+  label: string;
+  icon: any;
+  accent: string;
+  border: string;
+  color: string;
+  existing: SitePage | undefined;
+  onSave: (data: any) => void;
+  isSaving: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [title, setTitle] = useState(existing?.title || "");
+  const [subtitle, setSubtitle] = useState(existing?.subtitle || "");
+  const [heroImageUrl, setHeroImageUrl] = useState(existing?.heroImageUrl || "");
+  const [body, setBody] = useState(existing?.body || "");
+  const [ctaLabel, setCtaLabel] = useState(existing?.ctaLabel || "");
+  const [ctaUrl, setCtaUrl] = useState(existing?.ctaUrl || "");
+  const [contactEmail, setContactEmail] = useState(existing?.contactEmail || "");
+  const [sections, setSections] = useState<PageSection[]>(() => {
+    try { return existing?.sections ? JSON.parse(existing.sections) : []; } catch { return []; }
+  });
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(() => {
+    try { return existing?.socialLinks ? JSON.parse(existing.socialLinks) : []; } catch { return []; }
+  });
+
+  useEffect(() => {
+    setTitle(existing?.title || "");
+    setSubtitle(existing?.subtitle || "");
+    setHeroImageUrl(existing?.heroImageUrl || "");
+    setBody(existing?.body || "");
+    setCtaLabel(existing?.ctaLabel || "");
+    setCtaUrl(existing?.ctaUrl || "");
+    setContactEmail(existing?.contactEmail || "");
+    try { setSections(existing?.sections ? JSON.parse(existing.sections) : []); } catch { setSections([]); }
+    try { setSocialLinks(existing?.socialLinks ? JSON.parse(existing.socialLinks) : []); } catch { setSocialLinks([]); }
+  }, [existing]);
+
+  function addSection() {
+    setSections(s => [...s, { heading: "", text: "", imageUrl: "" }]);
+  }
+  function updateSection(i: number, field: keyof PageSection, value: string) {
+    setSections(s => s.map((sec, idx) => idx === i ? { ...sec, [field]: value } : sec));
+  }
+  function removeSection(i: number) {
+    setSections(s => s.filter((_, idx) => idx !== i));
+  }
+  function addSocial() {
+    setSocialLinks(l => [...l, { platform: "", url: "", label: "" }]);
+  }
+  function updateSocial(i: number, field: keyof SocialLink, value: string) {
+    setSocialLinks(l => l.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
+  }
+  function removeSocial(i: number) {
+    setSocialLinks(l => l.filter((_, idx) => idx !== i));
+  }
+
+  function handleSave() {
+    onSave({
+      pageKey,
+      title: title || label,
+      subtitle,
+      heroImageUrl,
+      body,
+      sections: JSON.stringify(sections.filter(s => s.heading || s.text)),
+      ctaLabel,
+      ctaUrl,
+      contactEmail,
+      socialLinks: JSON.stringify(socialLinks.filter(s => s.platform && s.url)),
+    });
+  }
+
+  const isConfigured = !!(existing?.body || existing?.heroImageUrl || existing?.sections);
+
+  return (
+    <div className={`rounded-xl border-2 ${border} bg-gradient-to-b ${color} overflow-hidden transition-all duration-200`}>
+      <button
+        className="w-full flex items-center justify-between px-5 py-4 text-left"
+        onClick={() => setExpanded(e => !e)}
+        data-testid={`admin-page-${pageKey}`}
+      >
+        <div className="flex items-center gap-3">
+          <Icon className={`w-4 h-4 ${accent}`} />
+          <span className={`text-base font-black tracking-tight ${accent}`}>{label}</span>
+          {isConfigured && (
+            <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-white/10 text-white/60">
+              Configured
+            </span>
+          )}
+        </div>
+        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
+
+      {expanded && (
+        <div className="px-5 pb-5 border-t border-white/5 pt-4 space-y-5">
+          {/* Title + Subtitle */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Page Title</label>
+              <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={label} className="text-sm" maxLength={100} />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Subtitle</label>
+              <Input value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="Short tagline" className="text-sm" maxLength={200} />
+            </div>
+          </div>
+
+          {/* Hero image */}
+          <div>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
+              <ImageIcon className="w-3 h-3" /> Hero Image URL
+            </label>
+            <Input value={heroImageUrl} onChange={e => setHeroImageUrl(e.target.value)} placeholder="https://..." className="text-sm font-mono" />
+          </div>
+
+          {/* Body */}
+          <div>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Intro Body</label>
+            <Textarea
+              value={body}
+              onChange={e => setBody(e.target.value)}
+              placeholder="Introductory text shown at the top of the page..."
+              rows={4}
+              className="resize-none text-sm"
+            />
+          </div>
+
+          {/* Content sections */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Content Sections</label>
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={addSection}>
+                <Plus className="w-3 h-3" /> Add Section
+              </Button>
+            </div>
+            {sections.length === 0 && (
+              <p className="text-xs text-muted-foreground/60 italic">No sections yet. Add one to create custom content blocks.</p>
+            )}
+            <div className="space-y-4">
+              {sections.map((sec, i) => (
+                <div key={i} className="rounded-lg border border-white/10 bg-black/20 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Section {i + 1}</span>
+                    <button onClick={() => removeSection(i)} className="text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <Input
+                    value={sec.heading}
+                    onChange={e => updateSection(i, "heading", e.target.value)}
+                    placeholder="Section heading"
+                    className="text-sm"
+                    maxLength={100}
+                  />
+                  <Textarea
+                    value={sec.text}
+                    onChange={e => updateSection(i, "text", e.target.value)}
+                    placeholder="Section body text..."
+                    rows={3}
+                    className="resize-none text-sm"
+                  />
+                  <Input
+                    value={sec.imageUrl || ""}
+                    onChange={e => updateSection(i, "imageUrl", e.target.value)}
+                    placeholder="Image URL (optional) — https://..."
+                    className="text-sm font-mono"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
+                <Link className="w-3 h-3" /> CTA Button Label
+              </label>
+              <Input value={ctaLabel} onChange={e => setCtaLabel(e.target.value)} placeholder="e.g. Get the Book" className="text-sm" maxLength={60} />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">CTA URL</label>
+              <Input value={ctaUrl} onChange={e => setCtaUrl(e.target.value)} placeholder="https://... or /billing" className="text-sm font-mono" maxLength={300} />
+            </div>
+          </div>
+
+          {/* Connect-specific: email + social links */}
+          {pageKey === "connect" && (
+            <>
+              <div>
+                <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Contact Email</label>
+                <Input value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="track@sweetmo.io" className="text-sm" type="email" />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Social Links</label>
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={addSocial}>
+                    <Plus className="w-3 h-3" /> Add Link
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {socialLinks.map((link, i) => (
+                    <div key={i} className="rounded-lg border border-white/10 bg-black/20 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground uppercase tracking-widest">Link {i + 1}</span>
+                        <button onClick={() => removeSocial(i)} className="text-muted-foreground hover:text-destructive"><Trash2 className="w-3 h-3" /></button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input value={link.platform} onChange={e => updateSocial(i, "platform", e.target.value)} placeholder="twitter" className="text-sm" />
+                        <Input value={link.label || ""} onChange={e => updateSocial(i, "label", e.target.value)} placeholder="@handle" className="text-sm" />
+                        <Input value={link.url} onChange={e => updateSocial(i, "url", e.target.value)} placeholder="https://..." className="text-sm font-mono" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Save */}
+          <Button onClick={handleSave} disabled={isSaving} className="w-full" data-testid={`btn-save-page-${pageKey}`}>
+            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            Save {label}
+          </Button>
+
+          {existing?.updatedAt && (
+            <p className="text-xs text-muted-foreground/60 text-center">
+              Last saved {new Date(existing.updatedAt).toLocaleString()}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ADMIN_EMAIL = "track@sweetmo.io";
 
@@ -367,12 +629,36 @@ export default function AdminPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"content" | "members">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "members" | "pages">("content");
+  const [savingPageKey, setSavingPageKey] = useState<string | null>(null);
 
   // Redirect if not admin
   useEffect(() => {
     if (user && user.email !== ADMIN_EMAIL) setLocation("/dashboard");
   }, [user]);
+
+  const { data: pagesArray = [], isLoading: pagesLoading } = useQuery<SitePage[]>({
+    queryKey: ["/api/pages"],
+    queryFn: () => apiRequest("GET", "/api/pages").then(r => r.json()),
+  });
+  const pagesMap: Record<string, SitePage> = {};
+  pagesArray.forEach(p => { pagesMap[p.pageKey] = p; });
+
+  const savePageMutation = useMutation({
+    mutationFn: (data: any) => {
+      setSavingPageKey(data.pageKey);
+      return apiRequest("PUT", `/api/admin/pages/${data.pageKey}`, data).then(r => r.json());
+    },
+    onSuccess: (_, vars) => {
+      setSavingPageKey(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
+      toast({ title: "Saved", description: `${vars.pageKey} page updated.` });
+    },
+    onError: (e: any) => {
+      setSavingPageKey(null);
+      toast({ title: "Error", description: e.message || "Save failed", variant: "destructive" });
+    },
+  });
 
   const { data: contentArray = [], isLoading } = useQuery<MetricContent[]>({
     queryKey: ["/api/metric-content"],
@@ -417,30 +703,25 @@ export default function AdminPage() {
 
       {/* Tab switcher */}
       <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border mb-6">
-        <button
-          onClick={() => setActiveTab("content")}
-          data-testid="tab-content"
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
-            activeTab === "content"
-              ? "bg-card border border-border text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Settings2 className="w-3.5 h-3.5" />
-          Metric Content
-        </button>
-        <button
-          onClick={() => setActiveTab("members")}
-          data-testid="tab-members"
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
-            activeTab === "members"
-              ? "bg-card border border-border text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          Members
-        </button>
+        {([
+          { key: "content", label: "Metric Content", icon: Settings2 },
+          { key: "pages",   label: "Pages",          icon: FileText },
+          { key: "members", label: "Members",         icon: Users },
+        ] as const).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            data-testid={`tab-${key}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
+              activeTab === key
+                ? "bg-card border border-border text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Tab content */}
@@ -466,6 +747,36 @@ export default function AdminPage() {
                   existing={contentMap[m.key]}
                   onSave={data => saveMutation.mutate(data)}
                   isSaving={savingKey === m.key && saveMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === "pages" && (
+        <>
+          <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+            Configure the three content pages accessible to all users: <strong>Story of Momentum</strong>, <strong>Daily Tracking</strong>, and <strong>Connect</strong>.
+          </p>
+          {pagesLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {PAGE_DEFS.map(p => (
+                <PageEditor
+                  key={p.key}
+                  pageKey={p.key}
+                  label={p.label}
+                  icon={p.icon}
+                  accent={p.accent}
+                  border={p.border}
+                  color={p.color}
+                  existing={pagesMap[p.key]}
+                  onSave={data => savePageMutation.mutate(data)}
+                  isSaving={savingPageKey === p.key && savePageMutation.isPending}
                 />
               ))}
             </div>

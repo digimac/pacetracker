@@ -115,6 +115,28 @@ export const insertMetricContentSchema = createInsertSchema(metricContent).omit(
 export type InsertMetricContent = z.infer<typeof insertMetricContentSchema>;
 export type MetricContent = typeof metricContent.$inferSelect;
 
+// Site pages — admin-managed CMS content for Story, Daily Tracking, Connect pages
+export const sitePages = pgTable("site_pages", {
+  id: serial("id").primaryKey(),
+  pageKey: text("page_key").notNull().unique(), // "story" | "tracking" | "connect"
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  heroImageUrl: text("hero_image_url"),
+  body: text("body"), // rich text / markdown body
+  // Flexible extra content slots (JSON-serialized array of {heading, text, imageUrl})
+  sections: text("sections"), // JSON string: [{heading, text, imageUrl}]
+  // Connect page specifics
+  contactEmail: text("contact_email"),
+  socialLinks: text("social_links"), // JSON string: [{platform, url}]
+  ctaLabel: text("cta_label"),
+  ctaUrl: text("cta_url"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSitePageSchema = createInsertSchema(sitePages).omit({ id: true, updatedAt: true });
+export type InsertSitePage = z.infer<typeof insertSitePageSchema>;
+export type SitePage = typeof sitePages.$inferSelect;
+
 // Password reset tokens
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: serial("id").primaryKey(),
