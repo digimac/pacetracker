@@ -94,6 +94,21 @@ export const insertUserScheduleSchema = createInsertSchema(userSchedule).omit({ 
 export type InsertUserSchedule = z.infer<typeof insertUserScheduleSchema>;
 export type UserSchedule = typeof userSchedule.$inferSelect;
 
+// Metric content — admin-editable story/image/quote per core metric
+export const metricContent = pgTable("metric_content", {
+  id: serial("id").primaryKey(),
+  metricKey: text("metric_key").notNull().unique(), // "TIME" | "GOAL" | "TEAM" | "TASK" | "VIEW" | "PACE"
+  story: text("story"),
+  imageUrl: text("image_url"),
+  quote: text("quote"),
+  quoteAuthor: text("quote_author"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertMetricContentSchema = createInsertSchema(metricContent).omit({ id: true, updatedAt: true });
+export type InsertMetricContent = z.infer<typeof insertMetricContentSchema>;
+export type MetricContent = typeof metricContent.$inferSelect;
+
 // Password reset tokens
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: serial("id").primaryKey(),

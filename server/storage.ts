@@ -5,8 +5,9 @@ import {
   MetricScore, InsertMetricScore,
   UserSchedule, InsertUserSchedule,
   Subscription, InsertSubscription,
+  MetricContent, InsertMetricContent,
   PasswordResetToken,
-  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, passwordResetTokens,
+  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, passwordResetTokens,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc } from "drizzle-orm";
 
@@ -43,6 +44,11 @@ export interface IStorage {
   upsertSubscription(data: Partial<Subscription> & { userId: number }): Promise<Subscription>;
   getSubscriptionByStripeCustomerId(customerId: string): Promise<Subscription | undefined>;
   isPro(userId: number): Promise<boolean>;
+
+  // Metric Content
+  getAllMetricContent(): Promise<MetricContent[]>;
+  getMetricContent(metricKey: string): Promise<MetricContent | undefined>;
+  upsertMetricContent(data: InsertMetricContent): Promise<MetricContent>;
 
   // Password Reset
   createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<PasswordResetToken>;
@@ -227,6 +233,33 @@ export class DrizzleStorage implements IStorage {
     const sub = await this.getSubscription(userId);
     if (!sub) return false;
     return sub.status === "active" && sub.plan !== "free";
+  }
+
+  // Metric Content
+  async getAllMetricContent(): Promise<MetricContent[]> {
+    return this.db.select().from(metricContent);
+  }
+
+  async getMetricContent(key: string): Promise<MetricContent | undefined> {
+    const rows = await this.db.select().from(metricContent).where(eq(metricContent.metricKey, key)).limit(1);
+    return rows[0];
+  }
+
+  async upsertMetricContent(data: InsertMetricContent): Promise<MetricContent> {
+    const rows = await this.db.insert(metricContent)
+      .values({ ...data, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: metricContent.metricKey,
+        set: {
+          story: data.story,
+          imageUrl: data.imageUrl,
+          quote: data.quote,
+          quoteAuthor: data.quoteAuthor,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return rows[0];
   }
 
   // Password Reset
@@ -439,6 +472,31 @@ export class MemStorage implements IStorage {
     const sub = this.subscriptionsMap.get(userId);
     if (!sub) return false;
     return sub.status === "active" && sub.plan !== "free";
+  }
+
+  // Metric Content (in-memory)
+  private metricContentMap: Map<string, MetricContent> = new Map();
+  private metricContentIdCounter = 1;
+
+  async getAllMetricContent(): Promise<MetricContent[]> {
+    return Array.from(this.metricContentMap.values());
+  }
+  async getMetricContent(key: string): Promise<MetricContent | undefined> {
+    return this.metricContentMap.get(key);
+  }
+  async upsertMetricContent(data: InsertMetricContent): Promise<MetricContent> {
+    const existing = this.metricContentMap.get(data.metricKey);
+    const merged: MetricContent = {
+      id: existing?.id ?? this.metricContentIdCounter++,
+      metricKey: data.metricKey,
+      story: data.story ?? null,
+      imageUrl: data.imageUrl ?? null,
+      quote: data.quote ?? null,
+      quoteAuthor: data.quoteAuthor ?? null,
+      updatedAt: new Date(),
+    };
+    this.metricContentMap.set(data.metricKey, merged);
+    return merged;
   }
 
   // Password Reset (in-memory)

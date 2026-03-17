@@ -13,9 +13,12 @@ import {
   LogOut,
   Menu,
   CreditCard,
+  ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
+
+const ADMIN_EMAIL = "admin@sweetmomentum.app";
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
@@ -27,6 +30,7 @@ const NAV_ITEMS = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, setUser } = useAuth();
+  const isAdmin = user?.email === ADMIN_EMAIL;
   const { theme, toggleTheme } = useTheme();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -93,6 +97,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+
+          {/* Admin link — only visible to admin user */}
+          {isAdmin && (
+            <div className="pt-2 mt-2 border-t border-[hsl(var(--sidebar-border))]">
+              <Link href="/admin">
+                <a
+                  data-testid="nav-admin"
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                    ${location === "/admin"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                    }
+                  `}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+                  Admin
+                </a>
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* Bottom */}

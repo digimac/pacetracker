@@ -15,8 +15,8 @@ import TodayPage from "@/pages/today";
 import HistoryPage from "@/pages/history";
 import SettingsPage from "@/pages/settings";
 import BillingPage from "@/pages/billing";
+import AdminPage from "@/pages/admin";
 import AppLayout from "@/components/app-layout";
-import { queryClient } from "@/lib/queryClient";
 
 function BillingSuccessPage() {
   const [, setLocation] = useLocation();
@@ -98,6 +98,7 @@ function Router() {
         <Route path="/billing/success" component={BillingSuccessPage} />
         <Route path="/billing/cancel" component={BillingPage} />
         <Route path="/settings" component={SettingsPage} />
+        <Route path="/admin" component={AdminPage} />
         <Route component={DashboardPage} />
       </Switch>
     </AppLayout>

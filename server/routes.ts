@@ -7,6 +7,16 @@ import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema } from "@shared/schema";
 import { z } from "zod";
 
+// Admin email — the one account with full admin privileges
+const ADMIN_EMAIL = "admin@sweetmomentum.app";
+
+async function requireAdmin(req: any, res: any, next: any) {
+  if (!req.session?.userId) return res.status(401).json({ error: "Unauthorized" });
+  const user = await storage.getUserById(req.session.userId);
+  if (!user || user.email !== ADMIN_EMAIL) return res.status(403).json({ error: "Admin access required" });
+  next();
+}
+
 // Session augmentation
 declare module "express-session" {
   interface SessionData {
@@ -284,6 +294,36 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
   );
+
+  // Metric Content — public GET (anyone logged in can read)
+  app.get("/api/metric-content", requireAuth, async (_req, res) => {
+    const content = await storage.getAllMetricContent();
+    res.json(content);
+  });
+
+  // Metric Content — admin upsert (session-based admin check)
+  app.post("/api/admin/metric-content", requireAdmin, async (req, res) => {
+    try {
+      const schema = z.object({
+        metricKey: z.enum(["TIME", "GOAL", "TEAM", "TASK", "VIEW", "PACE"]),
+        story: z.string().max(2000).optional().nullable(),
+        imageUrl: z.string().url().optional().nullable().or(z.literal("")),
+        quote: z.string().max(500).optional().nullable(),
+        quoteAuthor: z.string().max(100).optional().nullable(),
+      });
+      const data = schema.parse(req.body);
+      const result = await storage.upsertMetricContent({
+        metricKey: data.metricKey,
+        story: data.story || null,
+        imageUrl: data.imageUrl || null,
+        quote: data.quote || null,
+        quoteAuthor: data.quoteAuthor || null,
+      });
+      res.json(result);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
 
   // Admin: Promote user to Pro (protected by ADMIN_SECRET env var)
   app.post("/api/admin/promote", async (req, res) => {

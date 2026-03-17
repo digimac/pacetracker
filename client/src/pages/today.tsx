@@ -2,13 +2,13 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/App";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, XCircle, Minus, Save, ChevronRight } from "lucide-react";
+import { CheckCircle2, XCircle, Minus, Save, ChevronRight, Info } from "lucide-react";
 import { useState, useEffect } from "react";
-import type { MetricScore, CustomMetric } from "@shared/schema";
+import type { MetricScore, CustomMetric, MetricContent } from "@shared/schema";
+import MetricInfoModal from "@/components/metric-info-modal";
 
 const CORE_METRICS = [
   { key: "TIME", label: "TIME", description: "Did you manage your time with intention today?" },
@@ -27,12 +27,16 @@ function MetricCard({
   description,
   rating,
   onRate,
+  onInfo,
+  showInfo,
 }: {
   metricKey: string;
   label: string;
   description: string;
   rating: Rating;
   onRate: (key: string, rating: Rating) => void;
+  onInfo?: () => void;
+  showInfo?: boolean;
 }) {
   const isSuccess = rating === "success";
   const isSetback = rating === "setback";
@@ -56,8 +60,19 @@ function MetricCard({
             }`}>
               {label}
             </span>
-            {isSuccess && <Badge className="text-[10px] bg-green-500/20 text-green-400 border-green-500/30 hover-elevate">SUCCESS +1</Badge>}
-            {isSetback && <Badge className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30 hover-elevate">SETBACK -1</Badge>}
+            {isSuccess && <Badge className="text-[10px] bg-green-500/20 text-green-400 border-green-500/30">SUCCESS +1</Badge>}
+            {isSetback && <Badge className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30">SETBACK -1</Badge>}
+            {/* Info icon — only for core metrics */}
+            {showInfo && onInfo && (
+              <button
+                onClick={onInfo}
+                className="ml-auto flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors"
+                data-testid={`btn-info-${metricKey.toLowerCase()}`}
+                title={`Learn about ${label}`}
+              >
+                <Info className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           <p className="text-xs text-muted-foreground leading-snug">{description}</p>
         </div>
@@ -119,6 +134,7 @@ export default function TodayPage() {
 
   const [ratings, setRatings] = useState<Record<string, Rating>>({});
   const [notes, setNotes] = useState("");
+  const [activeModal, setActiveModal] = useState<{ key: string; label: string } | null>(null);
 
   // Fetch today's entry
   const { data: entryData, isLoading } = useQuery({
@@ -132,6 +148,15 @@ export default function TodayPage() {
     queryFn: () => apiRequest("GET", "/api/metrics/custom").then(r => r.json()),
   });
 
+  // Fetch metric content for modals
+  const { data: metricContentArray = [] } = useQuery<MetricContent[]>({
+    queryKey: ["/api/metric-content"],
+    queryFn: () => apiRequest("GET", "/api/metric-content").then(r => r.json()),
+  });
+
+  const metricContentMap: Record<string, MetricContent> = {};
+  metricContentArray.forEach(c => { metricContentMap[c.metricKey] = c; });
+
   // Initialize from existing entry
   useEffect(() => {
     if (entryData) {
@@ -142,7 +167,6 @@ export default function TodayPage() {
       setRatings(scoreMap);
       setNotes(entryData.entry?.notes || "");
     } else {
-      // Default all to skip
       const defaults: Record<string, Rating> = {};
       CORE_METRICS.forEach(m => defaults[m.key] = "skip");
       setRatings(defaults);
@@ -230,6 +254,8 @@ export default function TodayPage() {
               description={m.description}
               rating={ratings[m.key] || "skip"}
               onRate={handleRate}
+              showInfo={true}
+              onInfo={() => setActiveModal({ key: m.key, label: m.label })}
             />
           ))}
         </div>
@@ -252,6 +278,7 @@ export default function TodayPage() {
                 description={m.description || `Track your ${m.name.toLowerCase()} performance`}
                 rating={ratings[`custom_${m.id}`] || "skip"}
                 onRate={handleRate}
+                showInfo={false}
               />
             ))}
           </div>
@@ -291,6 +318,16 @@ export default function TodayPage() {
         <Save className="w-4 h-4 mr-2" />
         {saveMutation.isPending ? "Saving..." : "Save Today's Score"}
       </Button>
+
+      {/* Metric Info Modal */}
+      {activeModal && (
+        <MetricInfoModal
+          metricKey={activeModal.key}
+          metricLabel={activeModal.label}
+          content={metricContentMap[activeModal.key]}
+          onClose={() => setActiveModal(null)}
+        />
+      )}
     </div>
   );
 }
