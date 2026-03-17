@@ -67,6 +67,15 @@ export default function SettingsPage() {
   });
   const isPro = billing?.isPro ?? false;
 
+  // Metric content — used to show admin-configured subtext on core metrics
+  const { data: metricContentArray = [] } = useQuery<{ metricKey: string; subtext: string | null }[]>({
+    queryKey: ["/api/metric-content"],
+    queryFn: () => apiRequest("GET", "/api/metric-content").then(r => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+  const metricSubtext: Record<string, string> = {};
+  metricContentArray.forEach(c => { if (c.subtext) metricSubtext[c.metricKey] = c.subtext; });
+
   // Schedule
   const { data: schedule } = useQuery<UserSchedule | null>({
     queryKey: ["/api/schedule"],
@@ -245,7 +254,7 @@ export default function SettingsPage() {
             {CORE_METRIC_INFO.map(m => (
               <div key={m.key} className="flex items-center gap-3 py-1.5">
                 <span className="text-xs font-black tracking-widest w-12 text-primary">{m.label}</span>
-                <span className="text-xs text-muted-foreground">{m.desc}</span>
+                <span className="text-xs text-muted-foreground">{metricSubtext[m.key] || m.desc}</span>
               </div>
             ))}
           </div>
