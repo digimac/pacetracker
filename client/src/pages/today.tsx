@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, XCircle, Minus, Save, ChevronRight, Info } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import type { MetricScore, CustomMetric, MetricContent } from "@shared/schema";
 import MetricInfoModal from "@/components/metric-info-modal";
 
@@ -129,6 +130,7 @@ function MetricCard({
 export default function TodayPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const today = new Date().toISOString().split("T")[0];
   const displayDate = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
@@ -287,10 +289,10 @@ export default function TodayPage() {
 
       {customMetrics.length < 4 && (
         <div className="mb-6">
-          <a href="#/settings" className="flex items-center gap-2 text-xs text-primary hover:underline">
+          <button onClick={() => setLocation("/settings")} className="flex items-center gap-2 text-xs text-primary hover:underline">
             <span>+ Add up to {4 - customMetrics.length} more custom metrics in Settings</span>
             <ChevronRight className="w-3 h-3" />
-          </a>
+          </button>
         </div>
       )}
 
