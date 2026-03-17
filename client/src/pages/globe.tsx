@@ -18,8 +18,6 @@ const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
 type ScorePoint = {
   userId: number;
   displayName: string;
-  firstName: string | null;
-  lastName: string | null;
   timezone: string | null;
   city: string | null;
   region: string | null;
@@ -30,19 +28,6 @@ type ScorePoint = {
   losses: number;
   date: string;
 };
-
-/** Derive "K.M." style initials from first/last name or displayName fallback */
-function getInitials(point: ScorePoint): string {
-  const first = point.firstName?.trim();
-  const last = point.lastName?.trim();
-  if (first && last) return `${first[0].toUpperCase()}.${last[0].toUpperCase()}.`;
-  if (first) return `${first[0].toUpperCase()}.`;
-  // Fall back to splitting displayName on spaces
-  const parts = (point.displayName || "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0].toUpperCase()}.${parts[parts.length - 1][0].toUpperCase()}.`;
-  if (parts.length === 1) return `${parts[0][0].toUpperCase()}.`;
-  return "?";
-}
 
 function ScoreMarker({
   point,
@@ -97,25 +82,7 @@ function ScoreMarker({
         style={{ cursor: "pointer", transition: "all 0.15s" }}
       />
 
-      {/* Initials label — below the dot */}
-      <text
-        textAnchor="middle"
-        y={isHovered ? 20 : 17}
-        style={{
-          fontSize: isHovered ? "7px" : "6px",
-          fontFamily: "inherit",
-          fontWeight: "700",
-          fill: "#cbd5e1",
-          letterSpacing: "0.04em",
-          pointerEvents: "none",
-          transition: "all 0.15s",
-          textShadow: "0 1px 3px rgba(0,0,0,0.9)",
-        }}
-      >
-        {getInitials(point)}
-      </text>
-
-      {/* Score label — above the dot */}
+      {/* Score label — always visible */}
       <text
         textAnchor="middle"
         y={-10}
