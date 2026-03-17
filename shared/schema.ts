@@ -103,7 +103,8 @@ export type UserSchedule = typeof userSchedule.$inferSelect;
 export const metricContent = pgTable("metric_content", {
   id: serial("id").primaryKey(),
   metricKey: text("metric_key").notNull().unique(), // "TIME" | "GOAL" | "TEAM" | "TASK" | "VIEW" | "PACE"
-  subtext: text("subtext"),
+  subtext: text("subtext"),       // Short description — shown on Settings page core metrics pane
+  prompt: text("prompt"),         // Longer metrics prompt — shown inside the scoring card on Today page
   story: text("story"),
   imageUrl: text("image_url"),
   quote: text("quote"),

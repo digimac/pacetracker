@@ -347,13 +347,14 @@ interface MetricEditorProps {
   accent: string;
   border: string;
   existing: MetricContent | undefined;
-  onSave: (data: { metricKey: string; subtext: string; story: string; imageUrl: string; quote: string; quoteAuthor: string }) => void;
+  onSave: (data: { metricKey: string; subtext: string; prompt: string; story: string; imageUrl: string; quote: string; quoteAuthor: string }) => void;
   isSaving: boolean;
 }
 
 function MetricEditor({ metricKey, label, color, accent, border, existing, onSave, isSaving }: MetricEditorProps) {
   const [expanded, setExpanded] = useState(false);
   const [subtext, setSubtext] = useState(existing?.subtext || "");
+  const [prompt, setPrompt] = useState((existing as any)?.prompt || "");
   const [story, setStory] = useState(existing?.story || "");
   const [imageUrl, setImageUrl] = useState(existing?.imageUrl || "");
   const [quote, setQuote] = useState(existing?.quote || "");
@@ -362,13 +363,14 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
   // Sync when existing content loads
   useEffect(() => {
     setSubtext(existing?.subtext || "");
+    setPrompt((existing as any)?.prompt || "");
     setStory(existing?.story || "");
     setImageUrl(existing?.imageUrl || "");
     setQuote(existing?.quote || "");
     setQuoteAuthor(existing?.quoteAuthor || "");
   }, [existing]);
 
-  const hasContent = !!(existing?.story || existing?.imageUrl || existing?.quote || existing?.subtext);
+  const hasContent = !!(existing?.story || existing?.imageUrl || existing?.quote || existing?.subtext || (existing as any)?.prompt);
 
   return (
     <div className={`rounded-xl border-2 ${border} bg-gradient-to-b ${color} overflow-hidden transition-all duration-200`}
@@ -394,13 +396,14 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
       {expanded && (
         <div className="px-5 pb-5 space-y-4 border-t border-white/5 pt-4">
 
-          {/* Subtext */}
+          {/* Short Description (subtext — shown on Settings page) */}
           <div>
             <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">
-              Daily Prompt (subtext)
+              Short Description
             </label>
+            <p className="text-[10px] text-muted-foreground/70 mb-1.5">Shown on the Settings page in the Core Metrics pane.</p>
             <Input
-              placeholder={`e.g. Did you manage your time with intention today?`}
+              placeholder={`e.g. Intentional time management`}
               value={subtext}
               onChange={e => setSubtext(e.target.value)}
               className="text-sm"
@@ -408,6 +411,24 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
               data-testid={`input-subtext-${metricKey.toLowerCase()}`}
             />
             <p className="text-[10px] text-muted-foreground mt-1 text-right">{subtext.length}/200</p>
+          </div>
+
+          {/* Metrics Prompt (prompt — shown on Today scoring page) */}
+          <div>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">
+              Metrics Prompt
+            </label>
+            <p className="text-[10px] text-muted-foreground/70 mb-1.5">Shown inside the scoring card on the Today page when users rate this metric.</p>
+            <Textarea
+              placeholder={`e.g. Did you manage your time with intention today?`}
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              rows={2}
+              className="resize-none text-sm"
+              maxLength={300}
+              data-testid={`input-prompt-${metricKey.toLowerCase()}`}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1 text-right">{prompt.length}/300</p>
           </div>
 
           {/* Story */}
@@ -484,7 +505,7 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
 
           {/* Save button */}
           <Button
-            onClick={() => onSave({ metricKey, subtext, story, imageUrl, quote, quoteAuthor })}
+            onClick={() => onSave({ metricKey, subtext, prompt, story, imageUrl, quote, quoteAuthor })}
             disabled={isSaving}
             className="w-full"
             data-testid={`btn-save-${metricKey.toLowerCase()}`}
@@ -669,7 +690,7 @@ export default function AdminPage() {
   contentArray.forEach(c => { contentMap[c.metricKey] = c; });
 
   const saveMutation = useMutation({
-    mutationFn: (data: { metricKey: string; subtext: string; story: string; imageUrl: string; quote: string; quoteAuthor: string }) => {
+    mutationFn: (data: { metricKey: string; subtext: string; prompt: string; story: string; imageUrl: string; quote: string; quoteAuthor: string }) => {
       setSavingKey(data.metricKey);
       return apiRequest("POST", "/api/admin/metric-content", data).then(r => r.json());
     },

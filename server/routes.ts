@@ -339,6 +339,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const schema = z.object({
         metricKey: z.enum(["TIME", "GOAL", "TEAM", "TASK", "VIEW", "PACE"]),
         subtext: z.string().max(200).optional().nullable(),
+        prompt: z.string().max(300).optional().nullable(),
         story: z.string().max(2000).optional().nullable(),
         imageUrl: z.string().url().optional().nullable().or(z.literal("")),
         quote: z.string().max(500).optional().nullable(),
@@ -348,6 +349,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const result = await storage.upsertMetricContent({
         metricKey: data.metricKey,
         subtext: data.subtext || null,
+        prompt: data.prompt || null,
         story: data.story || null,
         imageUrl: data.imageUrl || null,
         quote: data.quote || null,
