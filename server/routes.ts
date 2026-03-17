@@ -479,6 +479,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           return {
             userId: u.id,
             displayName: u.displayName,
+            firstName: u.firstName || null,
+            lastName: u.lastName || null,
             timezone,
             city: u.city || null,
             region: u.region || null,

@@ -18,6 +18,8 @@ const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
 type ScorePoint = {
   userId: number;
   displayName: string;
+  firstName: string | null;
+  lastName: string | null;
   timezone: string | null;
   city: string | null;
   region: string | null;
@@ -28,6 +30,18 @@ type ScorePoint = {
   losses: number;
   date: string;
 };
+
+/** Returns "K.M." style initials — prefers firstName+lastName, falls back to displayName */
+function getInitials(point: ScorePoint): string {
+  const first = point.firstName?.trim();
+  const last = point.lastName?.trim();
+  if (first && last) return `${first[0].toUpperCase()}.${last[0].toUpperCase()}.`;
+  if (first) return `${first[0].toUpperCase()}.`;
+  const parts = (point.displayName || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0].toUpperCase()}.${parts[parts.length - 1][0].toUpperCase()}.`;
+  if (parts.length === 1) return `${parts[0][0].toUpperCase()}.`;
+  return "?";
+}
 
 function ScoreMarker({
   point,
@@ -117,7 +131,7 @@ function ScoreMarker({
             textAnchor="middle"
             style={{ fontSize: "8px", fill: "#e2e8f0", fontWeight: "700", fontFamily: "inherit" }}
           >
-            {point.displayName}
+            {getInitials(point)}
           </text>
           <text
             x={52}
