@@ -8,7 +8,7 @@ import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, ins
 import { z } from "zod";
 
 // Admin email — the one account with full admin privileges
-const ADMIN_EMAIL = "admin@sweetmomentum.app";
+const ADMIN_EMAIL = "admin@sweetmo.io";
 
 async function requireAdmin(req: any, res: any, next: any) {
   if (!req.session?.userId) return res.status(401).json({ error: "Unauthorized" });

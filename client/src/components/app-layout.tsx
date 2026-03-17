@@ -18,7 +18,7 @@ import {
 import { useState } from "react";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
 
-const ADMIN_EMAIL = "admin@sweetmomentum.app";
+const ADMIN_EMAIL = "admin@sweetmo.io";
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },

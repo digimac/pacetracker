@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ShieldCheck, Save, ImageIcon, Quote, BookOpen, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import type { MetricContent } from "@shared/schema";
 
-const ADMIN_EMAIL = "admin@sweetmomentum.app";
+const ADMIN_EMAIL = "admin@sweetmo.io";
 
 const CORE_METRICS = [
   { key: "TIME", label: "TIME", color: "from-violet-500/20 to-violet-600/5", accent: "text-violet-400", border: "border-violet-500/30" },
