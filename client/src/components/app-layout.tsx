@@ -14,8 +14,10 @@ import {
   Menu,
   CreditCard,
   ShieldCheck,
+  Globe,
 } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
 
 const ADMIN_EMAIL = "track@sweetmo.io";
@@ -31,6 +33,14 @@ const NAV_ITEMS = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, setUser } = useAuth();
   const isAdmin = user?.email === ADMIN_EMAIL;
+
+  const { data: billing } = useQuery<{ isPro: boolean }>({
+    queryKey: ["/api/billing/status"],
+    queryFn: () => apiRequest("GET", "/api/billing/status").then(r => r.json()),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const isPro = billing?.isPro ?? false;
   const { theme, toggleTheme } = useTheme();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -97,6 +107,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+
+          {/* Globe — Pro only */}
+          {isPro && (
+            <Link href="/globe">
+              <a
+                data-testid="nav-globe"
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                  ${location === "/globe"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                  }
+                `}
+                onClick={() => setMobileOpen(false)}
+              >
+                <Globe className="w-4 h-4 flex-shrink-0" />
+                Score Map
+              </a>
+            </Link>
+          )}
 
           {/* Admin link — only visible to admin user */}
           {isAdmin && (

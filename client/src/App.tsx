@@ -16,6 +16,7 @@ import HistoryPage from "@/pages/history";
 import SettingsPage from "@/pages/settings";
 import BillingPage from "@/pages/billing";
 import AdminPage from "@/pages/admin";
+import GlobePage from "@/pages/globe";
 import AppLayout from "@/components/app-layout";
 
 function BillingSuccessPage() {
@@ -98,6 +99,7 @@ function Router() {
         <Route path="/billing/success" component={BillingSuccessPage} />
         <Route path="/billing/cancel" component={BillingPage} />
         <Route path="/settings" component={SettingsPage} />
+        <Route path="/globe" component={GlobePage} />
         <Route path="/admin" component={AdminPage} />
         <Route component={DashboardPage} />
       </Switch>

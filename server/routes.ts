@@ -6,6 +6,7 @@ import { sendPasswordResetEmail } from "./email";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema } from "@shared/schema";
 import { z } from "zod";
+import { getCoordsForTimezone } from "./timezone-coords";
 
 // Admin email — the one account with full admin privileges
 const ADMIN_EMAIL = "track@sweetmo.io";
@@ -436,6 +437,43 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json(schedule);
     } catch (e: any) {
       res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Globe — world score map (Pro-gated on frontend, auth required)
+  app.get("/api/globe/scores", requireAuth, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const points = await Promise.all(
+        allUsers.map(async (u) => {
+          const [sched, latestEntry] = await Promise.all([
+            storage.getUserSchedule(u.id),
+            storage.getLatestDailyEntry(u.id),
+          ]);
+          const timezone = sched?.timezone || null;
+          const coords = timezone ? getCoordsForTimezone(timezone) : null;
+          if (!coords || !latestEntry) return null;
+
+          const scores = await storage.getMetricScoresByEntry(latestEntry.id);
+          const wins = scores.filter(s => s.rating === "success").length;
+          const losses = scores.filter(s => s.rating === "setback").length;
+          const score = wins - losses;
+
+          return {
+            userId: u.id,
+            displayName: u.displayName,
+            timezone,
+            coordinates: coords, // [lon, lat]
+            score,
+            wins,
+            losses,
+            date: latestEntry.entryDate,
+          };
+        })
+      );
+      res.json(points.filter(Boolean));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 }
