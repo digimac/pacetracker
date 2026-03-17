@@ -285,6 +285,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   );
 
+  // Admin: Promote user to Pro (protected by ADMIN_SECRET env var)
+  app.post("/api/admin/promote", async (req, res) => {
+    try {
+      const adminSecret = process.env.ADMIN_SECRET;
+      if (!adminSecret) return res.status(503).json({ error: "ADMIN_SECRET not configured" });
+      const authHeader = req.headers["x-admin-secret"];
+      if (authHeader !== adminSecret) return res.status(403).json({ error: "Forbidden" });
+
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      const user = await storage.getUserByEmail(email);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const sub = await storage.upsertSubscription({
+        userId: user.id,
+        plan: "monthly",
+        status: "active",
+        currentPeriodEnd: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000), // 10 years
+      });
+
+      res.json({ ok: true, user: { id: user.id, email: user.email, username: user.username }, subscription: sub });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   // User Schedule
   app.get("/api/schedule", requireAuth, async (req, res) => {
     const schedule = await storage.getUserSchedule(req.session!.userId!);
