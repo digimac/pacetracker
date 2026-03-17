@@ -332,6 +332,36 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Admin: List all members with stats
+  app.get("/api/admin/members", requireAdmin, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const members = await Promise.all(
+        allUsers.map(async (u) => {
+          const [sub, sched] = await Promise.all([
+            storage.getSubscription(u.id),
+            storage.getUserSchedule(u.id),
+          ]);
+          const isPro = sub?.status === "active" && !!sub.currentPeriodEnd && sub.currentPeriodEnd > new Date();
+          return {
+            id: u.id,
+            username: u.username,
+            email: u.email,
+            displayName: u.displayName,
+            createdAt: u.createdAt,
+            plan: sub?.plan || "free",
+            planStatus: sub?.status || "inactive",
+            isPro,
+            timezone: sched?.timezone || null,
+          };
+        })
+      );
+      res.json(members);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Admin: Promote user to Pro (protected by ADMIN_SECRET env var)
   app.post("/api/admin/promote", async (req, res) => {
     try {

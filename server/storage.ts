@@ -17,6 +17,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
 
   // Custom Metrics
   getCustomMetricsByUser(userId: number): Promise<CustomMetric[]>;
@@ -89,6 +90,10 @@ export class DrizzleStorage implements IStorage {
       username: user.username.toLowerCase(),
     }).returning();
     return rows[0];
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return this.db.select().from(users).orderBy(asc(users.createdAt));
   }
 
   // Custom Metrics
@@ -380,6 +385,9 @@ export class MemStorage implements IStorage {
     const newUser: User = { ...user, id: this.userIdCounter++, createdAt: new Date() };
     this.usersMap.set(newUser.id, newUser);
     return newUser;
+  }
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.usersMap.values()).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
   async getCustomMetricsByUser(userId: number): Promise<CustomMetric[]> {
     return Array.from(this.customMetrics.values()).filter(m => m.userId === userId && m.isActive);

@@ -6,8 +6,13 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck, Save, ImageIcon, Quote, BookOpen, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import {
+  ShieldCheck, Save, ImageIcon, Quote, BookOpen,
+  ChevronDown, ChevronUp, Loader2, Users, Settings2,
+  Crown, Clock, Globe,
+} from "lucide-react";
 import type { MetricContent } from "@shared/schema";
 
 const ADMIN_EMAIL = "track@sweetmo.io";
@@ -23,6 +28,53 @@ const CORE_METRICS = [
 
 type ContentMap = Record<string, MetricContent>;
 
+type Member = {
+  id: number;
+  username: string;
+  email: string;
+  displayName: string;
+  createdAt: string;
+  plan: string;
+  planStatus: string;
+  isPro: boolean;
+  timezone: string | null;
+};
+
+/** Masks a string: first char visible, rest replaced with *** */
+function mask(value: string | null | undefined): string {
+  if (!value) return "—";
+  if (value.length <= 1) return value;
+  return value[0] + "***";
+}
+
+/** Masks an email preserving the domain structure:
+ *  j***@e***.com  */
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return mask(email);
+  const [domainName, ...tld] = domain.split(".");
+  return `${mask(local)}@${mask(domainName)}.${tld.join(".")}`;
+}
+
+function PlanBadge({ isPro, plan }: { isPro: boolean; plan: string }) {
+  if (isPro) {
+    const label = plan === "pro_annual" ? "Pro Annual" : "Pro Monthly";
+    return (
+      <Badge className="text-[10px] bg-amber-500/20 text-amber-400 border-amber-500/30 flex items-center gap-1 w-fit">
+        <Crown className="w-2.5 h-2.5" />
+        {label}
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-[10px] text-muted-foreground w-fit">
+      Free
+    </Badge>
+  );
+}
+
+// ─── Metric Editor ───────────────────────────────────────────────────────────
+
 interface MetricEditorProps {
   metricKey: string;
   label: string;
@@ -30,12 +82,13 @@ interface MetricEditorProps {
   accent: string;
   border: string;
   existing: MetricContent | undefined;
-  onSave: (data: { metricKey: string; story: string; imageUrl: string; quote: string; quoteAuthor: string }) => void;
+  onSave: (data: { metricKey: string; subtext: string; story: string; imageUrl: string; quote: string; quoteAuthor: string }) => void;
   isSaving: boolean;
 }
 
 function MetricEditor({ metricKey, label, color, accent, border, existing, onSave, isSaving }: MetricEditorProps) {
   const [expanded, setExpanded] = useState(false);
+  const [subtext, setSubtext] = useState(existing?.subtext || "");
   const [story, setStory] = useState(existing?.story || "");
   const [imageUrl, setImageUrl] = useState(existing?.imageUrl || "");
   const [quote, setQuote] = useState(existing?.quote || "");
@@ -43,13 +96,14 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
 
   // Sync when existing content loads
   useEffect(() => {
+    setSubtext(existing?.subtext || "");
     setStory(existing?.story || "");
     setImageUrl(existing?.imageUrl || "");
     setQuote(existing?.quote || "");
     setQuoteAuthor(existing?.quoteAuthor || "");
   }, [existing]);
 
-  const hasContent = !!(existing?.story || existing?.imageUrl || existing?.quote);
+  const hasContent = !!(existing?.story || existing?.imageUrl || existing?.quote || existing?.subtext);
 
   return (
     <div className={`rounded-xl border-2 ${border} bg-gradient-to-b ${color} overflow-hidden transition-all duration-200`}
@@ -74,6 +128,22 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
       {/* Expanded editor */}
       {expanded && (
         <div className="px-5 pb-5 space-y-4 border-t border-white/5 pt-4">
+
+          {/* Subtext */}
+          <div>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">
+              Daily Prompt (subtext)
+            </label>
+            <Input
+              placeholder={`e.g. Did you manage your time with intention today?`}
+              value={subtext}
+              onChange={e => setSubtext(e.target.value)}
+              className="text-sm"
+              maxLength={200}
+              data-testid={`input-subtext-${metricKey.toLowerCase()}`}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1 text-right">{subtext.length}/200</p>
+          </div>
 
           {/* Story */}
           <div>
@@ -163,11 +233,108 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
   );
 }
 
+// ─── Members Tab ─────────────────────────────────────────────────────────────
+
+function MembersTab() {
+  const { data: members = [], isLoading } = useQuery<Member[]>({
+    queryKey: ["/api/admin/members"],
+    queryFn: () => apiRequest("GET", "/api/admin/members").then(r => r.json()),
+  });
+
+  const proCount = members.filter(m => m.isPro).length;
+  const freeCount = members.length - proCount;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary strip */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: "Total Members", value: members.length, color: "text-foreground" },
+          { label: "Pro", value: proCount, color: "text-amber-400" },
+          { label: "Free", value: freeCount, color: "text-muted-foreground" },
+        ].map(stat => (
+          <div key={stat.label} className="rounded-lg border border-border bg-muted/30 p-3 text-center">
+            <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Member rows */}
+      {members.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-8">No members yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {members.map((m, i) => (
+            <div
+              key={m.id}
+              className="rounded-xl border border-border bg-card p-4 space-y-3"
+              data-testid={`member-row-${m.id}`}
+            >
+              {/* Row header */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {/* Avatar */}
+                  <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-black text-sm text-primary flex-shrink-0">
+                    {(m.displayName || m.username).charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">{m.displayName}</p>
+                    <p className="text-xs text-muted-foreground">Member #{i + 1}</p>
+                  </div>
+                </div>
+                <PlanBadge isPro={m.isPro} plan={m.plan} />
+              </div>
+
+              {/* Masked details grid */}
+              <div className="grid grid-cols-1 gap-1.5 pt-1 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0">Username</span>
+                  <span className="text-xs font-mono text-foreground/80">{mask(m.username)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0">Email</span>
+                  <span className="text-xs font-mono text-foreground/80">{maskEmail(m.email)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0 flex items-center gap-1">
+                    <Globe className="w-2.5 h-2.5" /> TZ
+                  </span>
+                  <span className="text-xs font-mono text-foreground/80">{mask(m.timezone)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0 flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5" /> Joined
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(m.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Admin Page ───────────────────────────────────────────────────────────────
+
 export default function AdminPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"content" | "members">("content");
 
   // Redirect if not admin
   useEffect(() => {
@@ -203,43 +370,77 @@ export default function AdminPage() {
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
           <div className="w-9 h-9 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
             <ShieldCheck className="w-5 h-5 text-primary" />
           </div>
           <div>
             <h1 className="text-xl font-black tracking-tight uppercase">Admin Dashboard</h1>
-            <p className="text-xs text-muted-foreground">Metric content editor</p>
+            <p className="text-xs text-muted-foreground">Sweet Momentum control panel</p>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-          Configure the story, image, and quote shown in each metric's info modal. Users can open these by tapping the info icon on the Today page.
-        </p>
       </div>
 
-      {/* Metrics */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {CORE_METRICS.map(m => (
-            <MetricEditor
-              key={m.key}
-              metricKey={m.key}
-              label={m.label}
-              color={m.color}
-              accent={m.accent}
-              border={m.border}
-              existing={contentMap[m.key]}
-              onSave={data => saveMutation.mutate(data)}
-              isSaving={savingKey === m.key && saveMutation.isPending}
-            />
-          ))}
-        </div>
+      {/* Tab switcher */}
+      <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border mb-6">
+        <button
+          onClick={() => setActiveTab("content")}
+          data-testid="tab-content"
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
+            activeTab === "content"
+              ? "bg-card border border-border text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Settings2 className="w-3.5 h-3.5" />
+          Metric Content
+        </button>
+        <button
+          onClick={() => setActiveTab("members")}
+          data-testid="tab-members"
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
+            activeTab === "members"
+              ? "bg-card border border-border text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          Members
+        </button>
+      </div>
+
+      {/* Tab content */}
+      {activeTab === "content" && (
+        <>
+          <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+            Configure the story, image, and quote shown in each metric's info modal. Users can open these by tapping the info icon on the Today page.
+          </p>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {CORE_METRICS.map(m => (
+                <MetricEditor
+                  key={m.key}
+                  metricKey={m.key}
+                  label={m.label}
+                  color={m.color}
+                  accent={m.accent}
+                  border={m.border}
+                  existing={contentMap[m.key]}
+                  onSave={data => saveMutation.mutate(data)}
+                  isSaving={savingKey === m.key && saveMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
+
+      {activeTab === "members" && <MembersTab />}
     </div>
   );
 }
