@@ -12,6 +12,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, 
 import { TrendingUp, TrendingDown, Minus, Calendar, Target, Zap } from "lucide-react";
 import { useLocation } from "wouter";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
+import { useUserTimezone, getTodayInTimezone } from "@/hooks/use-user-timezone";
 
 type DayResult = {
   entry: { id: number; entryDate: string; notes?: string };
@@ -21,8 +22,10 @@ type DayResult = {
   total: number;
 };
 
-function getRangeForTab(tab: string): { start: string; end: string; label: string } {
-  const today = new Date();
+function getRangeForTab(tab: string, timezone: string): { start: string; end: string; label: string } {
+  // Use timezone-aware today so date ranges don't drift for non-UTC users
+  const todayStr = getTodayInTimezone(timezone);
+  const today = new Date(todayStr + "T12:00:00"); // noon to avoid DST edge cases
   switch (tab) {
     case "week": return {
       start: format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"),
@@ -84,8 +87,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function DashboardPage() {
   const [tab, setTab] = useState("week");
   const [, setLocation] = useLocation();
-  const today = new Date().toISOString().split("T")[0];
-  const { start, end, label } = getRangeForTab(tab);
+  const { timezone, getTodayString } = useUserTimezone();
+  const today = getTodayString();
+  const { start, end, label } = getRangeForTab(tab, timezone);
 
   const { data: results = [], isLoading } = useQuery<DayResult[]>({
     queryKey: ["/api/dashboard", start, end],
@@ -152,7 +156,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-xl font-black tracking-tight uppercase">Performance Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {format(new Date(), "EEEE, MMMM d, yyyy")}
+            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: timezone })}
           </p>
         </div>
         <Button onClick={() => setLocation("/today")} size="sm" data-testid="button-score-today">

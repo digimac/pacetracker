@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import type { MetricScore, CustomMetric, MetricContent } from "@shared/schema";
 import MetricInfoModal from "@/components/metric-info-modal";
+import { useUserTimezone } from "@/hooks/use-user-timezone";
 
 const CORE_METRICS = [
   { key: "TIME", label: "TIME", description: "Did you manage your time with intention today?" },
@@ -131,8 +132,14 @@ export default function TodayPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const today = new Date().toISOString().split("T")[0];
-  const displayDate = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const { timezone, getTodayString } = useUserTimezone();
+  const today = getTodayString();
+  const displayDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: timezone,
+  });
 
   const [ratings, setRatings] = useState<Record<string, Rating>>({});
   const [notes, setNotes] = useState("");

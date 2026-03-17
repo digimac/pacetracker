@@ -10,8 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import type { CustomMetric, UserSchedule } from "@shared/schema";
-import { Plus, Trash2, Save, Clock, Lock, Zap } from "lucide-react";
+import { Plus, Trash2, Save, Clock, Lock, Zap, Globe } from "lucide-react";
 import { useAuth } from "@/App";
+import { TIMEZONE_OPTIONS, getBrowserTimezone } from "@/hooks/use-user-timezone";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const METRIC_EMOJIS = ["⭐", "💪", "🧠", "📚", "🥗", "🏃", "😴", "💧", "🎯", "🌱"];
 
@@ -57,9 +59,15 @@ export default function SettingsPage() {
         sleepTime: schedule.sleepTime || "22:00",
         workStartTime: schedule.workStartTime || "09:00",
         workEndTime: schedule.workEndTime || "17:00",
-        timezone: schedule.timezone || "America/New_York",
+        timezone: schedule.timezone || getBrowserTimezone(),
         dailyGoal: schedule.dailyGoal || "",
       });
+    } else {
+      // Auto-detect browser timezone for new users
+      setScheduleForm(f => ({
+        ...f,
+        timezone: f.timezone === "America/New_York" ? getBrowserTimezone() : f.timezone,
+      }));
     }
   }, [schedule]);
 
@@ -296,6 +304,43 @@ export default function SettingsPage() {
               />
             </div>
           </div>
+          {/* Timezone */}
+          <div className="space-y-1.5 col-span-2">
+            <Label className="text-xs flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5" />
+              Timezone
+            </Label>
+            <Select
+              value={scheduleForm.timezone}
+              onValueChange={val => setScheduleForm(f => ({ ...f, timezone: val }))}
+            >
+              <SelectTrigger data-testid="select-timezone" className="text-xs">
+                <SelectValue placeholder="Select timezone" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {["UTC", "Americas", "Europe", "Asia/Pacific", "Africa"].map(group => {
+                  const groupOptions = TIMEZONE_OPTIONS.filter(tz => tz.group === group);
+                  if (groupOptions.length === 0) return null;
+                  return (
+                    <div key={group}>
+                      <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                        {group}
+                      </div>
+                      {groupOptions.map(tz => (
+                        <SelectItem key={tz.value} value={tz.value} className="text-xs">
+                          {tz.label}
+                        </SelectItem>
+                      ))}
+                    </div>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground/60">
+              Used to determine your local "today" for scoring.
+            </p>
+          </div>
+
           <div className="space-y-1.5">
             <Label className="text-xs">Daily Goal Statement</Label>
             <Textarea
