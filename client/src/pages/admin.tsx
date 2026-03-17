@@ -308,7 +308,7 @@ function MembersTab() {
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0 flex items-center gap-1">
                     <Globe className="w-2.5 h-2.5" /> TZ
                   </span>
-                  <span className="text-xs font-mono text-foreground/80">{mask(m.timezone)}</span>
+                  <span className="text-xs font-mono text-foreground/80">{m.timezone || "—"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0 flex items-center gap-1">
