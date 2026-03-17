@@ -32,8 +32,8 @@ const PLATFORM_ICONS: Record<string, typeof Mail> = {
 };
 
 const DEFAULT_SOCIAL: SocialLink[] = [
-  { platform: "twitter", url: "#", label: "@sweetmomentum" },
-  { platform: "instagram", url: "#", label: "@sweetmomentum" },
+  { platform: "twitter", url: "#", label: "@sweetmo_io" },
+  { platform: "instagram", url: "https://instagram.com/sweetmo.io", label: "@sweetmo.io" },
   { platform: "website", url: "https://sweetmo.io", label: "sweetmo.io" },
 ];
 
