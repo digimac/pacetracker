@@ -1,20 +1,11 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, CheckCircle, ArrowLeft } from "lucide-react";
-
-function getTokenFromHash(): string {
-  // Hash routing: URL looks like /#/reset-password?token=xxx
-  const hash = window.location.hash; // "#/reset-password?token=abc123"
-  const queryStart = hash.indexOf("?");
-  if (queryStart === -1) return "";
-  const params = new URLSearchParams(hash.slice(queryStart + 1));
-  return params.get("token") || "";
-}
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -25,7 +16,9 @@ export default function ResetPasswordPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const token = getTokenFromHash();
+  // useSearch() returns the query string from the hash router (e.g. "?token=abc123")
+  const search = useSearch();
+  const token = new URLSearchParams(search).get("token") || "";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +32,8 @@ export default function ResetPasswordPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/reset-password", {
+      const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
+      const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password }),
