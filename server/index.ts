@@ -69,7 +69,7 @@ app.use((req, res, next) => {
   // 1. Run DB migrations FIRST — this ensures the session table exists
   await runMigrations();
 
-  // 2. Ensure session table exists via direct SQL (belt-and-suspenders — migrations may skip)
+  // 2. Ensure all tables exist via direct SQL (belt-and-suspenders — Drizzle migrations may skip already-tracked entries)
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS "session" (
@@ -79,10 +79,37 @@ app.use((req, res, next) => {
         CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE
       );
       CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+
+      CREATE TABLE IF NOT EXISTS "invites" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "sender_id" integer NOT NULL,
+        "invitee_email" text,
+        "invitee_phone" text,
+        "token" text NOT NULL,
+        "message" text,
+        "status" text DEFAULT 'pending' NOT NULL,
+        "accepted_by_user_id" integer,
+        "expires_at" timestamp NOT NULL,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS "connections" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "user_id" integer NOT NULL,
+        "partner_id" integer NOT NULL,
+        "invite_id" integer,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
+
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'invites_token_unique') THEN
+          CREATE UNIQUE INDEX invites_token_unique ON "invites" ("token");
+        END IF;
+      END $$;
     `);
-    console.log("[session-store] session table ensured ✓");
+    console.log("[startup] All tables ensured ✓");
   } catch (err: any) {
-    console.error("[session-store] Could not ensure session table:", err?.message);
+    console.error("[startup] Could not ensure tables:", err?.message);
   }
 
   // 3. NOW set up session middleware, after the session table is guaranteed to exist
