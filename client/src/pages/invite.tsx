@@ -51,11 +51,25 @@ export default function InvitePage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      // Single atomic request: register + accept in one round-trip (no session race condition)
-      const res = await apiRequest("POST", `/api/invites/${token}/register`, {
-        email, username, displayName, password,
+      // Use raw fetch so we can inspect 409 status before throwing
+      const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
+      const res = await fetch(`${API_BASE}/api/invites/${token}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, username, displayName, password }),
       });
       const data = await res.json();
+      if (res.status === 409 && data.existingAccount) {
+        // Email already has an account — auto-switch to login with email pre-filled
+        setLoginEmail(email);
+        setMode("login");
+        toast({ title: "Account already exists", description: "Please log in below to accept the invite.", variant: "destructive" });
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(data.error || "Registration failed");
+      }
       if (data.inviteError) {
         toast({ title: "Account created, but invite issue", description: data.inviteError, variant: "destructive" });
       }

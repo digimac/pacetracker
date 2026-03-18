@@ -679,7 +679,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const data = insertUserSchema.parse(req.body);
       const existingEmail = await storage.getUserByEmail(data.email);
-      if (existingEmail) return res.status(400).json({ error: "Email already registered" });
+      // Return a specific code so the client can switch to login mode
+      if (existingEmail) return res.status(409).json({ error: "Email already registered", existingAccount: true });
       const existingUsername = await storage.getUserByUsername(data.username);
       if (existingUsername) return res.status(400).json({ error: "Username already taken" });
 
