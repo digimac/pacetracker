@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
-import { sendPasswordResetEmail } from "./email";
+import { sendPasswordResetEmail, sendFeedbackEmail } from "./email";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
 import { z } from "zod";
@@ -130,6 +130,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const hashed = hashPassword(password);
       await storage.updateUserPassword(record.userId, hashed);
       await storage.markPasswordResetTokenUsed(record.id);
+
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Feedback submission — sends email to track@sweetmo.io
+  app.post("/api/feedback", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const user = await storage.getUserById(userId);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const schema = z.object({
+        feedbackType: z.string().min(1, "Please enter a feedback type").max(200),
+        summary:      z.string().min(10, "Summary must be at least 10 characters").max(3000),
+        urgency:      z.enum(["Fun Idea", "Nice to Have", "Urgent Fix Needed"]),
+      });
+      const { feedbackType, summary, urgency } = schema.parse(req.body);
+
+      const displayName = user.displayName || user.username;
+      await sendFeedbackEmail({ fromDisplayName: displayName, fromEmail: user.email, feedbackType, summary, urgency });
 
       res.json({ ok: true });
     } catch (e: any) {

@@ -1,10 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Mail, MessageSquare, Twitter, Instagram, Linkedin, Globe, ArrowRight, Lightbulb, Star, Send } from "lucide-react";
+import { useState } from "react";
+import { Mail, MessageSquare, Twitter, Instagram, Linkedin, Globe, ArrowRight, Lightbulb, Star, Send, X, CheckCircle2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 type SitePage = {
   id: number;
@@ -37,6 +41,186 @@ const DEFAULT_SOCIAL: SocialLink[] = [
   { platform: "website", url: "https://sweetmo.io", label: "sweetmo.io" },
 ];
 
+const URGENCY_OPTIONS = [
+  {
+    value: "Fun Idea",
+    label: "Fun Idea",
+    description: "Would be cool someday",
+    color: "text-green-400",
+    bg: "bg-green-500/10 border-green-500/30",
+    activeBg: "bg-green-500/20 border-green-500/60",
+  },
+  {
+    value: "Nice to Have",
+    label: "Nice to Have",
+    description: "Would improve things",
+    color: "text-blue-400",
+    bg: "bg-blue-500/10 border-blue-500/30",
+    activeBg: "bg-blue-500/20 border-blue-500/60",
+  },
+  {
+    value: "Urgent Fix Needed",
+    label: "Urgent Fix Needed",
+    description: "Something is broken",
+    color: "text-red-400",
+    bg: "bg-red-500/10 border-red-500/30",
+    activeBg: "bg-red-500/20 border-red-500/60",
+  },
+] as const;
+
+type UrgencyValue = "Fun Idea" | "Nice to Have" | "Urgent Fix Needed";
+
+// ─── Feedback Modal ──────────────────────────────────────────────────────────
+
+function FeedbackModal({ onClose }: { onClose: () => void }) {
+  const { toast } = useToast();
+  const [feedbackType, setFeedbackType] = useState("");
+  const [summary, setSummary] = useState("");
+  const [urgency, setUrgency] = useState<UrgencyValue | "">("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const submitMutation = useMutation({
+    mutationFn: () =>
+      apiRequest("POST", "/api/feedback", { feedbackType, summary, urgency }).then(r => r.json()),
+    onSuccess: () => {
+      setSubmitted(true);
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message || "Could not send feedback. Please try again.", variant: "destructive" });
+    },
+  });
+
+  const canSubmit = feedbackType.trim().length > 0 && summary.trim().length >= 10 && urgency !== "";
+
+  // Success state
+  if (submitted) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="bg-card border border-border rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
+          <div className="w-14 h-14 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-7 h-7 text-green-400" />
+          </div>
+          <h2 className="text-lg font-black tracking-tight mb-2">Feedback Sent</h2>
+          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+            Thanks for taking the time. Your feedback has been sent to the team and we'll take a look.
+          </p>
+          <Button onClick={onClose} className="w-full">Done</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Star className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-base font-black tracking-tight">Leave Feedback</h2>
+              <p className="text-xs text-muted-foreground">Goes directly to the team</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted"
+            data-testid="btn-close-feedback"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+
+          {/* Feedback Type */}
+          <div>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">
+              Feedback Type
+            </label>
+            <Input
+              placeholder="e.g. Bug report, Feature request, UI suggestion..."
+              value={feedbackType}
+              onChange={e => setFeedbackType(e.target.value)}
+              maxLength={200}
+              data-testid="input-feedback-type"
+              className="text-sm"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1 text-right">{feedbackType.length}/200</p>
+          </div>
+
+          {/* Summary */}
+          <div>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">
+              Summary
+            </label>
+            <Textarea
+              placeholder="Describe your feedback in detail — what happened, what you'd like to see, or what could be better..."
+              value={summary}
+              onChange={e => setSummary(e.target.value)}
+              rows={5}
+              maxLength={3000}
+              className="resize-none text-sm"
+              data-testid="textarea-feedback-summary"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1 text-right">{summary.length}/3000</p>
+          </div>
+
+          {/* Urgency */}
+          <div>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">
+              Urgency
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {URGENCY_OPTIONS.map(opt => {
+                const isActive = urgency === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setUrgency(opt.value)}
+                    data-testid={`urgency-${opt.value.toLowerCase().replace(/\s+/g, "-")}`}
+                    className={`
+                      rounded-xl border-2 p-3 text-left transition-all duration-150
+                      ${isActive ? opt.activeBg : opt.bg}
+                    `}
+                  >
+                    <p className={`text-xs font-black tracking-wide ${opt.color}`}>{opt.label}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{opt.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-border flex-shrink-0 space-y-2">
+          {!canSubmit && summary.trim().length > 0 && summary.trim().length < 10 && (
+            <p className="text-[11px] text-muted-foreground text-center">Summary needs at least 10 characters</p>
+          )}
+          <Button
+            onClick={() => submitMutation.mutate()}
+            disabled={!canSubmit || submitMutation.isPending}
+            className="w-full gap-2"
+            data-testid="btn-submit-feedback"
+          >
+            {submitMutation.isPending
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
+              : <><Send className="w-4 h-4" /> Send Feedback</>
+            }
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Connect Page ─────────────────────────────────────────────────────────────
+
 const CONNECT_OPTIONS = [
   {
     icon: Mail,
@@ -64,6 +248,8 @@ export default function ConnectPage() {
     queryFn: () => apiRequest("GET", "/api/pages/connect").then(r => r.json()),
   });
 
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
   const socialLinks: SocialLink[] = (() => {
     try {
       return page?.socialLinks ? JSON.parse(page.socialLinks) : DEFAULT_SOCIAL;
@@ -80,6 +266,9 @@ export default function ConnectPage() {
 
   return (
     <div className="min-h-full">
+      {/* Feedback modal */}
+      {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
+
       {/* Hero */}
       <div className="relative overflow-hidden border-b border-border">
         {heroImage ? (
@@ -118,11 +307,15 @@ export default function ConnectPage() {
         {/* Contact options */}
         {!isLoading && (
           <div className="grid gap-4 sm:grid-cols-3">
-            {CONNECT_OPTIONS.map(({ icon: Icon, label, description, isEmail }) => (
-              <Card key={label} className="border-border hover:border-primary/40 transition-colors cursor-pointer group"
+            {CONNECT_OPTIONS.map(({ icon: Icon, label, description, isEmail, isFeedback }) => (
+              <Card
+                key={label}
+                className="border-border hover:border-primary/40 transition-colors cursor-pointer group"
                 onClick={() => {
                   if (isEmail) window.open(`mailto:${contactEmail}`, "_blank");
+                  if (isFeedback) setFeedbackOpen(true);
                 }}
+                data-testid={isFeedback ? "card-leave-feedback" : undefined}
               >
                 <CardContent className="p-5 space-y-3">
                   <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -134,6 +327,11 @@ export default function ConnectPage() {
                   </div>
                   {isEmail && (
                     <p className="text-xs text-primary font-medium">{contactEmail}</p>
+                  )}
+                  {isFeedback && (
+                    <p className="text-xs text-primary font-medium flex items-center gap-1">
+                      Open form <ArrowRight className="w-3 h-3" />
+                    </p>
                   )}
                 </CardContent>
               </Card>
