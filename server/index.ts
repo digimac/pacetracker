@@ -10,6 +10,9 @@ import { pool } from "./db";
 const app = express();
 const httpServer = createServer(app);
 
+// Trust Render/Cloudflare reverse proxy so sessions work correctly behind HTTPS termination
+app.set("trust proxy", 1);
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -34,7 +37,12 @@ app.use(session({
   store: process.env.DATABASE_URL
     ? new PgSession({ pool, tableName: "session", createTableIfMissing: true })
     : undefined,
-  cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 },
+  cookie: {
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  },
 }));
 
 export function log(message: string, source = "express") {
