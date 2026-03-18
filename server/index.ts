@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import MemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -29,14 +30,35 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
-const PgSession = connectPgSimple(session);
+// Build session store: prefer PostgreSQL (persistent across deploys), fall back to memory
+function buildSessionStore() {
+  if (process.env.DATABASE_URL) {
+    try {
+      const PgSession = connectPgSimple(session);
+      const store = new PgSession({
+        pool,
+        tableName: "session",
+        createTableIfMissing: true,
+      });
+      store.on("error", (err: any) => {
+        console.error("[session-store] PgSession error:", err?.message || err);
+      });
+      console.log("[session-store] Using PostgreSQL session store");
+      return store;
+    } catch (err: any) {
+      console.error("[session-store] Failed to init PgSession, falling back to memory:", err?.message);
+    }
+  }
+  const MemStore = MemoryStore(session);
+  console.log("[session-store] Using in-memory session store");
+  return new MemStore({ checkPeriod: 86400000 });
+}
+
 app.use(session({
   secret: process.env.SESSION_SECRET || "pacetracker-secret-2024",
   resave: false,
   saveUninitialized: false,
-  store: process.env.DATABASE_URL
-    ? new PgSession({ pool, tableName: "session", createTableIfMissing: true })
-    : undefined,
+  store: buildSessionStore(),
   cookie: {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

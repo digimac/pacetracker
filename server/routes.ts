@@ -69,11 +69,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         dailyGoal: "",
       });
 
-      // Explicitly save session before responding so cookie is written to DB store
-      req.session!.save((err) => {
-        if (err) return res.status(500).json({ error: "Session error" });
-        res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
-      });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Registration failed" });
     }
@@ -88,11 +84,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(401).json({ error: "Invalid email or password" });
       }
       req.session!.userId = user.id;
-      // Explicitly save session before responding so cookie is written to DB store
-      req.session!.save((err) => {
-        if (err) return res.status(500).json({ error: "Session error" });
-        res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
-      });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Login failed" });
     }
