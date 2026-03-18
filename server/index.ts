@@ -69,7 +69,23 @@ app.use((req, res, next) => {
   // 1. Run DB migrations FIRST — this ensures the session table exists
   await runMigrations();
 
-  // 2. NOW set up session middleware, after the session table is guaranteed to exist
+  // 2. Ensure session table exists via direct SQL (belt-and-suspenders — migrations may skip)
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "session" (
+        "sid" varchar NOT NULL,
+        "sess" json NOT NULL,
+        "expire" timestamp(6) NOT NULL,
+        CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE
+      );
+      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+    `);
+    console.log("[session-store] session table ensured ✓");
+  } catch (err: any) {
+    console.error("[session-store] Could not ensure session table:", err?.message);
+  }
+
+  // 3. NOW set up session middleware, after the session table is guaranteed to exist
   function buildSessionStore() {
     if (process.env.DATABASE_URL) {
       try {
@@ -77,7 +93,7 @@ app.use((req, res, next) => {
         const store = new PgSession({
           pool,
           tableName: "session",
-          createTableIfMissing: false, // table is created by migration 0009
+          createTableIfMissing: false, // table is created above
         });
         store.on("error", (err: any) => {
           console.error("[session-store] PgSession error:", err?.message || err);
@@ -107,7 +123,7 @@ app.use((req, res, next) => {
     },
   }));
 
-  // 3. Register all API routes
+  // 4. Register all API routes
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
