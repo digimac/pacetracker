@@ -21,10 +21,14 @@ function createTransporter() {
   return nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
-    secure: SMTP_PORT === 465,   // true for port 465 (SSL), false for 587 (STARTTLS)
+    secure: SMTP_PORT === 465,   // true for port 465 (SSL), false for 587/2525 (STARTTLS)
     auth: {
+      type: "LOGIN" as const,   // SMTP.com channel password auth requires LOGIN method
       user: SMTP_USER,
       pass: SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,  // prevent cert issues on shared SMTP hosts
     },
   });
 }
