@@ -23,6 +23,9 @@ const CORE_METRICS = [
 
 type Rating = "success" | "setback" | "skip";
 
+// Orange accent for custom metrics — #FF6E00
+const CUSTOM_ORANGE = "#FF6E00";
+
 function MetricCard({
   metricKey,
   label,
@@ -31,6 +34,7 @@ function MetricCard({
   onRate,
   onInfo,
   showInfo,
+  isCustom,
 }: {
   metricKey: string;
   label: string;
@@ -39,30 +43,74 @@ function MetricCard({
   onRate: (key: string, rating: Rating) => void;
   onInfo?: () => void;
   showInfo?: boolean;
+  isCustom?: boolean;
 }) {
   const isSuccess = rating === "success";
   const isSetback = rating === "setback";
   const isSkip = rating === "skip";
 
+  // Derive accent color: custom = orange, core = green on success
+  const accentColor = isCustom ? CUSTOM_ORANGE : undefined; // undefined → use Tailwind classes
+
+  // Card border/bg styles
+  const cardStyle = isSuccess && isCustom
+    ? { borderColor: "rgba(255,110,0,0.5)", background: "rgba(255,110,0,0.05)" }
+    : undefined;
+  const cardClass = `relative rounded-xl border-2 p-4 transition-all duration-200 ${
+    isSuccess && !isCustom ? "metric-success" : ""
+  } ${
+    isSetback ? "metric-setback" : ""
+  } ${
+    isSkip ? "metric-skip border-border" : isSuccess && isCustom ? "" : isSuccess ? "" : "border-border"
+  }`;
+
+  // Label color
+  const labelStyle = isSuccess && isCustom
+    ? { color: CUSTOM_ORANGE }
+    : isSetback
+    ? undefined
+    : undefined;
+  const labelClass = `text-lg font-black tracking-widest ${
+    isSuccess && !isCustom ? "text-green-400" : isSetback ? "text-red-400" : "text-muted-foreground"
+  }`;
+
+  // WIN button
+  const winStyle = isSuccess && isCustom
+    ? { background: "rgba(255,110,0,0.15)", borderColor: "rgba(255,110,0,0.4)", color: CUSTOM_ORANGE }
+    : !isSuccess && isCustom
+    ? undefined
+    : undefined;
+  const winClass = `flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-lg border transition-all duration-150 ${
+    isSuccess && !isCustom
+      ? "bg-green-500/20 border-green-500/40 text-green-400"
+      : !isSuccess && !isCustom
+      ? "border-border text-muted-foreground hover:border-green-500/40 hover:text-green-400 hover:bg-green-500/10"
+      : "border-border text-muted-foreground"
+  }`;
+
   return (
     <div
-      className={`
-        relative rounded-xl border-2 p-4 transition-all duration-200
-        ${isSuccess ? "metric-success" : ""}
-        ${isSetback ? "metric-setback" : ""}
-        ${isSkip ? "metric-skip border-border" : "border-border"}
-      `}
+      className={cardClass}
+      style={cardStyle}
       data-testid={`metric-card-${metricKey.toLowerCase()}`}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className={`text-lg font-black tracking-widest ${
-              isSuccess ? "text-green-400" : isSetback ? "text-red-400" : "text-muted-foreground"
-            }`}>
+            <span className={labelClass} style={isSuccess && isCustom ? { color: CUSTOM_ORANGE } : undefined}>
               {label}
             </span>
-            {isSuccess && <Badge className="text-[10px] bg-green-500/20 text-green-400 border-green-500/30">SUCCESS +1</Badge>}
+            {isSuccess && !isCustom && (
+              <Badge className="text-[10px] bg-green-500/20 text-green-400 border-green-500/30">SUCCESS +1</Badge>
+            )}
+            {isSuccess && isCustom && (
+              <Badge
+                className="text-[10px]"
+                style={{ background: "rgba(255,110,0,0.15)", color: CUSTOM_ORANGE, borderColor: "rgba(255,110,0,0.3)" }}
+              >
+                SUCCESS +1
+              </Badge>
+            )}
             {isSetback && <Badge className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30">SETBACK -1</Badge>}
             {/* Info icon — only for core metrics */}
             {showInfo && onInfo && (
@@ -83,13 +131,8 @@ function MetricCard({
           <button
             onClick={() => onRate(metricKey, "success")}
             data-testid={`btn-${metricKey.toLowerCase()}-success`}
-            className={`
-              flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-lg border transition-all duration-150
-              ${isSuccess
-                ? "bg-green-500/20 border-green-500/40 text-green-400"
-                : "border-border text-muted-foreground hover:border-green-500/40 hover:text-green-400 hover:bg-green-500/10"
-              }
-            `}
+            className={winClass}
+            style={isSuccess && isCustom ? { background: "rgba(255,110,0,0.15)", borderColor: "rgba(255,110,0,0.4)", color: CUSTOM_ORANGE } : undefined}
           >
             <CheckCircle2 className="w-5 h-5" />
             <span className="text-[9px] font-bold tracking-wider">WIN</span>
@@ -288,6 +331,7 @@ export default function TodayPage() {
                 rating={ratings[`custom_${m.id}`] || "skip"}
                 onRate={handleRate}
                 showInfo={false}
+                isCustom={true}
               />
             ))}
           </div>

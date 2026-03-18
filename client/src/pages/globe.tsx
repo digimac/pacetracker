@@ -58,13 +58,19 @@ function ScoreMarker({
   const isNegative = point.score < 0;
   const isNeutral = point.score === 0;
 
-  const dotColor = isPositive
+  const isHighScore = point.score >= 7;
+
+  const dotColor = isHighScore
+    ? "#FF6E00"   // bright orange — score ≥ 7
+    : isPositive
     ? "#4ade80"   // green-400
     : isNegative
     ? "#f87171"   // red-400
     : "#94a3b8";  // slate-400
 
-  const glowColor = isPositive
+  const glowColor = isHighScore
+    ? "rgba(255,110,0,0.4)"
+    : isPositive
     ? "rgba(74,222,128,0.4)"
     : isNegative
     ? "rgba(248,113,113,0.4)"
@@ -79,17 +85,17 @@ function ScoreMarker({
       onMouseLeave={onLeave}
     >
       {/* Glow ring — only when hovered or positive */}
-      {(isHovered || isPositive) && (
+      {(isHovered || isPositive || isHighScore) && (
         <circle
-          r={isHovered ? 14 : 10}
+          r={isHovered ? 14 : 7}
           fill={glowColor}
           style={{ transition: "all 0.2s" }}
         />
       )}
 
-      {/* Main dot */}
+      {/* Main dot — normal size reduced 33% (r 5→3.5); hover stays r=7 */}
       <circle
-        r={isHovered ? 7 : 5}
+        r={isHovered ? 7 : 3.5}
         fill={dotColor}
         stroke={isHovered ? "#ffffff" : "rgba(0,0,0,0.4)"}
         strokeWidth={isHovered ? 1.5 : 1}
