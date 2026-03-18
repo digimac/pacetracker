@@ -167,51 +167,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // Auth: Me
-  // Temporary SMTP diagnostic — remove after fixing
-  app.get("/api/debug/smtp", requireAdmin, async (_req, res) => {
-    const host = process.env.SMTP_HOST || "(not set)";
-    const portStr = process.env.SMTP_PORT || "(not set)";
-    const user = process.env.SMTP_USER || "(not set)";
-    const pass = process.env.SMTP_PASS ? `set (${process.env.SMTP_PASS.length} chars, starts: ${process.env.SMTP_PASS.slice(0,4)}...)` : "(not set)";
-    const fromEmail = process.env.SMTP_FROM_EMAIL || "(not set)";
-    const rawPass = process.env.SMTP_PASS || "";
-
-    // Test on configured port
-    let connResult = "untested";
-    let conn2525 = "untested";
-    try {
-      const nodemailer = await import("nodemailer");
-      const portNum = parseInt(portStr);
-      const t = nodemailer.createTransport({
-        host, port: portNum, secure: portNum === 465,
-        auth: { type: "LOGIN" as const, user, pass: rawPass },
-        tls: { rejectUnauthorized: false },
-      });
-      await t.verify();
-      connResult = `SUCCESS on port ${portNum}`;
-    } catch (e: any) {
-      connResult = `FAILED on port ${portStr}: ${e.message}`;
-    }
-
-    // Also test port 2525 if configured port isn't already 2525
-    if (portStr !== "2525") {
-      try {
-        const nodemailer = await import("nodemailer");
-        const t2 = nodemailer.createTransport({
-          host, port: 2525, secure: false,
-          auth: { type: "LOGIN" as const, user, pass: rawPass },
-          tls: { rejectUnauthorized: false },
-        });
-        await t2.verify();
-        conn2525 = "SUCCESS on port 2525";
-      } catch (e: any) {
-        conn2525 = `FAILED on port 2525: ${e.message}`;
-      }
-    }
-
-    res.json({ host, port: portStr, user, pass, fromEmail, connResult, conn2525 });
-  });
-
   app.get("/api/auth/me", async (req, res) => {
     if (!req.session?.userId) return res.status(401).json({ error: "Unauthorized" });
     const user = await storage.getUserById(req.session.userId);
