@@ -64,10 +64,11 @@ function Router() {
 
   const publicPaths = ["/register", "/forgot-password", "/reset-password"];
   const isInvitePath = location.startsWith("/invite/");
+  const isPublicPath = publicPaths.some(p => location === p || location.startsWith(p + "?"));
 
   useEffect(() => {
     if (!isLoading) {
-      if (!user && !publicPaths.includes(location) && !isInvitePath) setLocation("/login");
+      if (!user && !isPublicPath && !isInvitePath) setLocation("/login");
       if (user && (location === "/login" || location === "/register" || location === "/")) setLocation("/dashboard");
     }
   }, [user, isLoading, location]);
