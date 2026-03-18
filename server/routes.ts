@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { pool } from "./db";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
 import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail } from "./email";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
@@ -164,6 +165,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     await sendFeedbackEmail({ fromDisplayName: displayName, fromEmail: user.email, ...parsed });
 
     res.json({ ok: true });
+  });
+
+  // Temp: connections debug — remove after fixing
+  app.get("/api/debug/connections", requireAuth, async (req, res) => {
+    const userId = req.session!.userId!;
+    // Raw query — bypasses all ORM logic
+    const raw = await pool.query(
+      `SELECT id, user_id, partner_id, invite_id, created_at FROM connections WHERE user_id = $1 OR partner_id = $1`,
+      [userId]
+    );
+    // Also check invite statuses for this user
+    const invs = await pool.query(
+      `SELECT id, sender_id, invitee_email, status, accepted_by_user_id FROM invites WHERE sender_id = $1`,
+      [userId]
+    );
+    res.json({ userId, connections: raw.rows, sentInvites: invs.rows });
   });
 
   // Auth: Me
