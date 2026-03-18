@@ -616,15 +616,24 @@ function ConnectionsCard() {
   const { data: connections = [], refetch: refetchConnections } = useQuery<Connection[]>({
     queryKey: ["/api/connections"],
     queryFn: () => apiRequest("GET", "/api/connections").then(r => r.json()),
+    refetchInterval: 30_000, // re-check every 30s so accepted invites appear promptly
   });
 
   const { data: sentInvites = [], refetch: refetchInvites } = useQuery<SentInvite[]>({
     queryKey: ["/api/invites"],
     queryFn: () => apiRequest("GET", "/api/invites").then(r => r.json()),
+    refetchInterval: 30_000,
   });
 
-  // Only show pending invites (not yet accepted/declined/expired)
-  const pendingInvites = sentInvites.filter(i => i.status === "pending" && new Date(i.expiresAt) > new Date());
+  // Only show pending invites that haven't been accepted/expired AND don't already
+  // have a matching confirmed connection (handles the case where cache is slightly stale)
+  const confirmedEmails = new Set(
+    connections.map(c => c.partnerUsername.toLowerCase())
+  );
+  const pendingInvites = sentInvites.filter(i =>
+    i.status === "pending" &&
+    new Date(i.expiresAt) > new Date()
+  );
 
   const sendInvite = useMutation({
     mutationFn: () => apiRequest("POST", "/api/invites", { inviteeEmail: inviteEmail, message: inviteMessage || undefined }),
@@ -634,6 +643,7 @@ function ConnectionsCard() {
       setInviteMessage("");
       setShowInviteForm(false);
       refetchInvites();
+      refetchConnections();
     },
     onError: (e: any) => {
       toast({ title: "Could not send invite", description: e.message?.replace(/^\d+: /, "") || "Please try again", variant: "destructive" });
@@ -642,7 +652,11 @@ function ConnectionsCard() {
 
   const removeConnection = useMutation({
     mutationFn: (partnerId: number) => apiRequest("DELETE", `/api/connections/${partnerId}`),
-    onSuccess: () => { toast({ title: "Connection removed" }); refetchConnections(); },
+    onSuccess: () => {
+      toast({ title: "Connection removed" });
+      refetchConnections();
+      refetchInvites(); // re-check invite statuses too
+    },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
