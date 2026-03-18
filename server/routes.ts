@@ -198,6 +198,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(updated);
   });
 
+  // Reorder custom metrics — accepts ordered array of IDs
+  app.put("/api/metrics/custom/reorder", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const { order } = z.object({ order: z.array(z.number()) }).parse(req.body);
+      // Update sortOrder for each metric in the provided order
+      await Promise.all(
+        order.map((id, idx) => storage.updateCustomMetric(id, userId, { sortOrder: idx }))
+      );
+      const updated = await storage.getCustomMetricsByUser(userId);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   app.delete("/api/metrics/custom/:id", requireAuth, async (req, res) => {
     const id = parseInt(req.params.id);
     const ok = await storage.deleteCustomMetric(id, req.session!.userId!);

@@ -10,11 +10,25 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import type { CustomMetric, UserSchedule } from "@shared/schema";
-import { Plus, Trash2, Save, Clock, Lock, Zap, Globe } from "lucide-react";
+import { Plus, Trash2, Save, Clock, Lock, Zap, Globe, GripVertical } from "lucide-react";
 import { useAuth } from "@/App";
 import { TIMEZONE_OPTIONS, getBrowserTimezone } from "@/hooks/use-user-timezone";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useMutation } from "@tanstack/react-query";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const METRIC_EMOJIS = ["⭐", "💪", "🧠", "📚", "🥗", "🏃", "😴", "💧", "🎯", "🌱"];
 
@@ -26,6 +40,51 @@ const CORE_METRIC_INFO = [
   { key: "VIEW", label: "VIEW", desc: "Vision and perspective clarity" },
   { key: "PACE", label: "PACE", desc: "Rhythm and pace maintenance" },
 ];
+
+// ─── Sortable metric row (used inside drag context) ─────────────────────────
+function SortableMetricRow({ metric, onDelete }: { metric: CustomMetric; onDelete: (id: number) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: metric.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border"
+      data-testid={`custom-metric-${metric.id}`}
+    >
+      {/* Drag handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="flex-shrink-0 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none"
+        aria-label="Drag to reorder"
+        data-testid={`drag-handle-${metric.id}`}
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <span className="text-lg flex-shrink-0">{metric.emoji}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold uppercase tracking-wider truncate">{metric.name}</p>
+        {metric.description && <p className="text-xs text-muted-foreground truncate">{metric.description}</p>}
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => onDelete(metric.id)}
+        className="text-destructive flex-shrink-0"
+        data-testid={`btn-delete-metric-${metric.id}`}
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { user, setUser } = useAuth();
@@ -124,6 +183,10 @@ export default function SettingsPage() {
     queryFn: () => apiRequest("GET", "/api/metrics/custom").then(r => r.json()),
   });
 
+  // Local ordered list for optimistic drag-and-drop
+  const [orderedMetrics, setOrderedMetrics] = useState<CustomMetric[]>([]);
+  useEffect(() => { setOrderedMetrics(customMetrics); }, [customMetrics]);
+
   const [newMetric, setNewMetric] = useState({ name: "", description: "", emoji: "⭐" });
 
   const addMetric = useMutation({
@@ -149,6 +212,36 @@ export default function SettingsPage() {
       toast({ title: "Metric removed" });
     },
   });
+
+  const reorderMetrics = useMutation({
+    mutationFn: (order: number[]) =>
+      apiRequest("PUT", "/api/metrics/custom/reorder", { order }).then(r => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/metrics/custom"] });
+    },
+    onError: () => {
+      // Roll back optimistic update on failure
+      setOrderedMetrics(customMetrics);
+      toast({ title: "Error", description: "Could not save order", variant: "destructive" });
+    },
+  });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setOrderedMetrics(prev => {
+      const oldIdx = prev.findIndex(m => m.id === active.id);
+      const newIdx = prev.findIndex(m => m.id === over.id);
+      const next = arrayMove(prev, oldIdx, newIdx);
+      // Persist new order
+      reorderMetrics.mutate(next.map(m => m.id));
+      return next;
+    });
+  }
 
   const canAddMore = customMetrics.length < 4;
 
@@ -277,7 +370,9 @@ export default function SettingsPage() {
               </Badge>
             )}
           </CardTitle>
-          <CardDescription className="text-xs">Add up to 4 personal metrics (exercise, nutrition, reading, etc.)</CardDescription>
+          <CardDescription className="text-xs">
+            Add up to 4 personal metrics (exercise, nutrition, reading, etc.){isPro && orderedMetrics.length > 1 ? " · drag to reorder" : ""}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {!isPro && (
@@ -293,27 +388,45 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
-          {customMetrics.length > 0 ? (
-            <div className="space-y-2">
-              {customMetrics.map(m => (
-                <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border" data-testid={`custom-metric-${m.id}`}>
-                  <span className="text-lg flex-shrink-0">{m.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold uppercase tracking-wider truncate">{m.name}</p>
-                    {m.description && <p className="text-xs text-muted-foreground truncate">{m.description}</p>}
+          {orderedMetrics.length > 0 ? (
+            isPro ? (
+              // Pro users — drag-and-drop sortable list
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={orderedMetrics.map(m => m.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {orderedMetrics.map(m => (
+                      <SortableMetricRow
+                        key={m.id}
+                        metric={m}
+                        onDelete={id => deleteMetric.mutate(id)}
+                      />
+                    ))}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteMetric.mutate(m.id)}
-                    className="text-destructive flex-shrink-0"
-                    data-testid={`btn-delete-metric-${m.id}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+                </SortableContext>
+              </DndContext>
+            ) : (
+              // Free users — static list (no drag handles)
+              <div className="space-y-2">
+                {orderedMetrics.map(m => (
+                  <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border" data-testid={`custom-metric-${m.id}`}>
+                    <span className="text-lg flex-shrink-0">{m.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold uppercase tracking-wider truncate">{m.name}</p>
+                      {m.description && <p className="text-xs text-muted-foreground truncate">{m.description}</p>}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteMetric.mutate(m.id)}
+                      className="text-destructive flex-shrink-0"
+                      data-testid={`btn-delete-metric-${m.id}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )
           ) : (
             <p className="text-xs text-muted-foreground py-2">No custom metrics added yet.</p>
           )}
