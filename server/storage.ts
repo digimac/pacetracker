@@ -669,7 +669,7 @@ export class MemStorage implements IStorage {
   private connectionsArr: Connection[] = [];
   private connectionIdCounter = 1;
   async createInvite(data: InsertInvite): Promise<Invite> {
-    const rec: Invite = { id: this.inviteIdCounter++, ...data, inviteeEmail: data.inviteeEmail ?? null, inviteePhone: data.inviteePhone ?? null, message: data.message ?? null, acceptedByUserId: data.acceptedByUserId ?? null, createdAt: new Date() };
+    const rec: Invite = { id: this.inviteIdCounter++, ...data, status: data.status ?? "pending", inviteeEmail: data.inviteeEmail ?? null, inviteePhone: data.inviteePhone ?? null, message: data.message ?? null, acceptedByUserId: data.acceptedByUserId ?? null, createdAt: new Date() };
     this.invitesMap.set(rec.id, rec);
     return rec;
   }

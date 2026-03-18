@@ -191,16 +191,19 @@ export async function sendInviteEmail(opts: {
 }): Promise<void> {
   const { senderName, senderEmail, inviteeEmail, message, inviteUrl } = opts;
 
-  if (!isSmtpConfigured()) {
+  const transporter = createTransporter();
+  if (!transporter) {
     console.log(`[email] SMTP not configured. Invite from ${senderEmail} to ${inviteeEmail}: ${inviteUrl}`);
     return;
   }
 
-  const to = "track@sweetmo.io"; // blind relay; real delivery to inviteeEmail via reply-to pattern
-  // We send directly to the invitee
+  const fromAddress = SMTP_FROM_EMAIL
+    ? `"${SMTP_FROM_NAME}" <${SMTP_FROM_EMAIL}>`
+    : `"${SMTP_FROM_NAME}" <${SMTP_USER}>`;
+
   try {
     await transporter.sendMail({
-      from: `"Sweet Momentum" <${process.env.SMTP_FROM || "noreply@sweetmo.io"}>`,
+      from: fromAddress,
       to: inviteeEmail,
       replyTo: senderEmail,
       subject: `${senderName} invited you to Sweet Momentum`,
