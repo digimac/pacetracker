@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import type { CustomMetric, UserSchedule } from "@shared/schema";
-import { Plus, Trash2, Save, Clock, Lock, Zap, Globe, GripVertical, Users, Send, X, CheckCircle } from "lucide-react";
+import { Plus, Trash2, Save, Clock, Lock, Zap, Globe, GripVertical, Users, Send, X, CheckCircle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/App";
 import { TIMEZONE_OPTIONS, getBrowserTimezone } from "@/hooks/use-user-timezone";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -613,17 +613,26 @@ function ConnectionsCard() {
   const [inviteMessage, setInviteMessage] = useState("");
   const [showInviteForm, setShowInviteForm] = useState(false);
 
-  const { data: connections = [], refetch: refetchConnections } = useQuery<Connection[]>({
+  const { data: connections = [], refetch: refetchConnections, isFetching: fetchingConns } = useQuery<Connection[]>({
     queryKey: ["/api/connections"],
     queryFn: () => apiRequest("GET", "/api/connections").then(r => r.json()),
-    refetchInterval: 30_000, // re-check every 30s so accepted invites appear promptly
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
-  const { data: sentInvites = [], refetch: refetchInvites } = useQuery<SentInvite[]>({
+  const { data: sentInvites = [], refetch: refetchInvites, isFetching: fetchingInvites } = useQuery<SentInvite[]>({
     queryKey: ["/api/invites"],
     queryFn: () => apiRequest("GET", "/api/invites").then(r => r.json()),
     refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
+
+  function refreshAll() {
+    refetchConnections();
+    refetchInvites();
+  }
 
   // Only show pending invites that haven't been accepted/expired AND don't already
   // have a matching confirmed connection (handles the case where cache is slightly stale)
@@ -679,11 +688,24 @@ function ConnectionsCard() {
             </CardTitle>
             <CardDescription className="text-xs mt-1">Invite a trusted friend to share daily scores</CardDescription>
           </div>
-          {!showInviteForm && (
-            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setShowInviteForm(true)} data-testid="btn-show-invite-form">
-              <Plus className="w-3 h-3 mr-1" /> Invite
+          <div className="flex items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 text-muted-foreground"
+              onClick={refreshAll}
+              disabled={fetchingConns || fetchingInvites}
+              data-testid="btn-refresh-connections"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${(fetchingConns || fetchingInvites) ? "animate-spin" : ""}`} />
             </Button>
-          )}
+            {!showInviteForm && (
+              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setShowInviteForm(true)} data-testid="btn-show-invite-form">
+                <Plus className="w-3 h-3 mr-1" /> Invite
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
