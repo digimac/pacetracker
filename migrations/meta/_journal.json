@@ -64,6 +64,13 @@
       "when": 1742317200000,
       "tag": "0008_connections_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1742320000000,
+      "tag": "0009_session_table",
+      "breakpoints": true
     }
   ]
 }

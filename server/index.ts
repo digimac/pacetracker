@@ -56,8 +56,9 @@ function buildSessionStore() {
 
 app.use(session({
   secret: process.env.SESSION_SECRET || "pacetracker-secret-2024",
-  resave: false,
+  resave: true,
   saveUninitialized: false,
+  rolling: true,
   store: buildSessionStore(),
   cookie: {
     secure: process.env.NODE_ENV === "production",

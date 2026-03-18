@@ -69,6 +69,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         dailyGoal: "",
       });
 
+      await new Promise<void>((resolve, reject) => req.session!.save(err => err ? reject(err) : resolve())).catch(() => {});
       res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Registration failed" });
@@ -84,6 +85,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(401).json({ error: "Invalid email or password" });
       }
       req.session!.userId = user.id;
+      await new Promise<void>((resolve, reject) => req.session!.save(err => err ? reject(err) : resolve())).catch(() => {});
       res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Login failed" });
