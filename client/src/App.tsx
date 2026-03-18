@@ -62,13 +62,16 @@ function Router() {
   const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
 
-  const publicPaths = ["/register", "/forgot-password", "/reset-password"];
-  const isInvitePath = location.startsWith("/invite/");
-  const isPublicPath = publicPaths.some(p => location === p || location.startsWith(p + "?"));
-
   useEffect(() => {
     if (!isLoading) {
-      if (!user && !isPublicPath && !isInvitePath) setLocation("/login");
+      // Redirect unauthenticated users to login — EXCEPT for public pages
+      const isPublic =
+        location === "/register" ||
+        location.startsWith("/forgot-password") ||
+        location.startsWith("/reset-password") ||
+        location.startsWith("/invite/");
+      if (!user && !isPublic) setLocation("/login");
+      // Redirect authenticated users away from auth pages
       if (user && (location === "/login" || location === "/register" || location === "/")) setLocation("/dashboard");
     }
   }, [user, isLoading, location]);
@@ -84,13 +87,22 @@ function Router() {
     );
   }
 
+  // These routes render regardless of auth state — bypasses Switch entirely
+  if (location.startsWith("/reset-password")) return <ResetPasswordPage />;
+  if (location.startsWith("/forgot-password")) return <ForgotPasswordPage />;
+  if (location.startsWith("/invite/")) {
+    // Pass token via Route so useParams works inside InvitePage
+    return (
+      <Switch>
+        <Route path="/invite/:token" component={InvitePage} />
+      </Switch>
+    );
+  }
+
   if (!user) {
     return (
       <Switch>
         <Route path="/register" component={RegisterPage} />
-        <Route path="/forgot-password" component={ForgotPasswordPage} />
-        <Route path="/reset-password" component={ResetPasswordPage} />
-        <Route path="/invite/:token" component={InvitePage} />
         <Route component={LoginPage} />
       </Switch>
     );
@@ -111,9 +123,6 @@ function Router() {
         <Route path="/tracking" component={TrackingGuidePage} />
         <Route path="/connect" component={ConnectPage} />
         <Route path="/admin" component={AdminPage} />
-        <Route path="/invite/:token" component={InvitePage} />
-        <Route path="/reset-password" component={ResetPasswordPage} />
-        <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route component={DashboardPage} />
       </Switch>
     </AppLayout>
