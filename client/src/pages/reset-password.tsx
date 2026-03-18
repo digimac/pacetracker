@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,9 +16,12 @@ export default function ResetPasswordPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // useSearch() returns the query string from the hash router (e.g. "?token=abc123")
-  const search = useSearch();
-  const token = new URLSearchParams(search).get("token") || "";
+  // Read token from hash URL: /#/reset-password?token=xxx
+  // useSearch() from wouter may not include the query string in hash mode,
+  // so parse window.location.hash directly as the reliable source
+  const hash = window.location.hash; // e.g. "#/reset-password?token=abc"
+  const qIdx = hash.indexOf("?");
+  const token = qIdx !== -1 ? (new URLSearchParams(hash.slice(qIdx + 1)).get("token") || "") : "";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

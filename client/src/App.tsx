@@ -112,6 +112,8 @@ function Router() {
         <Route path="/connect" component={ConnectPage} />
         <Route path="/admin" component={AdminPage} />
         <Route path="/invite/:token" component={InvitePage} />
+        <Route path="/reset-password" component={ResetPasswordPage} />
+        <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route component={DashboardPage} />
       </Switch>
     </AppLayout>
