@@ -139,25 +139,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // Feedback submission — sends email to track@sweetmo.io
   app.post("/api/feedback", requireAuth, async (req, res) => {
+    const userId = req.session!.userId!;
+    const user = await storage.getUserById(userId);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+    // Validate first — return 400 only on bad input
+    const schema = z.object({
+      feedbackType: z.string().min(1, "Please enter a feedback type").max(200),
+      summary:      z.string().min(10, "Summary must be at least 10 characters").max(3000),
+      urgency:      z.enum(["Fun Idea", "Nice to Have", "Urgent Fix Needed"]),
+    });
+    let parsed: { feedbackType: string; summary: string; urgency: "Fun Idea" | "Nice to Have" | "Urgent Fix Needed" };
     try {
-      const userId = req.session!.userId!;
-      const user = await storage.getUserById(userId);
-      if (!user) return res.status(401).json({ error: "Unauthorized" });
-
-      const schema = z.object({
-        feedbackType: z.string().min(1, "Please enter a feedback type").max(200),
-        summary:      z.string().min(10, "Summary must be at least 10 characters").max(3000),
-        urgency:      z.enum(["Fun Idea", "Nice to Have", "Urgent Fix Needed"]),
-      });
-      const { feedbackType, summary, urgency } = schema.parse(req.body);
-
-      const displayName = user.displayName || user.username;
-      await sendFeedbackEmail({ fromDisplayName: displayName, fromEmail: user.email, feedbackType, summary, urgency });
-
-      res.json({ ok: true });
+      parsed = schema.parse(req.body);
     } catch (e: any) {
-      res.status(400).json({ error: e.message });
+      const msg = e?.errors?.[0]?.message || e.message || "Invalid input";
+      return res.status(400).json({ error: msg });
     }
+
+    // Send email — errors here are logged but don't fail the request
+    const displayName = user.displayName || user.username;
+    await sendFeedbackEmail({ fromDisplayName: displayName, fromEmail: user.email, ...parsed });
+
+    res.json({ ok: true });
   });
 
   // Auth: Me

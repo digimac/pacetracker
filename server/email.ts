@@ -115,6 +115,7 @@ export async function sendFeedbackEmail(opts: {
     ? `"${SMTP_FROM_NAME}" <${SMTP_FROM_EMAIL}>`
     : `"${SMTP_FROM_NAME}" <${SMTP_USER}>`;
 
+  try {
   await transporter.sendMail({
     from: fromAddress,
     to,
@@ -174,4 +175,8 @@ export async function sendFeedbackEmail(opts: {
   });
 
   console.log(`[email] Feedback email sent to ${to} from ${fromEmail}`);
+  } catch (smtpErr: any) {
+    console.error(`[email] SMTP error sending feedback from ${fromEmail}:`, smtpErr?.message || smtpErr);
+    // Don't rethrow — submission still succeeds from the user's perspective
+  }
 }
