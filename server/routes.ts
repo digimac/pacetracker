@@ -167,6 +167,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // Auth: Me
+  // Temporary SMTP diagnostic — remove after fixing
+  app.get("/api/debug/smtp", requireAdmin, async (_req, res) => {
+    const host = process.env.SMTP_HOST || "(not set)";
+    const port = process.env.SMTP_PORT || "(not set)";
+    const user = process.env.SMTP_USER || "(not set)";
+    const pass = process.env.SMTP_PASS ? `set (${process.env.SMTP_PASS.length} chars, starts: ${process.env.SMTP_PASS.slice(0,3)}...)` : "(not set)";
+    const fromEmail = process.env.SMTP_FROM_EMAIL || "(not set)";
+
+    // Actually attempt SMTP connection
+    let connResult = "untested";
+    try {
+      const nodemailer = await import("nodemailer");
+      const t = nodemailer.createTransport({
+        host, port: parseInt(port), secure: parseInt(port) === 465,
+        auth: { user, pass: process.env.SMTP_PASS || "" },
+      });
+      await t.verify();
+      connResult = "SUCCESS — SMTP connection verified";
+    } catch (e: any) {
+      connResult = `FAILED: ${e.message}`;
+    }
+
+    res.json({ host, port, user, pass, fromEmail, connResult });
+  });
+
   app.get("/api/auth/me", async (req, res) => {
     if (!req.session?.userId) return res.status(401).json({ error: "Unauthorized" });
     const user = await storage.getUserById(req.session.userId);
