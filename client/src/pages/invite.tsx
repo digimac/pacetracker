@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/App";
 import { Users, CheckCircle, XCircle, Loader2, ArrowRight } from "lucide-react";
 
 interface InvitePreview {
@@ -19,6 +20,7 @@ export default function InvitePage() {
   const token = params.token;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { setUser } = useAuth();
 
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,7 @@ export default function InvitePage() {
       if (data.inviteError) {
         toast({ title: "Account created, but invite issue", description: data.inviteError, variant: "destructive" });
       }
+      if (data.user) setUser(data.user); // update auth context so Router doesn't redirect to login
       setAccepted(true);
       setTimeout(() => setLocation("/dashboard"), 2000);
     } catch (e: any) {
@@ -94,6 +97,7 @@ export default function InvitePage() {
       if (data.inviteError) {
         toast({ title: "Logged in, but invite issue", description: data.inviteError, variant: "destructive" });
       }
+      if (data.user) setUser(data.user); // update auth context so Router doesn't redirect to login
       setAccepted(true);
       setTimeout(() => setLocation("/dashboard"), 2000);
     } catch (e: any) {
