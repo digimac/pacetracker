@@ -1,10 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
-import MemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { runMigrations } from "./migrate";
+import { pool } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -25,12 +26,14 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
-const MemStore = MemoryStore(session);
+const PgSession = connectPgSimple(session);
 app.use(session({
   secret: process.env.SESSION_SECRET || "pacetracker-secret-2024",
   resave: false,
   saveUninitialized: false,
-  store: new MemStore({ checkPeriod: 86400000 }),
+  store: process.env.DATABASE_URL
+    ? new PgSession({ pool, tableName: "session", createTableIfMissing: true })
+    : undefined,
   cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 },
 }));
 
