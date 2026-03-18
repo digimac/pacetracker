@@ -47,25 +47,20 @@ export default function InvitePage() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  async function acceptInvite() {
-    try {
-      await apiRequest("POST", `/api/invites/${token}/accept`, {});
-      setAccepted(true);
-      setTimeout(() => setLocation("/dashboard"), 2000);
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message?.replace(/^\d+: /, "") || "Could not accept invite", variant: "destructive" });
-    }
-  }
-
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await apiRequest("POST", "/api/auth/register", {
+      // Single atomic request: register + accept in one round-trip (no session race condition)
+      const res = await apiRequest("POST", `/api/invites/${token}/register`, {
         email, username, displayName, password,
       });
-      // Now accept the invite
-      await acceptInvite();
+      const data = await res.json();
+      if (data.inviteError) {
+        toast({ title: "Account created, but invite issue", description: data.inviteError, variant: "destructive" });
+      }
+      setAccepted(true);
+      setTimeout(() => setLocation("/dashboard"), 2000);
     } catch (e: any) {
       toast({ title: "Registration failed", description: e.message?.replace(/^\d+: /, "") || "Please try again", variant: "destructive" });
     } finally {
@@ -77,8 +72,16 @@ export default function InvitePage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await apiRequest("POST", "/api/auth/login", { email: loginEmail, password: loginPassword });
-      await acceptInvite();
+      // Single atomic request: login + accept in one round-trip
+      const res = await apiRequest("POST", `/api/invites/${token}/login`, {
+        email: loginEmail, password: loginPassword,
+      });
+      const data = await res.json();
+      if (data.inviteError) {
+        toast({ title: "Logged in, but invite issue", description: data.inviteError, variant: "destructive" });
+      }
+      setAccepted(true);
+      setTimeout(() => setLocation("/dashboard"), 2000);
     } catch (e: any) {
       toast({ title: "Login failed", description: e.message?.replace(/^\d+: /, "") || "Invalid credentials", variant: "destructive" });
     } finally {

@@ -647,26 +647,81 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // Accept invite — called after new user registers (or existing user logs in)
+  // Helper: accept an invite for a known userId within an already-saved session
+  async function acceptInviteForUser(token: string, userId: number): Promise<{ error?: string }> {
+    const invite = await storage.getInviteByToken(token);
+    if (!invite) return { error: "Invite not found" };
+    if (invite.status !== "pending") return { error: "This invite has already been used" };
+    if (new Date() > invite.expiresAt) {
+      await storage.updateInviteStatus(invite.id, "expired");
+      return { error: "This invite link has expired" };
+    }
+    if (invite.senderId === userId) return { error: "You can\'t accept your own invite" };
+    await storage.createConnection(invite.senderId, userId, invite.id);
+    await storage.updateInviteStatus(invite.id, "accepted", userId);
+    return {};
+  }
+
+  // Accept invite (existing logged-in user)
   app.post("/api/invites/:token/accept", requireAuth, async (req, res) => {
     try {
       const userId = req.session!.userId!;
-      const invite = await storage.getInviteByToken(req.params.token);
-      if (!invite) return res.status(404).json({ error: "Invite not found" });
-      if (invite.status !== "pending") return res.status(410).json({ error: "This invite has already been used" });
-      if (new Date() > invite.expiresAt) {
-        await storage.updateInviteStatus(invite.id, "expired");
-        return res.status(410).json({ error: "This invite link has expired" });
-      }
-      if (invite.senderId === userId) return res.status(400).json({ error: "You can't accept your own invite" });
-
-      // Create bidirectional connection
-      await storage.createConnection(invite.senderId, userId, invite.id);
-      await storage.updateInviteStatus(invite.id, "accepted", userId);
-
+      const result = await acceptInviteForUser(req.params.token, userId);
+      if (result.error) return res.status(410).json({ error: result.error });
       res.json({ ok: true });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Register + accept invite in one atomic request (no session race condition)
+  app.post("/api/invites/:token/register", async (req, res) => {
+    try {
+      const data = insertUserSchema.parse(req.body);
+      const existingEmail = await storage.getUserByEmail(data.email);
+      if (existingEmail) return res.status(400).json({ error: "Email already registered" });
+      const existingUsername = await storage.getUserByUsername(data.username);
+      if (existingUsername) return res.status(400).json({ error: "Username already taken" });
+
+      const user = await storage.createUser({ ...data, password: hashPassword(data.password) });
+      req.session!.userId = user.id;
+      await storage.upsertUserSchedule({
+        userId: user.id, wakeTime: "06:00", sleepTime: "22:00",
+        workStartTime: "09:00", workEndTime: "17:00",
+        timezone: "America/New_York", dailyGoal: "",
+      });
+      await new Promise<void>((resolve, reject) => req.session!.save(err => err ? reject(err) : resolve()));
+
+      // Accept the invite now that session is saved
+      const result = await acceptInviteForUser(req.params.token, user.id);
+      if (result.error) {
+        // Still return success for registration — just note invite failed
+        return res.json({ user: { id: user.id, email: user.email, username: user.username }, inviteError: result.error });
+      }
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName } });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message || "Registration failed" });
+    }
+  });
+
+  // Login + accept invite in one atomic request
+  app.post("/api/invites/:token/login", async (req, res) => {
+    try {
+      const { email, password } = z.object({ email: z.string(), password: z.string() }).parse(req.body);
+      const user = await storage.getUserByEmail(email);
+      if (!user || !verifyPassword(password, user.password)) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      req.session!.userId = user.id;
+      await new Promise<void>((resolve, reject) => req.session!.save(err => err ? reject(err) : resolve()));
+
+      const result = await acceptInviteForUser(req.params.token, user.id);
+      if (result.error) {
+        return res.json({ user: { id: user.id, email: user.email, username: user.username }, inviteError: result.error });
+      }
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName } });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message || "Login failed" });
     }
   });
 
