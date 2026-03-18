@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -143,7 +143,9 @@ export default function App() {
       <AuthContext.Provider value={{ user, setUser, isLoading }}>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
-            <Router />
+            <WouterRouter hook={useHashLocation}>
+              <Router />
+            </WouterRouter>
             <Toaster />
           </TooltipProvider>
         </QueryClientProvider>
