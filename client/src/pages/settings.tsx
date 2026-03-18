@@ -598,16 +598,33 @@ interface Connection {
   connectedSince: string;
 }
 
+interface SentInvite {
+  id: number;
+  inviteeEmail: string | null;
+  inviteePhone: string | null;
+  status: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
 function ConnectionsCard() {
   const { toast } = useToast();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
   const [showInviteForm, setShowInviteForm] = useState(false);
 
-  const { data: connections = [], refetch } = useQuery<Connection[]>({
+  const { data: connections = [], refetch: refetchConnections } = useQuery<Connection[]>({
     queryKey: ["/api/connections"],
     queryFn: () => apiRequest("GET", "/api/connections").then(r => r.json()),
   });
+
+  const { data: sentInvites = [], refetch: refetchInvites } = useQuery<SentInvite[]>({
+    queryKey: ["/api/invites"],
+    queryFn: () => apiRequest("GET", "/api/invites").then(r => r.json()),
+  });
+
+  // Only show pending invites (not yet accepted/declined/expired)
+  const pendingInvites = sentInvites.filter(i => i.status === "pending" && new Date(i.expiresAt) > new Date());
 
   const sendInvite = useMutation({
     mutationFn: () => apiRequest("POST", "/api/invites", { inviteeEmail: inviteEmail, message: inviteMessage || undefined }),
@@ -616,6 +633,7 @@ function ConnectionsCard() {
       setInviteEmail("");
       setInviteMessage("");
       setShowInviteForm(false);
+      refetchInvites();
     },
     onError: (e: any) => {
       toast({ title: "Could not send invite", description: e.message?.replace(/^\d+: /, "") || "Please try again", variant: "destructive" });
@@ -624,7 +642,7 @@ function ConnectionsCard() {
 
   const removeConnection = useMutation({
     mutationFn: (partnerId: number) => apiRequest("DELETE", `/api/connections/${partnerId}`),
-    onSuccess: () => { toast({ title: "Connection removed" }); refetch(); },
+    onSuccess: () => { toast({ title: "Connection removed" }); refetchConnections(); },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -634,6 +652,8 @@ function ConnectionsCard() {
     if (score >= 4) return "text-yellow-400";
     return "text-red-400";
   };
+
+  const hasAny = connections.length > 0 || pendingInvites.length > 0;
 
   return (
     <Card>
@@ -697,45 +717,80 @@ function ConnectionsCard() {
           </div>
         )}
 
-        {/* Current connections */}
-        {connections.length === 0 ? (
+        {/* Empty state */}
+        {!hasAny && (
           <div className="text-center py-6 text-muted-foreground">
             <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
             <p className="text-sm">No accountability partners yet.</p>
             <p className="text-xs mt-1">Send an invite to get started.</p>
           </div>
-        ) : (
-          <div className="space-y-2">
-            {connections.map((c) => (
-              <div key={c.connectionId} className="flex items-center justify-between p-3 bg-muted/20 border border-border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary">
-                    {c.partnerName.charAt(0).toUpperCase()}
+        )}
+
+        {/* Confirmed partners */}
+        {connections.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <CheckCircle className="w-3 h-3 text-green-500" /> Confirmed
+            </p>
+            <div className="space-y-2">
+              {connections.map((c) => (
+                <div key={c.connectionId} className="flex items-center justify-between p-3 bg-muted/20 border border-border rounded-lg" data-testid={`connection-row-${c.partnerId}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary">
+                      {c.partnerName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{c.partnerName}</p>
+                      <p className="text-xs text-muted-foreground">@{c.partnerUsername}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{c.partnerName}</p>
-                    <p className="text-xs text-muted-foreground">@{c.partnerUsername}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Today</p>
+                      <p className={`text-base font-black ${scoreColor(c.todayScore)}`}>
+                        {c.todayScore !== null ? c.todayScore : "—"}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
+                      onClick={() => removeConnection.mutate(c.partnerId)}
+                      data-testid={`btn-remove-connection-${c.partnerId}`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Today</p>
-                    <p className={`text-base font-black ${scoreColor(c.todayScore)}`}>
-                      {c.todayScore !== null ? c.todayScore : "—"}
-                    </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Pending invites */}
+        {pendingInvites.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Clock className="w-3 h-3 text-yellow-500" /> Pending
+            </p>
+            <div className="space-y-2">
+              {pendingInvites.map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between p-3 bg-muted/10 border border-dashed border-border rounded-lg" data-testid={`invite-row-${inv.id}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+                      <Clock className="w-3.5 h-3.5 text-yellow-500/60" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{inv.inviteeEmail || inv.inviteePhone}</p>
+                      <p className="text-xs text-muted-foreground">Invite pending · expires {new Date(inv.expiresAt).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
-                    onClick={() => removeConnection.mutate(c.partnerId)}
-                    data-testid={`btn-remove-connection-${c.partnerId}`}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </Button>
+                  <Badge variant="outline" className="text-[10px] text-yellow-500 border-yellow-500/30 bg-yellow-500/10">
+                    Awaiting
+                  </Badge>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </CardContent>
