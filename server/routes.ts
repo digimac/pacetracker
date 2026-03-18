@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
-import { sendPasswordResetEmail, sendFeedbackEmail } from "./email";
+import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail } from "./email";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
 import { z } from "zod";
@@ -525,6 +525,170 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const data = insertSitePageSchema.parse({ ...req.body, pageKey });
       const page = await storage.upsertSitePage(data);
       res.json(page);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // ── Invite & Connections ────────────────────────────────────────────────────
+
+  // Send an invite via email
+  app.post("/api/invites", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const sender = await storage.getUserById(userId);
+      if (!sender) return res.status(401).json({ error: "Unauthorized" });
+
+      const schema = z.object({
+        inviteeEmail: z.string().email("Please enter a valid email address"),
+        message: z.string().max(300).optional(),
+      });
+      const { inviteeEmail, message } = schema.parse(req.body);
+
+      // Don't allow inviting yourself
+      if (inviteeEmail.toLowerCase() === sender.email.toLowerCase()) {
+        return res.status(400).json({ error: "You can't invite yourself" });
+      }
+
+      // Check if already connected
+      const existingUser = await storage.getUserByEmail(inviteeEmail);
+      if (existingUser) {
+        const conns = await storage.getConnectionsByUser(userId);
+        const alreadyConnected = conns.some(c =>
+          (c.userId === userId && c.partnerId === existingUser.id) ||
+          (c.userId === existingUser.id && c.partnerId === userId)
+        );
+        if (alreadyConnected) return res.status(400).json({ error: "You're already connected with this person" });
+      }
+
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      const invite = await storage.createInvite({
+        senderId: userId,
+        inviteeEmail,
+        inviteePhone: null,
+        token,
+        message: message || null,
+        status: "pending",
+        acceptedByUserId: null,
+        expiresAt,
+      });
+
+      const appUrl = process.env.APP_URL || "https://sweet-momentum.onrender.com";
+      const inviteUrl = `${appUrl}/#/invite/${token}`;
+
+      const senderName = sender.firstName && sender.lastName
+        ? `${sender.firstName} ${sender.lastName}`
+        : sender.displayName || sender.username;
+
+      // Send email (non-blocking — SMTP errors are logged, not thrown)
+      sendInviteEmail({ senderName, senderEmail: sender.email, inviteeEmail, message: message || undefined, inviteUrl }).catch(() => {});
+
+      res.json({ ok: true, inviteId: invite.id });
+    } catch (e: any) {
+      const msg = e?.errors?.[0]?.message || e.message || "Failed to send invite";
+      res.status(400).json({ error: msg });
+    }
+  });
+
+  // Get my sent invites
+  app.get("/api/invites", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const sentInvites = await storage.getInvitesBySender(userId);
+      res.json(sentInvites);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Preview invite (public — no auth needed, used on the accept page before signup)
+  app.get("/api/invites/:token", async (req, res) => {
+    try {
+      const invite = await storage.getInviteByToken(req.params.token);
+      if (!invite) return res.status(404).json({ error: "Invite not found" });
+      if (invite.status !== "pending") return res.status(410).json({ error: "This invite has already been used or expired" });
+      if (new Date() > invite.expiresAt) {
+        await storage.updateInviteStatus(invite.id, "expired");
+        return res.status(410).json({ error: "This invite has expired" });
+      }
+      const sender = await storage.getUserById(invite.senderId);
+      const senderName = sender
+        ? (sender.firstName && sender.lastName ? `${sender.firstName} ${sender.lastName}` : sender.displayName || sender.username)
+        : "A Sweet Momentum member";
+      res.json({
+        senderName,
+        message: invite.message,
+        inviteeEmail: invite.inviteeEmail,
+        status: invite.status,
+      });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Accept invite — called after new user registers (or existing user logs in)
+  app.post("/api/invites/:token/accept", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const invite = await storage.getInviteByToken(req.params.token);
+      if (!invite) return res.status(404).json({ error: "Invite not found" });
+      if (invite.status !== "pending") return res.status(410).json({ error: "This invite has already been used" });
+      if (new Date() > invite.expiresAt) {
+        await storage.updateInviteStatus(invite.id, "expired");
+        return res.status(410).json({ error: "This invite link has expired" });
+      }
+      if (invite.senderId === userId) return res.status(400).json({ error: "You can't accept your own invite" });
+
+      // Create bidirectional connection
+      await storage.createConnection(invite.senderId, userId, invite.id);
+      await storage.updateInviteStatus(invite.id, "accepted", userId);
+
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Get my connections (with partner info)
+  app.get("/api/connections", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const conns = await storage.getConnectionsByUser(userId);
+      const today = new Date().toISOString().split("T")[0];
+
+      const enriched = await Promise.all(conns.map(async (c) => {
+        const partnerId = c.userId === userId ? c.partnerId : c.userId;
+        const partner = await storage.getUserById(partnerId);
+        if (!partner) return null;
+        const partnerName = partner.firstName && partner.lastName
+          ? `${partner.firstName} ${partner.lastName}`
+          : partner.displayName || partner.username;
+        const todayScore = await storage.getPartnerDailyScore(partnerId, today);
+        return {
+          connectionId: c.id,
+          partnerId,
+          partnerName,
+          partnerUsername: partner.username,
+          todayScore: todayScore?.score ?? null,
+          connectedSince: c.createdAt,
+        };
+      }));
+
+      res.json(enriched.filter(Boolean));
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Remove a connection
+  app.delete("/api/connections/:partnerId", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const partnerId = parseInt(req.params.partnerId);
+      await storage.removeConnection(userId, partnerId);
+      res.json({ ok: true });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }

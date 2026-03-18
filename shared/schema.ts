@@ -149,3 +149,34 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 });
 
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
+// Invite tokens — sent via email/SMS, used once to register + auto-connect
+export const invites = pgTable("invites", {
+  id: serial("id").primaryKey(),
+  senderId: integer("sender_id").notNull(),         // user who sent the invite
+  inviteeEmail: text("invitee_email"),               // email address invited (nullable if SMS)
+  inviteePhone: text("invitee_phone"),               // phone number invited (nullable if email)
+  token: text("token").notNull().unique(),           // UUID token in the invite link
+  message: text("message"),                          // optional personal message
+  status: text("status").default("pending").notNull(), // "pending" | "accepted" | "declined" | "expired"
+  acceptedByUserId: integer("accepted_by_user_id"), // set when accepted
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertInviteSchema = createInsertSchema(invites).omit({ id: true, createdAt: true });
+export type InsertInvite = z.infer<typeof insertInviteSchema>;
+export type Invite = typeof invites.$inferSelect;
+
+// Connections — mutual accountability partnerships between two users
+export const connections = pgTable("connections", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),             // the member who sent the invite
+  partnerId: integer("partner_id").notNull(),       // the member who accepted
+  inviteId: integer("invite_id"),                   // reference back to invite
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertConnectionSchema = createInsertSchema(connections).omit({ id: true, createdAt: true });
+export type InsertConnection = z.infer<typeof insertConnectionSchema>;
+export type Connection = typeof connections.$inferSelect;

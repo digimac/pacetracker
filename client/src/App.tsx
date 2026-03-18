@@ -20,6 +20,7 @@ import GlobePage from "@/pages/globe";
 import StoryPage from "@/pages/story";
 import TrackingGuidePage from "@/pages/tracking-guide";
 import ConnectPage from "@/pages/connect";
+import InvitePage from "@/pages/invite";
 import AppLayout from "@/components/app-layout";
 
 function BillingSuccessPage() {
@@ -62,10 +63,11 @@ function Router() {
   const [location, setLocation] = useLocation();
 
   const publicPaths = ["/register", "/forgot-password", "/reset-password"];
+  const isInvitePath = location.startsWith("/invite/");
 
   useEffect(() => {
     if (!isLoading) {
-      if (!user && !publicPaths.includes(location)) setLocation("/login");
+      if (!user && !publicPaths.includes(location) && !isInvitePath) setLocation("/login");
       if (user && (location === "/login" || location === "/register" || location === "/")) setLocation("/dashboard");
     }
   }, [user, isLoading, location]);
@@ -87,6 +89,7 @@ function Router() {
         <Route path="/register" component={RegisterPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
+        <Route path="/invite/:token" component={InvitePage} />
         <Route component={LoginPage} />
       </Switch>
     );
@@ -107,6 +110,7 @@ function Router() {
         <Route path="/tracking" component={TrackingGuidePage} />
         <Route path="/connect" component={ConnectPage} />
         <Route path="/admin" component={AdminPage} />
+        <Route path="/invite/:token" component={InvitePage} />
         <Route component={DashboardPage} />
       </Switch>
     </AppLayout>
@@ -124,7 +128,7 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    fetch("/api/auth/me", { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.user) setUser(data.user);

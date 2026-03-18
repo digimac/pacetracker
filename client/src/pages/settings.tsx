@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import type { CustomMetric, UserSchedule } from "@shared/schema";
-import { Plus, Trash2, Save, Clock, Lock, Zap, Globe, GripVertical } from "lucide-react";
+import { Plus, Trash2, Save, Clock, Lock, Zap, Globe, GripVertical, Users, Send, X, CheckCircle } from "lucide-react";
 import { useAuth } from "@/App";
 import { TIMEZONE_OPTIONS, getBrowserTimezone } from "@/hooks/use-user-timezone";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -581,6 +581,164 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* ── Connections ─────────────────────────────────────────────────────── */}
+      <ConnectionsCard />
     </div>
+  );
+}
+
+// ─── Connections Card ─────────────────────────────────────────────────────────
+interface Connection {
+  connectionId: number;
+  partnerId: number;
+  partnerName: string;
+  partnerUsername: string;
+  todayScore: number | null;
+  connectedSince: string;
+}
+
+function ConnectionsCard() {
+  const { toast } = useToast();
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [showInviteForm, setShowInviteForm] = useState(false);
+
+  const { data: connections = [], refetch } = useQuery<Connection[]>({
+    queryKey: ["/api/connections"],
+    queryFn: () => apiRequest("GET", "/api/connections").then(r => r.json()),
+  });
+
+  const sendInvite = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/invites", { inviteeEmail: inviteEmail, message: inviteMessage || undefined }),
+    onSuccess: () => {
+      toast({ title: "Invite sent", description: `An invite was sent to ${inviteEmail}` });
+      setInviteEmail("");
+      setInviteMessage("");
+      setShowInviteForm(false);
+    },
+    onError: (e: any) => {
+      toast({ title: "Could not send invite", description: e.message?.replace(/^\d+: /, "") || "Please try again", variant: "destructive" });
+    },
+  });
+
+  const removeConnection = useMutation({
+    mutationFn: (partnerId: number) => apiRequest("DELETE", `/api/connections/${partnerId}`),
+    onSuccess: () => { toast({ title: "Connection removed" }); refetch(); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const scoreColor = (score: number | null) => {
+    if (score === null) return "text-muted-foreground";
+    if (score >= 7) return "text-[#FF6E00]";
+    if (score >= 4) return "text-yellow-400";
+    return "text-red-400";
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+              <Users className="w-4 h-4" /> Accountability Partners
+            </CardTitle>
+            <CardDescription className="text-xs mt-1">Invite a trusted friend to share daily scores</CardDescription>
+          </div>
+          {!showInviteForm && (
+            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setShowInviteForm(true)} data-testid="btn-show-invite-form">
+              <Plus className="w-3 h-3 mr-1" /> Invite
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Invite form */}
+        {showInviteForm && (
+          <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Email address</Label>
+              <Input
+                type="email"
+                placeholder="friend@example.com"
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+                data-testid="input-invite-email"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Personal message <span className="text-muted-foreground">(optional)</span></Label>
+              <Textarea
+                placeholder="Add a short note to your invite..."
+                value={inviteMessage}
+                onChange={e => setInviteMessage(e.target.value)}
+                rows={2}
+                maxLength={300}
+                className="resize-none text-sm"
+                data-testid="textarea-invite-message"
+              />
+              <p className="text-[11px] text-muted-foreground text-right">{inviteMessage.length}/300</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="flex-1 bg-[#FF6E00] hover:bg-[#e06300] text-white text-xs"
+                disabled={!inviteEmail || sendInvite.isPending}
+                onClick={() => sendInvite.mutate()}
+                data-testid="btn-send-invite"
+              >
+                <Send className="w-3 h-3 mr-1.5" />
+                {sendInvite.isPending ? "Sending..." : "Send Invite"}
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs" onClick={() => setShowInviteForm(false)} data-testid="btn-cancel-invite">
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Current connections */}
+        {connections.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">No accountability partners yet.</p>
+            <p className="text-xs mt-1">Send an invite to get started.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {connections.map((c) => (
+              <div key={c.connectionId} className="flex items-center justify-between p-3 bg-muted/20 border border-border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary">
+                    {c.partnerName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{c.partnerName}</p>
+                    <p className="text-xs text-muted-foreground">@{c.partnerUsername}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Today</p>
+                    <p className={`text-base font-black ${scoreColor(c.todayScore)}`}>
+                      {c.todayScore !== null ? c.todayScore : "—"}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
+                    onClick={() => removeConnection.mutate(c.partnerId)}
+                    data-testid={`btn-remove-connection-${c.partnerId}`}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

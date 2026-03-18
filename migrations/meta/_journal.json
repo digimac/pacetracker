@@ -57,6 +57,13 @@
       "when": 1773705000000,
       "tag": "0007_metric_prompt",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1742317200000,
+      "tag": "0008_connections_invites",
+      "breakpoints": true
     }
   ]
 }

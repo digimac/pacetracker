@@ -180,3 +180,67 @@ export async function sendFeedbackEmail(opts: {
     // Don't rethrow — submission still succeeds from the user's perspective
   }
 }
+
+// ── Send accountability partner invite ──────────────────────────────────────
+export async function sendInviteEmail(opts: {
+  senderName: string;
+  senderEmail: string;
+  inviteeEmail: string;
+  message?: string;
+  inviteUrl: string;
+}): Promise<void> {
+  const { senderName, senderEmail, inviteeEmail, message, inviteUrl } = opts;
+
+  if (!isSmtpConfigured()) {
+    console.log(`[email] SMTP not configured. Invite from ${senderEmail} to ${inviteeEmail}: ${inviteUrl}`);
+    return;
+  }
+
+  const to = "track@sweetmo.io"; // blind relay; real delivery to inviteeEmail via reply-to pattern
+  // We send directly to the invitee
+  try {
+    await transporter.sendMail({
+      from: `"Sweet Momentum" <${process.env.SMTP_FROM || "noreply@sweetmo.io"}>`,
+      to: inviteeEmail,
+      replyTo: senderEmail,
+      subject: `${senderName} invited you to Sweet Momentum`,
+      html: `
+        <body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+          <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+            <div style="background:#FF6E00;padding:32px;text-align:center;">
+              <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;letter-spacing:1px;">Sweet Momentum</h1>
+              <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Daily Performance Tracking</p>
+            </div>
+            <div style="padding:32px;">
+              <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey there,</p>
+              <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">
+                <strong style="color:#fff;">${senderName}</strong> has invited you to connect on Sweet Momentum as their accountability partner.
+              </p>
+              ${message ? `
+              <div style="background:#252525;border-left:3px solid #FF6E00;border-radius:4px;padding:16px;margin:0 0 24px;">
+                <p style="margin:0;color:#ccc;font-size:14px;font-style:italic;">"${message}"</p>
+                <p style="margin:8px 0 0;color:#888;font-size:12px;">— ${senderName}</p>
+              </div>
+              ` : ""}
+              <p style="color:#bbb;font-size:14px;margin:0 0 24px;">
+                Once you join, ${senderName} will be able to see your daily score — just the score, nothing else. You'll also see theirs. It's a simple way to stay accountable.
+              </p>
+              <div style="text-align:center;margin:32px 0;">
+                <a href="${inviteUrl}" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;letter-spacing:0.5px;">
+                  Accept Invite &amp; Join Free
+                </a>
+              </div>
+              <p style="color:#666;font-size:12px;text-align:center;margin:0;">
+                This invite expires in 7 days. If you didn't expect this, you can safely ignore it.
+              </p>
+            </div>
+          </div>
+        </body>
+      `,
+      text: `${senderName} invited you to join Sweet Momentum as their accountability partner.\n\n${message ? `"${message}"\n\n` : ""}Accept the invite and create your free account:\n${inviteUrl}\n\nThis link expires in 7 days.`,
+    });
+    console.log(`[email] Invite sent from ${senderEmail} to ${inviteeEmail}`);
+  } catch (smtpErr: any) {
+    console.error(`[email] SMTP error sending invite to ${inviteeEmail}:`, smtpErr?.message || smtpErr);
+  }
+}

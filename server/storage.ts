@@ -8,7 +8,9 @@ import {
   MetricContent, InsertMetricContent,
   SitePage, InsertSitePage,
   PasswordResetToken,
-  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens,
+  Invite, InsertInvite,
+  Connection,
+  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
 
@@ -64,6 +66,16 @@ export interface IStorage {
   getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
   markPasswordResetTokenUsed(id: number): Promise<void>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+
+  // Invites & Connections
+  createInvite(data: InsertInvite): Promise<Invite>;
+  getInviteByToken(token: string): Promise<Invite | undefined>;
+  getInvitesBySender(userId: number): Promise<Invite[]>;
+  updateInviteStatus(id: number, status: string, acceptedByUserId?: number): Promise<void>;
+  createConnection(userId: number, partnerId: number, inviteId?: number): Promise<Connection>;
+  getConnectionsByUser(userId: number): Promise<Connection[]>;
+  removeConnection(userId: number, partnerId: number): Promise<void>;
+  getPartnerDailyScore(partnerId: number, date: string): Promise<{ score: number; notes: string | null } | null>;
 }
 
 // ─── Drizzle (PostgreSQL) implementation ────────────────────────────────────
@@ -346,6 +358,50 @@ export class DrizzleStorage implements IStorage {
       .set({ password: hashedPassword })
       .where(eq(users.id, userId));
   }
+
+  // ── Invites & Connections (Drizzle) ─────────────────────────────────────────
+  async createInvite(data: InsertInvite): Promise<Invite> {
+    const [row] = await this.db.insert(invites).values(data).returning();
+    return row;
+  }
+  async getInviteByToken(token: string): Promise<Invite | undefined> {
+    const [row] = await this.db.select().from(invites).where(eq(invites.token, token)).limit(1);
+    return row;
+  }
+  async getInvitesBySender(userId: number): Promise<Invite[]> {
+    return this.db.select().from(invites).where(eq(invites.senderId, userId)).orderBy(desc(invites.createdAt));
+  }
+  async updateInviteStatus(id: number, status: string, acceptedByUserId?: number): Promise<void> {
+    await this.db.update(invites)
+      .set({ status, ...(acceptedByUserId ? { acceptedByUserId } : {}) })
+      .where(eq(invites.id, id));
+  }
+  async createConnection(userId: number, partnerId: number, inviteId?: number): Promise<Connection> {
+    const [row] = await this.db.insert(connections).values({ userId, partnerId, inviteId }).returning();
+    return row;
+  }
+  async getConnectionsByUser(userId: number): Promise<Connection[]> {
+    // Return connections where user is either sender or acceptor
+    const sent = await this.db.select().from(connections).where(eq(connections.userId, userId));
+    const received = await this.db.select().from(connections).where(eq(connections.partnerId, userId));
+    return [...sent, ...received];
+  }
+  async removeConnection(userId: number, partnerId: number): Promise<void> {
+    await this.db.delete(connections)
+      .where(and(eq(connections.userId, userId), eq(connections.partnerId, partnerId)));
+    await this.db.delete(connections)
+      .where(and(eq(connections.userId, partnerId), eq(connections.partnerId, userId)));
+  }
+  async getPartnerDailyScore(partnerId: number, date: string): Promise<{ score: number; notes: string | null } | null> {
+    const entry = await this.getDailyEntry(partnerId, date);
+    if (!entry) return null;
+    const scores = await this.getMetricScoresByEntry(entry.id);
+    const successes = scores.filter(s => s.rating === "success").length;
+    const setbacks = scores.filter(s => s.rating === "setback").length;
+    const total = successes + setbacks;
+    const score = total === 0 ? 0 : Math.round((successes / total) * 10);
+    return { score, notes: entry.notes };
+  }
 }
 
 // ─── In-memory fallback (used in local dev without DATABASE_URL) ─────────────
@@ -605,6 +661,49 @@ export class MemStorage implements IStorage {
   async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
     const user = this.usersMap.get(userId);
     if (user) this.usersMap.set(userId, { ...user, password: hashedPassword });
+  }
+
+  // Invites & Connections (in-memory stubs)
+  private invitesMap: Map<number, Invite> = new Map();
+  private inviteIdCounter = 1;
+  private connectionsArr: Connection[] = [];
+  private connectionIdCounter = 1;
+  async createInvite(data: InsertInvite): Promise<Invite> {
+    const rec: Invite = { id: this.inviteIdCounter++, ...data, inviteeEmail: data.inviteeEmail ?? null, inviteePhone: data.inviteePhone ?? null, message: data.message ?? null, acceptedByUserId: data.acceptedByUserId ?? null, createdAt: new Date() };
+    this.invitesMap.set(rec.id, rec);
+    return rec;
+  }
+  async getInviteByToken(token: string): Promise<Invite | undefined> {
+    return Array.from(this.invitesMap.values()).find(i => i.token === token);
+  }
+  async getInvitesBySender(userId: number): Promise<Invite[]> {
+    return Array.from(this.invitesMap.values()).filter(i => i.senderId === userId);
+  }
+  async updateInviteStatus(id: number, status: string, acceptedByUserId?: number): Promise<void> {
+    const inv = this.invitesMap.get(id);
+    if (inv) this.invitesMap.set(id, { ...inv, status, acceptedByUserId: acceptedByUserId ?? inv.acceptedByUserId });
+  }
+  async createConnection(userId: number, partnerId: number, inviteId?: number): Promise<Connection> {
+    const rec: Connection = { id: this.connectionIdCounter++, userId, partnerId, inviteId: inviteId ?? null, createdAt: new Date() };
+    this.connectionsArr.push(rec);
+    return rec;
+  }
+  async getConnectionsByUser(userId: number): Promise<Connection[]> {
+    return this.connectionsArr.filter(c => c.userId === userId || c.partnerId === userId);
+  }
+  async removeConnection(userId: number, partnerId: number): Promise<void> {
+    this.connectionsArr = this.connectionsArr.filter(c =>
+      !((c.userId === userId && c.partnerId === partnerId) || (c.userId === partnerId && c.partnerId === userId))
+    );
+  }
+  async getPartnerDailyScore(partnerId: number, date: string): Promise<{ score: number; notes: string | null } | null> {
+    const entry = await this.getDailyEntry(partnerId, date);
+    if (!entry) return null;
+    const scores = await this.getMetricScoresByEntry(entry.id);
+    const successes = scores.filter(s => s.rating === "success").length;
+    const setbacks = scores.filter(s => s.rating === "setback").length;
+    const total = successes + setbacks;
+    return { score: total === 0 ? 0 : Math.round((successes / total) * 10), notes: entry.notes };
   }
 
   async getUserSchedule(userId: number): Promise<UserSchedule | undefined> { return this.userSchedules.get(userId); }
