@@ -37,11 +37,8 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
-            <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8">
-              <path d="M12 2L3 7v10l9 5 9-5V7L12 2z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
-              <path d="M12 2v20M3 7l9 5 9-5" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
-            </svg>
+          <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-4">
+            <img src="/favicon.png" alt="Sweet Momentum" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-xl font-bold tracking-tight">SWEET MOMENTUM</h1>
           <p className="text-sm text-muted-foreground mt-1">Your daily performance system</p>
