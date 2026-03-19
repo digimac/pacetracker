@@ -651,8 +651,8 @@ function MembersTab() {
 const TEMPLATE_DEFS = [
   {
     key: "invite",
-    label: "Accountability Partner Invite",
-    description: "Sent when a member invites someone to become their accountability partner.",
+    label: "Momentum Partner Invite",
+    description: "Sent when a member invites someone to become their momentum partner.",
     defaultSubject: "{{senderName}} invited you to Sweet Momentum",
     defaultBodyHtml: `<body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
   <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
@@ -662,13 +662,13 @@ const TEMPLATE_DEFS = [
     </div>
     <div style="padding:32px;">
       <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey there,</p>
-      <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;"><strong style="color:#fff;">{{senderName}}</strong> has invited you to connect on Sweet Momentum as their accountability partner.</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;"><strong style="color:#fff;">{{senderName}}</strong> has invited you to connect on Sweet Momentum as their momentum partner.</p>
       <div style="text-align:center;margin:32px 0;"><a href="{{inviteUrl}}" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;">Accept Invite &amp; Join Free</a></div>
       <p style="color:#666;font-size:12px;text-align:center;margin:0;">This invite expires in 7 days.</p>
     </div>
   </div>
 </body>`,
-    defaultBodyText: `{{senderName}} invited you to join Sweet Momentum as their accountability partner.
+    defaultBodyText: `{{senderName}} invited you to join Sweet Momentum as their momentum partner.
 
 Accept the invite and create your free account:
 {{inviteUrl}}

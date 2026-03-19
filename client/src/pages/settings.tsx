@@ -684,7 +684,7 @@ function ConnectionsCard() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-              <Users className="w-4 h-4" /> Accountability Partners
+              <Users className="w-4 h-4" /> Momentum Partners
             </CardTitle>
             <CardDescription className="text-xs mt-1">Invite a trusted friend to share daily scores</CardDescription>
           </div>
@@ -757,7 +757,7 @@ function ConnectionsCard() {
         {!hasAny && (
           <div className="text-center py-6 text-muted-foreground">
             <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No accountability partners yet.</p>
+            <p className="text-sm">No momentum partners yet.</p>
             <p className="text-xs mt-1">Send an invite to get started.</p>
           </div>
         )}

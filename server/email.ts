@@ -186,7 +186,7 @@ export async function sendFeedbackEmail(opts: {
   }
 }
 
-// ── Send accountability partner invite ──────────────────────────────────────
+// ── Send momentum partner invite ──────────────────────────────────────
 export async function sendInviteEmail(opts: {
   senderName: string;
   senderEmail: string;
@@ -218,7 +218,7 @@ export async function sendInviteEmail(opts: {
             <div style="padding:32px;">
               <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey there,</p>
               <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">
-                <strong style="color:#fff;">${senderName}</strong> has invited you to connect on Sweet Momentum as their accountability partner.
+                <strong style="color:#fff;">${senderName}</strong> has invited you to connect on Sweet Momentum as their momentum partner.
               </p>
               ${message ? `
               <div style="background:#252525;border-left:3px solid #FF6E00;border-radius:4px;padding:16px;margin:0 0 24px;">
@@ -241,7 +241,7 @@ export async function sendInviteEmail(opts: {
           </div>
         </body>
       `;
-  const defaultText = `${senderName} invited you to join Sweet Momentum as their accountability partner.\n\n${message ? `"${message}"\n\n` : ""}Accept the invite and create your free account:\n${inviteUrl}\n\nThis link expires in 7 days.`;
+  const defaultText = `${senderName} invited you to join Sweet Momentum as their momentum partner.\n\n${message ? `"${message}"\n\n` : ""}Accept the invite and create your free account:\n${inviteUrl}\n\nThis link expires in 7 days.`;
 
   // ── Try to load admin-configured DB template, fall back to defaults ──
   let subject = defaultSubject;

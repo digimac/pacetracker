@@ -134,7 +134,7 @@ export default function InvitePage() {
         <div className="max-w-md w-full text-center space-y-4">
           <CheckCircle className="w-16 h-16 text-[#FF6E00] mx-auto" />
           <h1 className="text-xl font-bold text-foreground">You're connected!</h1>
-          <p className="text-muted-foreground">You and {preview?.senderName} are now accountability partners. Redirecting to your dashboard…</p>
+          <p className="text-muted-foreground">You and {preview?.senderName} are now momentum partners. Redirecting to your dashboard…</p>
         </div>
       </div>
     );
@@ -150,7 +150,7 @@ export default function InvitePage() {
           </div>
           <h1 className="text-2xl font-bold text-foreground">You've been invited</h1>
           <p className="text-muted-foreground text-sm">
-            <span className="font-semibold text-foreground">{preview?.senderName}</span> wants you as their accountability partner on Sweet Momentum.
+            <span className="font-semibold text-foreground">{preview?.senderName}</span> wants you as their momentum partner on Sweet Momentum.
           </p>
         </div>
 
@@ -164,7 +164,7 @@ export default function InvitePage() {
 
         {/* What this means */}
         <div className="bg-card border border-border rounded-lg p-4 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">What accountability partners see</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">What momentum partners see</p>
           <ul className="text-sm text-muted-foreground space-y-1">
             <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-[#FF6E00] shrink-0" /> Each other's daily score (0–10)</li>
             <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-[#FF6E00] shrink-0" /> Name and username only</li>
