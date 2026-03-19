@@ -715,7 +715,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const userId = req.session!.userId!;
       const conns = await storage.getConnectionsByUser(userId);
-      const today = new Date().toISOString().split("T")[0];
+      // Use the viewing user's timezone to compute "today" correctly
+      const viewerSchedule = await storage.getUserSchedule(userId);
+      const viewerTz = viewerSchedule?.timezone || "UTC";
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: viewerTz }); // YYYY-MM-DD in user's tz
 
       const enriched = await Promise.all(conns.map(async (c) => {
         const partnerId = c.userId === userId ? c.partnerId : c.userId;
@@ -724,7 +727,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const partnerName = partner.firstName && partner.lastName
           ? `${partner.firstName} ${partner.lastName}`
           : partner.displayName || partner.username;
-        const todayScore = await storage.getPartnerDailyScore(partnerId, today);
+        // Also try partner's own "today" in case their timezone differs
+        const partnerSchedule = await storage.getUserSchedule(partnerId);
+        const partnerTz = partnerSchedule?.timezone || viewerTz;
+        const partnerToday = new Date().toLocaleDateString("en-CA", { timeZone: partnerTz });
+        // Prefer partner's own today; fall back to viewer's today
+        let todayScore = await storage.getPartnerDailyScore(partnerId, partnerToday);
+        if (!todayScore && partnerToday !== today) {
+          todayScore = await storage.getPartnerDailyScore(partnerId, today);
+        }
         return {
           connectionId: c.id,
           partnerId,

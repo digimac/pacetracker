@@ -402,9 +402,8 @@ export class DrizzleStorage implements IStorage {
     const scores = await this.getMetricScoresByEntry(entry.id);
     const successes = scores.filter(s => s.rating === "success").length;
     const setbacks = scores.filter(s => s.rating === "setback").length;
-    const total = successes + setbacks;
-    const score = total === 0 ? 0 : Math.round((successes / total) * 10);
-    return { score, notes: entry.notes };
+    if (successes === 0 && setbacks === 0) return null; // no scores recorded yet
+    return { score: successes - setbacks, notes: entry.notes };
   }
   async getEmailTemplate(key: string): Promise<EmailTemplate | undefined> {
     const [row] = await this.db.select().from(emailTemplates).where(eq(emailTemplates.key, key));
@@ -722,8 +721,8 @@ export class MemStorage implements IStorage {
     const scores = await this.getMetricScoresByEntry(entry.id);
     const successes = scores.filter(s => s.rating === "success").length;
     const setbacks = scores.filter(s => s.rating === "setback").length;
-    const total = successes + setbacks;
-    return { score: total === 0 ? 0 : Math.round((successes / total) * 10), notes: entry.notes };
+    if (successes === 0 && setbacks === 0) return null;
+    return { score: successes - setbacks, notes: entry.notes };
   }
 
   async getUserSchedule(userId: number): Promise<UserSchedule | undefined> { return this.userSchedules.get(userId); }
