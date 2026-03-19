@@ -45,15 +45,31 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
+// Derive a unique username from an email address (local part, sanitised)
+async function deriveUsername(email: string): Promise<string> {
+  const base = email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20) || "user";
+  let candidate = base;
+  let i = 2;
+  while (await storage.getUserByUsername(candidate)) {
+    candidate = `${base}${i++}`;
+  }
+  return candidate;
+}
+
 export async function registerRoutes(httpServer: Server, app: Express): Promise<void> {
   // Auth: Register
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const data = insertUserSchema.parse(req.body);
-      const existingEmail = await storage.getUserByEmail(data.email);
+      // Accept body without username — derive it automatically from email
+      const raw = z.object({
+        email: z.string().email(),
+        password: z.string().min(8),
+        displayName: z.string().min(1),
+      }).parse(req.body);
+      const existingEmail = await storage.getUserByEmail(raw.email);
       if (existingEmail) return res.status(400).json({ error: "Email already registered" });
-      const existingUsername = await storage.getUserByUsername(data.username);
-      if (existingUsername) return res.status(400).json({ error: "Username already taken" });
+      const username = await deriveUsername(raw.email);
+      const data = { ...raw, username };
 
       const user = await storage.createUser({ ...data, password: hashPassword(data.password) });
       req.session!.userId = user.id;
@@ -661,12 +677,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Register + accept invite in one atomic request (no session race condition)
   app.post("/api/invites/:token/register", async (req, res) => {
     try {
-      const data = insertUserSchema.parse(req.body);
-      const existingEmail = await storage.getUserByEmail(data.email);
+      const raw = z.object({
+        email: z.string().email(),
+        password: z.string().min(8),
+        displayName: z.string().min(1),
+      }).parse(req.body);
+      const existingEmail = await storage.getUserByEmail(raw.email);
       // Return a specific code so the client can switch to login mode
       if (existingEmail) return res.status(409).json({ error: "Email already registered", existingAccount: true });
-      const existingUsername = await storage.getUserByUsername(data.username);
-      if (existingUsername) return res.status(400).json({ error: "Username already taken" });
+      const username = await deriveUsername(raw.email);
+      const data = { ...raw, username };
 
       const user = await storage.createUser({ ...data, password: hashPassword(data.password) });
       req.session!.userId = user.id;

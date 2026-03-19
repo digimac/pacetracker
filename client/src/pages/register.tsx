@@ -14,7 +14,7 @@ type Step = "account" | "location";
 
 export default function RegisterPage() {
   const [step, setStep] = useState<Step>("account");
-  const [form, setForm] = useState({ displayName: "", username: "", email: "", password: "" });
+  const [form, setForm] = useState({ displayName: "", email: "", password: "" });
   const [location, setLocationForm] = useState({ city: "", region: "", country: "" });
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
@@ -106,17 +106,7 @@ export default function RegisterPage() {
                     data-testid="input-display-name"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    placeholder="yourhandle"
-                    value={form.username}
-                    onChange={e => update("username", e.target.value.toLowerCase())}
-                    required
-                    data-testid="input-username"
-                  />
-                </div>
+
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email</Label>
                   <Input

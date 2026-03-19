@@ -29,7 +29,6 @@ export default function InvitePage() {
   // Registration form
   const [mode, setMode] = useState<"choose" | "register" | "login">("choose");
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
@@ -59,7 +58,7 @@ export default function InvitePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, username, displayName, password }),
+        body: JSON.stringify({ email, displayName, password }),
       });
       const data = await res.json();
       if (res.status === 409 && data.existingAccount) {
@@ -167,7 +166,7 @@ export default function InvitePage() {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">What momentum partners see</p>
           <ul className="text-sm text-muted-foreground space-y-1">
             <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-[#FF6E00] shrink-0" /> Each other's daily score (0–10)</li>
-            <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-[#FF6E00] shrink-0" /> Name and username only</li>
+            <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-[#FF6E00] shrink-0" /> Name only</li>
             <li className="flex items-center gap-2"><XCircle className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" /> No individual metric details</li>
             <li className="flex items-center gap-2"><XCircle className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" /> No notes or personal content</li>
           </ul>
@@ -196,10 +195,7 @@ export default function InvitePage() {
               <Label htmlFor="inv-email">Email</Label>
               <Input id="inv-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required data-testid="input-invite-email" />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="inv-username">Username</Label>
-              <Input id="inv-username" value={username} onChange={e => setUsername(e.target.value)} required placeholder="yourname" data-testid="input-invite-username" />
-            </div>
+
             <div className="space-y-1">
               <Label htmlFor="inv-display">Display name</Label>
               <Input id="inv-display" value={displayName} onChange={e => setDisplayName(e.target.value)} required placeholder="Your Name" data-testid="input-invite-display" />
