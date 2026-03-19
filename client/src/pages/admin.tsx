@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ShieldCheck, Save, ImageIcon, Quote, BookOpen,
   ChevronDown, ChevronUp, Loader2, Users, Settings2,
-  Crown, Clock, Globe, FileText, Plus, Trash2, Link,
+  Crown, Clock, Globe, FileText, Plus, Trash2, Link, Mail,
 } from "lucide-react";
 import type { MetricContent } from "@shared/schema";
 
@@ -645,12 +645,278 @@ function MembersTab() {
 
 // ─── Admin Page ───────────────────────────────────────────────────────────────
 
+
+// ─── Email Templates Tab ─────────────────────────────────────────────────────
+
+const TEMPLATE_DEFS = [
+  {
+    key: "invite",
+    label: "Accountability Partner Invite",
+    description: "Sent when a member invites someone to become their accountability partner.",
+    defaultSubject: "{{senderName}} invited you to Sweet Momentum",
+    defaultBodyHtml: `<body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+  <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+    <div style="background:#FF6E00;padding:32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;">Sweet Momentum</h1>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Daily Performance Tracking</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey there,</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;"><strong style="color:#fff;">{{senderName}}</strong> has invited you to connect on Sweet Momentum as their accountability partner.</p>
+      <div style="text-align:center;margin:32px 0;"><a href="{{inviteUrl}}" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;">Accept Invite &amp; Join Free</a></div>
+      <p style="color:#666;font-size:12px;text-align:center;margin:0;">This invite expires in 7 days.</p>
+    </div>
+  </div>
+</body>`,
+    defaultBodyText: `{{senderName}} invited you to join Sweet Momentum as their accountability partner.
+
+Accept the invite and create your free account:
+{{inviteUrl}}
+
+This link expires in 7 days.`,
+  },
+  {
+    key: "password_reset",
+    label: "Password Reset",
+    description: "Sent when a member requests a password reset link.",
+    defaultSubject: "Reset your Sweet Momentum password",
+    defaultBodyHtml: `<body style="font-family:sans-serif;background:#0a0a0a;color:#f5f5f5;padding:40px 20px;">
+  <div style="max-width:480px;margin:0 auto;">
+    <h1 style="font-size:22px;font-weight:900;">Reset your password</h1>
+    <p style="color:#a0a0a0;">Click the link below to choose a new password.</p>
+    <a href="{{resetUrl}}" style="display:inline-block;background:#7c3aed;color:white;font-weight:700;padding:14px 32px;border-radius:8px;text-decoration:none;">Reset Password</a>
+    <p style="color:#666;font-size:13px;margin-top:24px;">This link expires in 1 hour.</p>
+  </div>
+</body>`,
+    defaultBodyText: `Reset your Sweet Momentum password
+
+Click the link below to reset your password:
+{{resetUrl}}
+
+This link expires in 1 hour.`,
+  },
+];
+
+type EmailTemplateData = {
+  id: number;
+  templateKey: string;
+  subject: string;
+  bodyHtml: string;
+  bodyText: string;
+  updatedAt: string;
+};
+
+function EmailTemplateEditor({
+  def,
+}: {
+  def: (typeof TEMPLATE_DEFS)[0];
+}) {
+  const { toast } = useToast();
+  const [expanded, setExpanded] = useState(false);
+  const [subject, setSubject]     = useState("");
+  const [bodyHtml, setBodyHtml]   = useState("");
+  const [bodyText, setBodyText]   = useState("");
+  const [previewMode, setPreviewMode] = useState<"html" | "text">("html");
+
+  const { data: existing, isLoading } = useQuery<EmailTemplateData | null>({
+    queryKey: ["/api/admin/email-templates", def.key],
+    queryFn: () =>
+      apiRequest("GET", `/api/admin/email-templates/${def.key}`)
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null),
+    retry: false,
+  });
+
+  useEffect(() => {
+    setSubject(existing?.subject   ?? def.defaultSubject);
+    setBodyHtml(existing?.bodyHtml ?? def.defaultBodyHtml);
+    setBodyText(existing?.bodyText ?? def.defaultBodyText);
+  }, [existing]);
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      apiRequest("PUT", `/api/admin/email-templates/${def.key}`, {
+        subject,
+        bodyHtml,
+        bodyText,
+      }).then(r => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/email-templates", def.key] });
+      toast({ title: "Saved", description: `"${def.label}" template updated.` });
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message || "Save failed", variant: "destructive" });
+    },
+  });
+
+  const isDirty =
+    subject   !== (existing?.subject   ?? def.defaultSubject)  ||
+    bodyHtml  !== (existing?.bodyHtml  ?? def.defaultBodyHtml) ||
+    bodyText  !== (existing?.bodyText  ?? def.defaultBodyText);
+
+  const variableHint: Record<string, string[]> = {
+    invite: ["{{senderName}}", "{{inviteUrl}}", "{{message}}"],
+    password_reset: ["{{resetUrl}}"],
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors"
+        data-testid={`email-template-toggle-${def.key}`}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/30 flex items-center justify-center flex-shrink-0">
+            <Mail className="w-4 h-4 text-orange-400" />
+          </div>
+          <div className="text-left">
+            <p className="text-sm font-bold">{def.label}</p>
+            <p className="text-xs text-muted-foreground">{def.description}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {isDirty && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded px-2 py-0.5">
+              Unsaved
+            </span>
+          )}
+          {existing && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-2 py-0.5">
+              Custom
+            </span>
+          )}
+          {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              {/* Variable reference */}
+              <div className="text-xs text-muted-foreground bg-muted/40 border border-border rounded-lg px-3 py-2.5">
+                <p className="font-semibold mb-1 text-foreground/70">Available variables:</p>
+                <p className="font-mono">{(variableHint[def.key] || []).join("  ")}</p>
+              </div>
+
+              {/* Subject */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Subject Line</label>
+                <Input
+                  value={subject}
+                  onChange={e => setSubject(e.target.value)}
+                  placeholder="Email subject..."
+                  data-testid={`email-subject-${def.key}`}
+                />
+              </div>
+
+              {/* HTML Body */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">HTML Body</label>
+                <Textarea
+                  value={bodyHtml}
+                  onChange={e => setBodyHtml(e.target.value)}
+                  rows={10}
+                  className="font-mono text-xs resize-y"
+                  placeholder="HTML email body..."
+                  data-testid={`email-body-html-${def.key}`}
+                />
+              </div>
+
+              {/* Plain Text Body */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Plain Text Body</label>
+                <Textarea
+                  value={bodyText}
+                  onChange={e => setBodyText(e.target.value)}
+                  rows={5}
+                  className="font-mono text-xs resize-y"
+                  placeholder="Plain text fallback..."
+                  data-testid={`email-body-text-${def.key}`}
+                />
+              </div>
+
+              {/* Preview */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Preview</label>
+                  <div className="flex gap-1">
+                    {(["html", "text"] as const).map(mode => (
+                      <button
+                        key={mode}
+                        onClick={() => setPreviewMode(mode)}
+                        className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded transition-colors ${
+                          previewMode === mode
+                            ? "bg-card border border-border text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >{mode}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="border border-border rounded-lg overflow-hidden">
+                  {previewMode === "html" ? (
+                    <iframe
+                      srcDoc={bodyHtml}
+                      className="w-full h-64 bg-white"
+                      sandbox="allow-same-origin"
+                      title={`${def.label} HTML preview`}
+                    />
+                  ) : (
+                    <pre className="text-xs font-mono p-3 whitespace-pre-wrap text-muted-foreground bg-muted/30 min-h-[8rem]">{bodyText}</pre>
+                  )}
+                </div>
+              </div>
+
+              {/* Save */}
+              <div className="flex justify-end pt-1">
+                <Button
+                  onClick={() => saveMutation.mutate()}
+                  disabled={saveMutation.isPending || !subject.trim() || !bodyHtml.trim() || !bodyText.trim()}
+                  className="gap-2"
+                  data-testid={`email-save-${def.key}`}
+                >
+                  {saveMutation.isPending ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5" />
+                  )}
+                  Save Template
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmailTemplatesTab() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        Customise the emails sent by Sweet Momentum. Use the variables shown inside each editor to insert dynamic content. Changes take effect immediately for all future sends.
+      </p>
+      {TEMPLATE_DEFS.map(def => (
+        <EmailTemplateEditor key={def.key} def={def} />
+      ))}
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"content" | "members" | "pages">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "members" | "pages" | "emails">("content");
   const [savingPageKey, setSavingPageKey] = useState<string | null>(null);
 
   // Redirect if not admin
@@ -728,6 +994,7 @@ export default function AdminPage() {
           { key: "content", label: "Metric Content", icon: Settings2 },
           { key: "pages",   label: "Pages",          icon: FileText },
           { key: "members", label: "Members",         icon: Users },
+          { key: "emails",  label: "Emails",          icon: Mail },
         ] as const).map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -806,6 +1073,8 @@ export default function AdminPage() {
       )}
 
       {activeTab === "members" && <MembersTab />}
+
+      {activeTab === "emails" && <EmailTemplatesTab />}
     </div>
   );
 }

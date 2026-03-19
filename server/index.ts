@@ -101,6 +101,15 @@ app.use((req, res, next) => {
         "created_at" timestamp DEFAULT now() NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS "email_templates" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "key" text NOT NULL UNIQUE,
+        "subject" text NOT NULL,
+        "body_html" text NOT NULL,
+        "body_text" text NOT NULL,
+        "updated_at" timestamp DEFAULT now() NOT NULL
+      );
+
       DO $$ BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'invites_token_unique') THEN
           CREATE UNIQUE INDEX invites_token_unique ON "invites" ("token");

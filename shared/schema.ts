@@ -180,3 +180,17 @@ export const connections = pgTable("connections", {
 export const insertConnectionSchema = createInsertSchema(connections).omit({ id: true, createdAt: true });
 export type InsertConnection = z.infer<typeof insertConnectionSchema>;
 export type Connection = typeof connections.$inferSelect;
+
+// Email Templates — admin-configurable email content
+export const emailTemplates = pgTable("email_templates", {
+  id:        serial("id").primaryKey(),
+  key:       text("key").notNull().unique(),   // e.g. "invite", "password_reset"
+  subject:   text("subject").notNull(),
+  bodyHtml:  text("body_html").notNull(),
+  bodyText:  text("body_text").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({ id: true, updatedAt: true });
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;

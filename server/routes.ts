@@ -753,6 +753,32 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // ── Email Templates (admin only) ──────────────────────────────────────────
+  app.get("/api/admin/email-templates/:key", requireAdmin, async (req, res) => {
+    try {
+      const { key } = req.params;
+      const template = await storage.getEmailTemplate(key);
+      if (!template) return res.status(404).json({ error: "Template not found" });
+      res.json(template);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/admin/email-templates/:key", requireAdmin, async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { subject, bodyHtml, bodyText } = req.body;
+      if (!subject || !bodyHtml || !bodyText) {
+        return res.status(400).json({ error: "subject, bodyHtml, and bodyText are required" });
+      }
+      const template = await storage.upsertEmailTemplate(key, subject, bodyHtml, bodyText);
+      res.json(template);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Globe — world score map (Pro-gated on frontend, auth required)
   app.get("/api/globe/scores", requireAuth, async (req, res) => {
     try {

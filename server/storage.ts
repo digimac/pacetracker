@@ -10,7 +10,8 @@ import {
   PasswordResetToken,
   Invite, InsertInvite,
   Connection,
-  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections,
+  EmailTemplate,
+  users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections, emailTemplates,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
 
@@ -76,6 +77,9 @@ export interface IStorage {
   getConnectionsByUser(userId: number): Promise<Connection[]>;
   removeConnection(userId: number, partnerId: number): Promise<void>;
   getPartnerDailyScore(partnerId: number, date: string): Promise<{ score: number; notes: string | null } | null>;
+  // Email templates
+  getEmailTemplate(key: string): Promise<EmailTemplate | undefined>;
+  upsertEmailTemplate(key: string, subject: string, bodyHtml: string, bodyText: string): Promise<EmailTemplate>;
 }
 
 // ─── Drizzle (PostgreSQL) implementation ────────────────────────────────────
@@ -402,6 +406,22 @@ export class DrizzleStorage implements IStorage {
     const score = total === 0 ? 0 : Math.round((successes / total) * 10);
     return { score, notes: entry.notes };
   }
+  async getEmailTemplate(key: string): Promise<EmailTemplate | undefined> {
+    const [row] = await this.db.select().from(emailTemplates).where(eq(emailTemplates.key, key));
+    return row;
+  }
+  async upsertEmailTemplate(key: string, subject: string, bodyHtml: string, bodyText: string): Promise<EmailTemplate> {
+    const existing = await this.getEmailTemplate(key);
+    if (existing) {
+      const [row] = await this.db.update(emailTemplates)
+        .set({ subject, bodyHtml, bodyText, updatedAt: new Date() })
+        .where(eq(emailTemplates.key, key))
+        .returning();
+      return row;
+    }
+    const [row] = await this.db.insert(emailTemplates).values({ key, subject, bodyHtml, bodyText }).returning();
+    return row;
+  }
 }
 
 // ─── In-memory fallback (used in local dev without DATABASE_URL) ─────────────
@@ -717,6 +737,15 @@ export class MemStorage implements IStorage {
     const newSchedule: UserSchedule = { ...schedule, id: this.userScheduleIdCounter++, updatedAt: new Date() };
     this.userSchedules.set(schedule.userId, newSchedule);
     return newSchedule;
+  }
+  private emailTemplatesMap: Map<string, EmailTemplate> = new Map();
+  async getEmailTemplate(key: string): Promise<EmailTemplate | undefined> {
+    return this.emailTemplatesMap.get(key);
+  }
+  async upsertEmailTemplate(key: string, subject: string, bodyHtml: string, bodyText: string): Promise<EmailTemplate> {
+    const t: EmailTemplate = { id: this.emailTemplatesMap.size + 1, key, subject, bodyHtml, bodyText, updatedAt: new Date() };
+    this.emailTemplatesMap.set(key, t);
+    return t;
   }
 }
 

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { storage } from "./storage";
 
 // SMTP.com relay credentials — set these in Render environment variables:
 //   SMTP_HOST        e.g. send.smtp.com
@@ -205,13 +206,9 @@ export async function sendInviteEmail(opts: {
     ? `"${SMTP_FROM_NAME}" <${SMTP_FROM_EMAIL}>`
     : `"${SMTP_FROM_NAME}" <${SMTP_USER}>`;
 
-  try {
-    await transporter.sendMail({
-      from: fromAddress,
-      to: inviteeEmail,
-      replyTo: senderEmail,
-      subject: `${senderName} invited you to Sweet Momentum`,
-      html: `
+  // ── Default hardcoded template (used if no DB override exists) ──
+  const defaultSubject = `${senderName} invited you to Sweet Momentum`;
+  const defaultHtml = `
         <body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
           <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
             <div style="background:#FF6E00;padding:32px;text-align:center;">
@@ -243,8 +240,38 @@ export async function sendInviteEmail(opts: {
             </div>
           </div>
         </body>
-      `,
-      text: `${senderName} invited you to join Sweet Momentum as their accountability partner.\n\n${message ? `"${message}"\n\n` : ""}Accept the invite and create your free account:\n${inviteUrl}\n\nThis link expires in 7 days.`,
+      `;
+  const defaultText = `${senderName} invited you to join Sweet Momentum as their accountability partner.\n\n${message ? `"${message}"\n\n` : ""}Accept the invite and create your free account:\n${inviteUrl}\n\nThis link expires in 7 days.`;
+
+  // ── Try to load admin-configured DB template, fall back to defaults ──
+  let subject = defaultSubject;
+  let html    = defaultHtml;
+  let text    = defaultText;
+
+  try {
+    const tpl = await storage.getEmailTemplate("invite");
+    if (tpl) {
+      // Replace template variables: {{senderName}}, {{inviteUrl}}, {{message}}
+      const interpolate = (s: string) => s
+        .replace(/\{\{senderName\}\}/g, senderName)
+        .replace(/\{\{inviteUrl\}\}/g, inviteUrl)
+        .replace(/\{\{message\}\}/g, message || "");
+      subject = interpolate(tpl.subject);
+      html    = interpolate(tpl.bodyHtml);
+      text    = interpolate(tpl.bodyText);
+    }
+  } catch (dbErr) {
+    console.warn("[email] Could not load invite template from DB, using default:", dbErr);
+  }
+
+  try {
+    await transporter.sendMail({
+      from: fromAddress,
+      to: inviteeEmail,
+      replyTo: senderEmail,
+      subject,
+      html,
+      text,
     });
     console.log(`[email] Invite sent from ${senderEmail} to ${inviteeEmail}`);
   } catch (smtpErr: any) {
