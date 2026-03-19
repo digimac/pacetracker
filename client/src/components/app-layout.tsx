@@ -29,7 +29,6 @@ const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { label: "Today", icon: CalendarCheck, path: "/today" },
   { label: "History", icon: History, path: "/history" },
-  { label: "Billing", icon: CreditCard, path: "/billing" },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
 
@@ -92,22 +91,43 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {NAV_ITEMS.map(({ label, icon: Icon, path }) => {
             const active = location === path || (location === "/" && path === "/dashboard");
             return (
-              <Link key={path} href={path}>
-                <a
-                  data-testid={`nav-${label.toLowerCase()}`}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
-                    ${active
-                      ? "bg-primary text-primary-foreground"
-                      : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
-                    }
-                  `}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  {label}
-                </a>
-              </Link>
+              <div key={path}>
+                <Link href={path}>
+                  <a
+                    data-testid={`nav-${label.toLowerCase()}`}
+                    className={`
+                      flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                      ${active
+                        ? "bg-primary text-primary-foreground"
+                        : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                      }
+                    `}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {label}
+                  </a>
+                </Link>
+                {/* Billing nested under Settings */}
+                {path === "/settings" && (
+                  <Link href="/billing">
+                    <a
+                      data-testid="nav-billing"
+                      className={`
+                        flex items-center gap-3 pl-9 pr-3 py-2 mt-0.5 rounded-lg text-sm font-medium transition-all duration-150
+                        ${(location === "/billing" || location.startsWith("/billing"))
+                          ? "bg-primary text-primary-foreground"
+                          : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                        }
+                      `}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <CreditCard className="w-4 h-4 flex-shrink-0" />
+                      Billing
+                    </a>
+                  </Link>
+                )}
+              </div>
             );
           })}
 
