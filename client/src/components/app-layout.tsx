@@ -18,6 +18,7 @@ import {
   BookOpen,
   Monitor,
   MessageSquare,
+  ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -46,6 +47,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(
+    location === "/settings" || location.startsWith("/billing")
+  );
 
   async function handleLogout() {
     await apiRequest("POST", "/api/auth/logout");
@@ -102,14 +106,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
                       }
                     `}
-                    onClick={() => setMobileOpen(false)}
+                    onClick={() => {
+                      setMobileOpen(false);
+                      if (path === "/settings") setSettingsExpanded(e => !e);
+                    }}
                   >
                     <Icon className="w-4 h-4 flex-shrink-0" />
-                    {label}
+                    <span className="flex-1">{label}</span>
+                    {path === "/settings" && (
+                      <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${
+                        settingsExpanded ? "rotate-180" : ""
+                      }`} />
+                    )}
                   </a>
                 </Link>
-                {/* Billing nested under Settings */}
-                {path === "/settings" && (
+                {/* Billing nested under Settings — visible only when expanded */}
+                {path === "/settings" && settingsExpanded && (
                   <Link href="/billing">
                     <a
                       data-testid="nav-billing"
