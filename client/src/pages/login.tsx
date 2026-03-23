@@ -77,7 +77,7 @@ export default function LoginPage() {
 
         {/* Admin-configured headline */}
         {headline && (
-          <h1 className="text-2xl font-black tracking-tight uppercase text-center mb-2 text-white drop-shadow-lg w-full">
+          <h1 className="text-6xl font-black tracking-tight uppercase text-center mb-2 text-white drop-shadow-lg w-full">
             {headline}
           </h1>
         )}
