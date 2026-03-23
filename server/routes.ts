@@ -312,6 +312,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Today's metric timeline — all scored metrics with their ratedAt timestamps
+  app.get("/api/today/timeline", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const sched = await storage.getUserSchedule(userId);
+      const tz = sched?.timezone || "UTC";
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+      const entry = await storage.getDailyEntry(userId, today);
+      if (!entry) return res.json([]);
+      const scores = await storage.getMetricScoresByEntry(entry.id);
+      // Only return core metrics with a non-skip rating that have a ratedAt
+      const timeline = scores
+        .filter(s => s.rating !== "skip" && ["TIME","GOAL","TEAM","TASK","VIEW","PACE"].includes(s.metricKey))
+        .map(s => ({
+          metricKey: s.metricKey,
+          metricLabel: s.metricLabel,
+          rating: s.rating,
+          ratedAt: (s as any).ratedAt ?? null,
+        }));
+      res.json(timeline);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Dashboard: date range summary
   app.get("/api/dashboard", requireAuth, async (req, res) => {
     const userId = req.session!.userId!;

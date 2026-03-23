@@ -60,6 +60,7 @@ export const metricScores = pgTable("metric_scores", {
   metricKey: text("metric_key").notNull(), // "TIME", "GOAL", "TEAM", "TASK", "VIEW", "PACE", or "custom_<id>"
   metricLabel: text("metric_label").notNull(),
   rating: text("rating").notNull(), // "success" | "setback" | "skip"
+  ratedAt: timestamp("rated_at").defaultNow().notNull(), // when this rating was last set
 });
 
 export const insertMetricScoreSchema = createInsertSchema(metricScores).omit({ id: true });

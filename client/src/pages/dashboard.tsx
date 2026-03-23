@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,136 @@ import { TrendingUp, TrendingDown, Minus, Calendar, Target, Zap } from "lucide-r
 import { useLocation } from "wouter";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
 import { useUserTimezone, getTodayInTimezone } from "@/hooks/use-user-timezone";
+
+type TimelineEvent = {
+  metricKey: string;
+  metricLabel: string;
+  rating: "success" | "setback";
+  ratedAt: string | null;
+};
+
+const CORE_METRIC_COLORS: Record<string, string> = {
+  TIME: "#a78bfa",
+  GOAL: "#34d399",
+  TEAM: "#60a5fa",
+  TASK: "#f59e0b",
+  VIEW: "#f472b6",
+  PACE: "#FF6E00",
+};
+
+function DaySparkline({ events }: { events: TimelineEvent[] }) {
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string; time: string; rating: string } | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const W = 600;
+  const H = 72;
+  const PAD_X = 28;
+  const MID_Y = H / 2;
+  const DOT_R = 5;
+  const OFFSET_Y = 18; // distance above/below midline
+
+  // Convert ratedAt to fraction of 24h day (0–1)
+  function timeToX(iso: string): number {
+    const d = new Date(iso);
+    const minutes = d.getHours() * 60 + d.getMinutes();
+    return PAD_X + ((minutes / 1440) * (W - PAD_X * 2));
+  }
+
+  // Hour tick marks: 6am, 12pm, 6pm
+  const ticks = [
+    { hour: 6,  label: "6am" },
+    { hour: 12, label: "12pm" },
+    { hour: 18, label: "6pm" },
+  ];
+
+  const validEvents = events.filter(e => e.ratedAt);
+
+  return (
+    <div className="relative">
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full"
+        style={{ height: 72 }}
+        onMouseLeave={() => setTooltip(null)}
+      >
+        {/* Midline */}
+        <line x1={PAD_X} y1={MID_Y} x2={W - PAD_X} y2={MID_Y} stroke="hsl(215 10% 22%)" strokeWidth={1} />
+
+        {/* Hour ticks */}
+        {ticks.map(t => {
+          const x = PAD_X + (((t.hour * 60) / 1440) * (W - PAD_X * 2));
+          return (
+            <g key={t.hour}>
+              <line x1={x} y1={MID_Y - 4} x2={x} y2={MID_Y + 4} stroke="hsl(215 10% 30%)" strokeWidth={1} />
+              <text x={x} y={H - 4} textAnchor="middle" fontSize={9} fill="hsl(215 10% 45%)">{t.label}</text>
+            </g>
+          );
+        })}
+
+        {/* Start / end labels */}
+        <text x={PAD_X} y={H - 4} textAnchor="middle" fontSize={9} fill="hsl(215 10% 35%)">12am</text>
+        <text x={W - PAD_X} y={H - 4} textAnchor="middle" fontSize={9} fill="hsl(215 10% 35%)">12am</text>
+
+        {/* Events */}
+        {validEvents.map((e, i) => {
+          const x = timeToX(e.ratedAt!);
+          const isSuccess = e.rating === "success";
+          const y = isSuccess ? MID_Y - OFFSET_Y : MID_Y + OFFSET_Y;
+          const color = CORE_METRIC_COLORS[e.metricKey] || "#94a3b8";
+          return (
+            <g key={i}>
+              {/* Connector line */}
+              <line
+                x1={x} y1={MID_Y}
+                x2={x} y2={y}
+                stroke={color}
+                strokeWidth={1}
+                strokeOpacity={0.4}
+              />
+              {/* Dot */}
+              <circle
+                cx={x} cy={y} r={DOT_R}
+                fill={color}
+                opacity={0.9}
+                style={{ cursor: "pointer" }}
+                onMouseEnter={(ev) => {
+                  const d = new Date(e.ratedAt!);
+                  const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+                  const svgRect = svgRef.current?.getBoundingClientRect();
+                  if (!svgRect) return;
+                  const svgW = svgRect.width;
+                  const scaleX = svgW / W;
+                  setTooltip({
+                    x: x * scaleX,
+                    y: isSuccess ? 4 : MID_Y + OFFSET_Y + DOT_R + 2,
+                    label: e.metricLabel,
+                    time: timeStr,
+                    rating: e.rating,
+                  });
+                }}
+                onMouseLeave={() => setTooltip(null)}
+              />
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div
+          className="absolute z-10 pointer-events-none bg-card border border-border rounded-lg px-2.5 py-1.5 text-xs shadow-lg -translate-x-1/2"
+          style={{ left: tooltip.x, top: tooltip.y }}
+        >
+          <p className="font-bold text-foreground">{tooltip.label}</p>
+          <p className={`text-[10px] font-semibold ${tooltip.rating === "success" ? "text-green-400" : "text-red-400"}`}>
+            {tooltip.rating} · {tooltip.time}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 type DayResult = {
   entry: { id: number; entryDate: string; notes?: string };
@@ -102,6 +232,13 @@ export default function DashboardPage() {
     queryFn: () => apiRequest("GET", `/api/entries/${today}`).then(r => r.json()),
   });
 
+  const { data: timeline = [] } = useQuery<TimelineEvent[]>({
+    queryKey: ["/api/today/timeline"],
+    queryFn: () => apiRequest("GET", "/api/today/timeline").then(r => r.json()),
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
+
   // Stats
   const totalDays = results.length;
   const totalScore = results.reduce((s, r) => s + r.total, 0);
@@ -189,6 +326,32 @@ export default function DashboardPage() {
               <Button variant="outline" size="sm" onClick={() => setLocation("/today")}>
                 {todayData ? "Update" : "Score Now"}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Today's Metric Timeline Sparkline */}
+      {timeline.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader className="pb-1 pt-4 px-4">
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Today's Activity Timeline</CardTitle>
+            <p className="text-[10px] text-muted-foreground/60 mt-0.5">Core metric scores plotted across the day · hover a dot for details</p>
+          </CardHeader>
+          <CardContent className="px-3 pb-2">
+            <DaySparkline events={timeline} />
+            {/* Legend */}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 px-1">
+              {Object.entries(CORE_METRIC_COLORS).map(([key, color]) => {
+                const ev = timeline.find(e => e.metricKey === key);
+                if (!ev) return null;
+                return (
+                  <div key={key} className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                    <span className="text-[9px] font-bold tracking-widest text-muted-foreground">{key}</span>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

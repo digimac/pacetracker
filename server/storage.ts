@@ -219,13 +219,28 @@ export class DrizzleStorage implements IStorage {
   }
 
   async upsertMetricScores(entryId: number, userId: number, scores: { metricKey: string; metricLabel: string; rating: string }[]): Promise<MetricScore[]> {
-    // Delete existing scores for this entry, then re-insert
-    await this.db.delete(metricScores).where(eq(metricScores.entryId, entryId));
     if (scores.length === 0) return [];
-    const rows = await this.db.insert(metricScores)
-      .values(scores.map(s => ({ entryId, userId, metricKey: s.metricKey, metricLabel: s.metricLabel, rating: s.rating })))
-      .returning();
-    return rows;
+    // For each score: update rating + ratedAt if a row already exists for this entryId+metricKey,
+    // otherwise insert fresh. This preserves the ratedAt of each metric independently.
+    const results: MetricScore[] = [];
+    for (const s of scores) {
+      const existing = await this.db.select().from(metricScores)
+        .where(and(eq(metricScores.entryId, entryId), eq(metricScores.metricKey, s.metricKey)))
+        .limit(1);
+      if (existing.length > 0) {
+        const [updated] = await this.db.update(metricScores)
+          .set({ rating: s.rating, metricLabel: s.metricLabel, ratedAt: new Date() })
+          .where(eq(metricScores.id, existing[0].id))
+          .returning();
+        results.push(updated);
+      } else {
+        const [inserted] = await this.db.insert(metricScores)
+          .values({ entryId, userId, metricKey: s.metricKey, metricLabel: s.metricLabel, rating: s.rating, ratedAt: new Date() })
+          .returning();
+        results.push(inserted);
+      }
+    }
+    return results;
   }
 
   // User Schedule

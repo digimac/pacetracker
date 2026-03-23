@@ -118,6 +118,9 @@ app.use((req, res, next) => {
 
       -- Add category column to users if it doesn't exist yet
       ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "category" text;
+
+      -- Add rated_at timestamp to metric_scores if it doesn't exist yet
+      ALTER TABLE "metric_scores" ADD COLUMN IF NOT EXISTS "rated_at" timestamp DEFAULT now() NOT NULL;
     `);
     console.log("[startup] All tables ensured ✓");
   } catch (err: any) {
