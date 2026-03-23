@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
-import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail } from "./email";
+import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail } from "./email";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
 import { z } from "zod";
@@ -512,6 +512,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         status: "active",
         currentPeriodEnd: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
       });
+      // Fire-and-forget upgrade notification email
+      sendUpgradeEmail({
+        toEmail: target.email,
+        displayName: target.displayName || target.username,
+      }).catch(err => console.error("[email] upgrade email error:", err));
       res.json({ ok: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });

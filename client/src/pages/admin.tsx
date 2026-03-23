@@ -809,6 +809,33 @@ Click the link below to reset your password:
 
 This link expires in 1 hour.`,
   },
+  {
+    key: "upgrade",
+    label: "Pro Upgrade Notification",
+    description: "Sent to a member when their account is upgraded to Pro by an admin.",
+    defaultSubject: "You've been upgraded to Sweet Momentum Pro!",
+    defaultBodyHtml: `<body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+  <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+    <div style="background:#FF6E00;padding:32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;">Sweet Momentum</h1>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Daily Performance Tracking</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey {{displayName}},</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">Your account has been <strong style="color:#FF6E00;">upgraded to Pro</strong>. You now have access to all Pro features including custom metrics and the Score Map.</p>
+      <div style="text-align:center;margin:32px 0;"><a href="https://sweetmo.io" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;">Go to Sweet Momentum</a></div>
+      <p style="color:#666;font-size:12px;text-align:center;margin:0;">Questions? Reply to this email and we'll be happy to help.</p>
+    </div>
+  </div>
+</body>`,
+    defaultBodyText: `Hey {{displayName}},
+
+Your Sweet Momentum account has been upgraded to Pro! You now have access to all Pro features.
+
+Visit the app: https://sweetmo.io
+
+Questions? Reply to this email.`,
+  },
 ];
 
 type EmailTemplateData = {
@@ -871,6 +898,7 @@ function EmailTemplateEditor({
   const variableHint: Record<string, string[]> = {
     invite: ["{{senderName}}", "{{inviteUrl}}", "{{message}}"],
     password_reset: ["{{resetUrl}}"],
+    upgrade: ["{{displayName}}"],
   };
 
   return (
