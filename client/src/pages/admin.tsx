@@ -38,6 +38,7 @@ const PAGE_DEFS = [
   { key: "story",    label: "Story of Momentum", icon: BookOpen,  accent: "text-violet-400", border: "border-violet-500/30", color: "from-violet-500/10 to-violet-600/5" },
   { key: "tracking", label: "Daily Tracking",     icon: Clock,     accent: "text-emerald-400", border: "border-emerald-500/30", color: "from-emerald-500/10 to-emerald-600/5" },
   { key: "connect",  label: "Connect",            icon: Globe,     accent: "text-blue-400", border: "border-blue-500/30", color: "from-blue-500/10 to-blue-600/5" },
+  { key: "login",    label: "Login Page",         icon: ShieldCheck, accent: "text-orange-400", border: "border-orange-500/30", color: "from-orange-500/10 to-orange-600/5" },
 ];
 
 // ─── Page Editor ─────────────────────────────────────────────────────────────
@@ -140,7 +141,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           {/* Title + Subtitle */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Page Title</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Headline" : "Page Title"}</label>
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={label} className="text-sm" maxLength={100} />
             </div>
             <div>
@@ -152,14 +153,15 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           {/* Hero image */}
           <div>
             <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
-              <ImageIcon className="w-3 h-3" /> Hero Image URL
+              <ImageIcon className="w-3 h-3" /> {pageKey === "login" ? "Background Image URL" : "Hero Image URL"}
             </label>
             <Input value={heroImageUrl} onChange={e => setHeroImageUrl(e.target.value)} placeholder="https://..." className="text-sm font-mono" />
+            {pageKey === "login" && <p className="text-[10px] text-muted-foreground/60 mt-1">Used as a subtle full-screen background on the login page. A dark overlay is applied automatically.</p>}
           </div>
 
           {/* Body */}
           <div>
-            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Intro Body</label>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Body Text" : "Intro Body"}</label>
             <Textarea
               value={body}
               onChange={e => setBody(e.target.value)}
@@ -169,7 +171,8 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
             />
           </div>
 
-          {/* Content sections */}
+          {/* Content sections — hidden for login page */}
+          {pageKey !== "login" && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Content Sections</label>
@@ -213,8 +216,10 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
               ))}
             </div>
           </div>
+          )} {/* end sections pageKey !== login */}
 
-          {/* CTA */}
+          {/* CTA + Connect specifics — hidden for login page */}
+          {pageKey !== "login" && (
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
@@ -227,6 +232,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
               <Input value={ctaUrl} onChange={e => setCtaUrl(e.target.value)} placeholder="https://... or /billing" className="text-sm font-mono" maxLength={300} />
             </div>
           </div>
+          )}
 
           {/* Connect-specific: email + social links */}
           {pageKey === "connect" && (

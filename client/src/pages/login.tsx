@@ -8,6 +8,14 @@ import { Link } from "wouter";
 import { useAuth } from "@/App";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+
+type LoginPageConfig = {
+  title: string | null;
+  body: string | null;
+  heroImageUrl: string | null;
+} | null;
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,6 +25,13 @@ export default function LoginPage() {
   const { setUser } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  // Fetch admin-configured login page content (public endpoint, no auth needed)
+  const { data: config } = useQuery<LoginPageConfig>({
+    queryKey: ["/api/public/login-page"],
+    queryFn: () => apiRequest("GET", "/api/public/login-page").then(r => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,19 +53,56 @@ export default function LoginPage() {
     }
   }
 
+  const headline = config?.title?.trim() || null;
+  const bodyText  = config?.body?.trim()  || null;
+  const bgImage   = config?.heroImageUrl?.trim() || null;
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-background">
+
+      {/* Background image with overlay */}
+      {bgImage && (
+        <>
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${bgImage})` }}
+          />
+          {/* Dark overlay so text / form remain readable */}
+          <div className="absolute inset-0 bg-black/60" />
+        </>
+      )}
+
+      {/* All content above the background */}
+      <div className="relative z-10 w-full max-w-sm flex flex-col items-center">
+
+        {/* Admin-configured headline */}
+        {headline && (
+          <h1 className="text-2xl font-black tracking-tight uppercase text-center mb-2 text-white drop-shadow-lg w-full">
+            {headline}
+          </h1>
+        )}
+
+        {/* Admin-configured body text */}
+        {bodyText && (
+          <p className="text-sm text-center mb-6 leading-relaxed text-white/80 drop-shadow w-full">
+            {bodyText}
+          </p>
+        )}
+
+        {/* Logo / App name */}
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-4">
             <img src="/favicon.png" alt="Sweet Momentum" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">SWEET MOMENTUM</h1>
-          <p className="text-sm text-muted-foreground mt-1">Your daily performance system</p>
+          <h2 className={`text-xl font-bold tracking-tight ${bgImage ? "text-white" : ""}`}>
+            SWEET MOMENTUM
+          </h2>
+          <p className={`text-sm mt-1 ${bgImage ? "text-white/70" : "text-muted-foreground"}`}>
+            Your daily performance system
+          </p>
         </div>
 
-        <Card>
+        <Card className={bgImage ? "bg-card/90 backdrop-blur-sm border-white/10 w-full" : "w-full"}>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Sign In</CardTitle>
             <CardDescription>Enter your credentials to continue</CardDescription>
@@ -109,8 +161,6 @@ export default function LoginPage() {
                 <a className="text-primary hover:underline font-medium">Create one</a>
               </Link>
             </div>
-
-
           </CardContent>
         </Card>
       </div>
