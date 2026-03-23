@@ -12,6 +12,7 @@ import {
   ShieldCheck, Save, ImageIcon, Quote, BookOpen,
   ChevronDown, ChevronUp, Loader2, Users, Settings2,
   Crown, Clock, Globe, FileText, Plus, Trash2, Link, Mail,
+  ArrowUp, ArrowDown, UserX, AlertTriangle,
 } from "lucide-react";
 import type { MetricContent } from "@shared/schema";
 
@@ -522,9 +523,43 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
 // ─── Members Tab ─────────────────────────────────────────────────────────────
 
 function MembersTab() {
-  const { data: members = [], isLoading } = useQuery<Member[]>({
+  const { toast } = useToast();
+  const [confirmDelete, setConfirmDelete] = useState<{ id: number; name: string } | null>(null);
+
+  const { data: members = [], isLoading, refetch } = useQuery<Member[]>({
     queryKey: ["/api/admin/members"],
     queryFn: () => apiRequest("GET", "/api/admin/members").then(r => r.json()),
+  });
+
+  const upgradeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("POST", `/api/admin/users/${id}/upgrade`).then(r => r.json()),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      toast({ title: "Upgraded to Pro" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const downgradeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("POST", `/api/admin/users/${id}/downgrade`).then(r => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      toast({ title: "Downgraded to Free" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/admin/users/${id}`).then(r => r.json()),
+    onSuccess: () => {
+      setConfirmDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      toast({ title: "Account deleted" });
+    },
+    onError: (e: any) => {
+      setConfirmDelete(null);
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
   });
 
   const proCount = members.filter(m => m.isPro).length;
@@ -540,6 +575,41 @@ function MembersTab() {
 
   return (
     <div className="space-y-4">
+      {/* Delete confirmation dialog */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-card border border-border rounded-xl p-6 max-w-sm w-full shadow-xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <p className="font-bold text-sm">Delete account?</p>
+                <p className="text-xs text-muted-foreground">This cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              You are about to permanently delete <strong className="text-foreground">{confirmDelete.name}</strong>'s account and all of their data — scores, metrics, and settings.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setConfirmDelete(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1 gap-2"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate(confirmDelete.id)}
+                data-testid="btn-confirm-delete"
+              >
+                {deleteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserX className="w-3.5 h-3.5" />}
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Summary strip */}
       <div className="grid grid-cols-3 gap-3">
         {[
@@ -568,7 +638,6 @@ function MembersTab() {
               {/* Row header */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  {/* Avatar */}
                   <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-black text-sm text-primary flex-shrink-0">
                     {(m.displayName || m.username).charAt(0).toUpperCase()}
                   </div>
@@ -634,6 +703,45 @@ function MembersTab() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Admin actions */}
+              <div className="flex gap-2 pt-1 border-t border-border">
+                {m.isPro ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 gap-1.5 text-xs h-8 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                    disabled={downgradeMutation.isPending}
+                    onClick={() => downgradeMutation.mutate(m.id)}
+                    data-testid={`btn-downgrade-${m.id}`}
+                  >
+                    <ArrowDown className="w-3 h-3" />
+                    Downgrade to Free
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 gap-1.5 text-xs h-8 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                    disabled={upgradeMutation.isPending}
+                    onClick={() => upgradeMutation.mutate(m.id)}
+                    data-testid={`btn-upgrade-${m.id}`}
+                  >
+                    <ArrowUp className="w-3 h-3" />
+                    Upgrade to Pro
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs h-8 border-red-500/30 text-red-400 hover:bg-red-500/10"
+                  onClick={() => setConfirmDelete({ id: m.id, name: m.displayName })}
+                  data-testid={`btn-delete-${m.id}`}
+                >
+                  <UserX className="w-3 h-3" />
+                  Delete
+                </Button>
               </div>
             </div>
           ))}

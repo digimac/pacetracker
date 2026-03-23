@@ -474,6 +474,58 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Admin: Upgrade user to Pro
+  app.post("/api/admin/users/:id/upgrade", requireAdmin, async (req, res) => {
+    try {
+      const targetId = parseInt(req.params.id);
+      const target = await storage.getUserById(targetId);
+      if (!target) return res.status(404).json({ error: "User not found" });
+      if (target.email === ADMIN_EMAIL) return res.status(400).json({ error: "Cannot modify admin account" });
+      await storage.upsertSubscription({
+        userId: targetId,
+        plan: "monthly",
+        status: "active",
+        currentPeriodEnd: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
+      });
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Admin: Downgrade user to Free
+  app.post("/api/admin/users/:id/downgrade", requireAdmin, async (req, res) => {
+    try {
+      const targetId = parseInt(req.params.id);
+      const target = await storage.getUserById(targetId);
+      if (!target) return res.status(404).json({ error: "User not found" });
+      if (target.email === ADMIN_EMAIL) return res.status(400).json({ error: "Cannot modify admin account" });
+      await storage.upsertSubscription({
+        userId: targetId,
+        plan: "free",
+        status: "inactive",
+        currentPeriodEnd: new Date(Date.now() - 1000), // immediately expired
+      });
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Admin: Delete user account and all data
+  app.delete("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const targetId = parseInt(req.params.id);
+      const target = await storage.getUserById(targetId);
+      if (!target) return res.status(404).json({ error: "User not found" });
+      if (target.email === ADMIN_EMAIL) return res.status(400).json({ error: "Cannot delete admin account" });
+      await storage.deleteUser(targetId);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Admin: Promote user to Pro (protected by ADMIN_SECRET env var)
   app.post("/api/admin/promote", async (req, res) => {
     try {

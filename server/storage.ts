@@ -23,6 +23,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserProfile(userId: number, updates: { firstName?: string | null; lastName?: string | null; city?: string | null; region?: string | null; country?: string | null; category?: string | null }): Promise<User | undefined>;
+  deleteUser(userId: number): Promise<void>;
 
   // Custom Metrics
   getCustomMetricsByUser(userId: number): Promise<CustomMetric[]>;
@@ -123,6 +124,20 @@ export class DrizzleStorage implements IStorage {
   async updateUserProfile(userId: number, updates: { firstName?: string | null; lastName?: string | null; city?: string | null; region?: string | null; country?: string | null; category?: string | null }): Promise<User | undefined> {
     const rows = await this.db.update(users).set(updates).where(eq(users.id, userId)).returning();
     return rows[0];
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    // Delete all related data in dependency order, then the user
+    await this.db.delete(connections).where(eq(connections.userId, userId));
+    await this.db.delete(connections).where(eq(connections.partnerId, userId));
+    await this.db.delete(invites).where(eq(invites.senderId, userId));
+    await this.db.delete(metricScores).where(eq(metricScores.userId, userId));
+    await this.db.delete(dailyEntries).where(eq(dailyEntries.userId, userId));
+    await this.db.delete(customMetrics).where(eq(customMetrics.userId, userId));
+    await this.db.delete(userSchedule).where(eq(userSchedule.userId, userId));
+    await this.db.delete(subscriptions).where(eq(subscriptions.userId, userId));
+    await this.db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
+    await this.db.delete(users).where(eq(users.id, userId));
   }
 
   // Custom Metrics
