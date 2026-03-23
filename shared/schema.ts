@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   city: text("city"),
   region: text("region"),
   country: text("country"),
+  category: text("category"),   // athlete | graduate | recovery | veteran | caregiver | entrepreneur | writer | musician
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

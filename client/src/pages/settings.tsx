@@ -32,6 +32,17 @@ import { CSS } from "@dnd-kit/utilities";
 
 const METRIC_EMOJIS = ["⭐", "💪", "🧠", "📚", "🥗", "🏃", "😴", "💧", "🎯", "🌱"];
 
+export const USER_CATEGORIES = [
+  { key: "athlete",      label: "Athlete",      emoji: "🏅" },
+  { key: "graduate",     label: "Graduate",     emoji: "🎓" },
+  { key: "recovery",     label: "Recovery",     emoji: "🌿" },
+  { key: "veteran",      label: "Veteran",      emoji: "🎖️" },
+  { key: "caregiver",    label: "Caregiver",    emoji: "🤝" },
+  { key: "entrepreneur", label: "Entrepreneur", emoji: "🚀" },
+  { key: "writer",       label: "Writer",       emoji: "✍️" },
+  { key: "musician",     label: "Musician",     emoji: "🎵" },
+];
+
 const CORE_METRIC_INFO = [
   { key: "TIME", label: "TIME", desc: "Intentional time management" },
   { key: "GOAL", label: "GOAL", desc: "Primary goal pursuit" },
@@ -98,6 +109,7 @@ export default function SettingsPage() {
     city: user?.city || "",
     region: user?.region || "",
     country: user?.country || "",
+    category: (user as any)?.category || "",
   });
 
   // Keep form in sync if user context loads after mount
@@ -108,8 +120,9 @@ export default function SettingsPage() {
       city: user?.city || "",
       region: user?.region || "",
       country: user?.country || "",
+      category: (user as any)?.category || "",
     });
-  }, [user?.firstName, user?.lastName, user?.city, user?.region, user?.country]);
+  }, [user?.firstName, user?.lastName, user?.city, user?.region, user?.country, (user as any)?.category]);
 
   const saveProfile = useMutation({
     mutationFn: () => apiRequest("PATCH", "/api/auth/profile", profileForm).then(r => r.json()),
@@ -319,6 +332,33 @@ export default function SettingsPage() {
                   data-testid="input-country"
                 />
               </div>
+            </div>
+          </div>
+
+
+          {/* Community */}
+          <div className="pt-2 border-t border-border space-y-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">My Community</p>
+              <p className="text-[11px] text-muted-foreground/70 mt-0.5">Choose a category that best reflects your journey. This personalises your app experience.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {USER_CATEGORIES.map(cat => (
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => setProfileForm(f => ({ ...f, category: f.category === cat.key ? "" : cat.key }))}
+                  data-testid={`btn-category-${cat.key}`}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-left transition-all ${
+                    profileForm.category === cat.key
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-muted/20 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                  }`}
+                >
+                  <span className="text-lg leading-none">{cat.emoji}</span>
+                  <span className="text-xs font-semibold">{cat.label}</span>
+                </button>
+              ))}
             </div>
           </div>
 

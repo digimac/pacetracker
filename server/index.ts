@@ -115,6 +115,9 @@ app.use((req, res, next) => {
           CREATE UNIQUE INDEX invites_token_unique ON "invites" ("token");
         END IF;
       END $$;
+
+      -- Add category column to users if it doesn't exist yet
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "category" text;
     `);
     console.log("[startup] All tables ensured ✓");
   } catch (err: any) {

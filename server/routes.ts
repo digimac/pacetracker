@@ -86,7 +86,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       });
 
       await new Promise<void>((resolve, reject) => req.session!.save(err => err ? reject(err) : resolve())).catch(() => {});
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Registration failed" });
     }
@@ -102,7 +102,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
       req.session!.userId = user.id;
       await new Promise<void>((resolve, reject) => req.session!.save(err => err ? reject(err) : resolve())).catch(() => {});
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Login failed" });
     }
@@ -188,19 +188,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!req.session?.userId) return res.status(401).json({ error: "Unauthorized" });
     const user = await storage.getUserById(req.session.userId);
     if (!user) return res.status(401).json({ error: "User not found" });
-    res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
+    res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null } });
   });
 
   // Profile update — first name / last name
   app.patch("/api/auth/profile", requireAuth, async (req, res) => {
     try {
       const userId = req.session!.userId!;
-      const { firstName, lastName, city, region, country } = z.object({
+      const { firstName, lastName, city, region, country, category } = z.object({
         firstName: z.string().max(100).optional().nullable(),
         lastName: z.string().max(100).optional().nullable(),
         city: z.string().max(100).optional().nullable(),
         region: z.string().max(100).optional().nullable(),
         country: z.string().max(100).optional().nullable(),
+        category: z.string().max(50).optional().nullable(),
       }).parse(req.body);
       const user = await storage.updateUserProfile(userId, {
         firstName: firstName ?? null,
@@ -208,9 +209,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         city: city ?? null,
         region: region ?? null,
         country: country ?? null,
+        category: category !== undefined ? (category ?? null) : undefined,
       });
       if (!user) return res.status(404).json({ error: "User not found" });
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null } });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }
