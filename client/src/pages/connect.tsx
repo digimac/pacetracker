@@ -364,6 +364,14 @@ export default function ConnectPage() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [showCoaching, setShowCoaching] = useState(false);
 
+  const { data: billing } = useQuery<{ isPro: boolean }>({
+    queryKey: ["/api/billing/status"],
+    queryFn: () => apiRequest("GET", "/api/billing/status").then(r => r.json()),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const isPro = billing?.isPro ?? false;
+
   const socialLinks: SocialLink[] = (() => {
     try {
       return page?.socialLinks ? JSON.parse(page.socialLinks) : DEFAULT_SOCIAL;
