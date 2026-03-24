@@ -49,12 +49,31 @@ function DaySparkline({ events }: { events: TimelineEvent[] }) {
   const MID_Y = H / 2;
   const DOT_R = 5;
   const OFFSET_Y = 18; // distance above/below midline
+  const TOOLTIP_ABOVE = 18; // px to lift tooltip above the dot (in SVG-scaled space)
 
   // Convert ratedAt to fraction of 24h day (0–1)
   function timeToX(iso: string): number {
     const d = new Date(iso);
     const minutes = d.getHours() * 60 + d.getMinutes();
     return PAD_X + ((minutes / 1440) * (W - PAD_X * 2));
+  }
+
+  function showTooltip(e: TimelineEvent, svgX: number, dotY: number) {
+    const d = new Date(e.ratedAt!);
+    const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    const svgRect = svgRef.current?.getBoundingClientRect();
+    if (!svgRect) return;
+    const scaleX = svgRect.width / W;
+    const scaleY = svgRect.height / H;
+    // Always place tooltip above the dot, shifted up by TOOLTIP_ABOVE px in scaled space
+    const tooltipY = (dotY - DOT_R - TOOLTIP_ABOVE) * scaleY;
+    setTooltip({
+      x: svgX * scaleX,
+      y: Math.max(0, tooltipY), // clamp so it never goes above the container
+      label: e.metricLabel,
+      time: timeStr,
+      rating: e.rating,
+    });
   }
 
   // Hour tick marks: 6am, 12pm, 6pm
@@ -67,7 +86,7 @@ function DaySparkline({ events }: { events: TimelineEvent[] }) {
   const validEvents = events.filter(e => e.ratedAt);
 
   return (
-    <div className="relative">
+    <div className="relative" onClick={e => { if ((e.target as SVGElement).tagName !== "circle") setTooltip(null); }}>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
@@ -97,7 +116,7 @@ function DaySparkline({ events }: { events: TimelineEvent[] }) {
         {validEvents.map((e, i) => {
           const x = timeToX(e.ratedAt!);
           const isSuccess = e.rating === "success";
-          const y = isSuccess ? MID_Y - OFFSET_Y : MID_Y + OFFSET_Y;
+          const dotY = isSuccess ? MID_Y - OFFSET_Y : MID_Y + OFFSET_Y;
           const customIdx = validEvents.filter(ev => !CORE_METRIC_COLORS[ev.metricKey]).findIndex(ev => ev.metricKey === e.metricKey);
           const color = getMetricColor(e.metricKey, customIdx < 0 ? 0 : customIdx);
           return (
@@ -105,43 +124,35 @@ function DaySparkline({ events }: { events: TimelineEvent[] }) {
               {/* Connector line */}
               <line
                 x1={x} y1={MID_Y}
-                x2={x} y2={y}
+                x2={x} y2={dotY}
                 stroke={color}
                 strokeWidth={1}
                 strokeOpacity={0.4}
               />
-              {/* Dot */}
+              {/* Dot — larger hit target for mobile */}
               <circle
-                cx={x} cy={y} r={DOT_R}
+                cx={x} cy={dotY} r={DOT_R + 6}
+                fill="transparent"
+                style={{ cursor: "pointer" }}
+                onMouseEnter={() => showTooltip(e, x, dotY)}
+                onMouseLeave={() => setTooltip(null)}
+                onClick={ev => { ev.stopPropagation(); showTooltip(e, x, dotY); }}
+              />
+              <circle
+                cx={x} cy={dotY} r={DOT_R}
                 fill={color}
                 opacity={0.9}
-                style={{ cursor: "pointer" }}
-                onMouseEnter={(ev) => {
-                  const d = new Date(e.ratedAt!);
-                  const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-                  const svgRect = svgRef.current?.getBoundingClientRect();
-                  if (!svgRect) return;
-                  const svgW = svgRect.width;
-                  const scaleX = svgW / W;
-                  setTooltip({
-                    x: x * scaleX,
-                    y: isSuccess ? 4 : MID_Y + OFFSET_Y + DOT_R + 2,
-                    label: e.metricLabel,
-                    time: timeStr,
-                    rating: e.rating,
-                  });
-                }}
-                onMouseLeave={() => setTooltip(null)}
+                style={{ pointerEvents: "none" }}
               />
             </g>
           );
         })}
       </svg>
 
-      {/* Tooltip */}
+      {/* Tooltip — always above the dot, centered horizontally */}
       {tooltip && (
         <div
-          className="absolute z-10 pointer-events-none bg-card border border-border rounded-lg px-2.5 py-1.5 text-xs shadow-lg -translate-x-1/2"
+          className="absolute z-10 pointer-events-none bg-card border border-border rounded-lg px-2.5 py-1.5 text-xs shadow-lg -translate-x-1/2 -translate-y-full"
           style={{ left: tooltip.x, top: tooltip.y }}
         >
           <p className="font-bold text-foreground">{tooltip.label}</p>
