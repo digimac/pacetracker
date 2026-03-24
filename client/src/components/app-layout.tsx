@@ -45,7 +45,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   });
   const isPro = billing?.isPro ?? false;
   const { theme, toggleTheme } = useTheme();
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
+  function navigate(path: string) { window.location.hash = path; }
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(
     location === "/settings" || location.startsWith("/billing")
@@ -105,7 +106,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   `}
                   onClick={() => {
                     setMobileOpen(false);
-                    setLocation(path);
+                    navigate(path);
                     if (path === "/settings") setSettingsExpanded(true); // always expand on nav
                   }}
                 >
@@ -135,7 +136,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
                       }
                     `}
-                    onClick={() => { setMobileOpen(false); setLocation("/billing"); }}
+                    onClick={() => { setMobileOpen(false); navigate("/billing"); }}
                   >
                     <CreditCard className="w-4 h-4 flex-shrink-0" />
                     Subscribe
@@ -165,7 +166,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
                     }
                   `}
-                  onClick={() => { setMobileOpen(false); setLocation(path); }}
+                  onClick={() => { setMobileOpen(false); navigate(path); }}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
                   {label}
@@ -179,7 +180,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               data-testid="nav-globe"
-              onClick={() => { setMobileOpen(false); setLocation("/globe"); }}
+              onClick={() => { setMobileOpen(false); navigate("/globe"); }}
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                   ${location === "/globe"
@@ -200,7 +201,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <button
               type="button"
               data-testid="nav-admin"
-              onClick={() => { setMobileOpen(false); setLocation("/admin"); }}
+              onClick={() => { setMobileOpen(false); navigate("/admin"); }}
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                     ${location === "/admin"
