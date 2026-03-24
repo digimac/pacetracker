@@ -8,7 +8,7 @@ import { Link } from "wouter";
 import { useAuth } from "@/App";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { USER_CATEGORIES } from "@/pages/settings";
+import { USER_CATEGORIES } from "@/lib/categories";
 import { MapPin, ArrowRight, SkipForward } from "lucide-react";
 
 type Step = "account" | "location" | "category";

@@ -32,16 +32,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const METRIC_EMOJIS = ["⭐", "💪", "🧠", "📚", "🥗", "🏃", "😴", "💧", "🎯", "🌱"];
 
-export const USER_CATEGORIES = [
-  { key: "athlete",      label: "Athlete",      emoji: "🏅" },
-  { key: "graduate",     label: "Graduate",     emoji: "🎓" },
-  { key: "recovery",     label: "Recovery",     emoji: "🌿" },
-  { key: "veteran",      label: "Veteran",      emoji: "🎖️" },
-  { key: "caregiver",    label: "Caregiver",    emoji: "🤝" },
-  { key: "entrepreneur", label: "Entrepreneur", emoji: "🚀" },
-  { key: "writer",       label: "Writer",       emoji: "✍️" },
-  { key: "musician",     label: "Musician",     emoji: "🎵" },
-];
+export { USER_CATEGORIES } from "@/lib/categories";
 
 const CORE_METRIC_INFO = [
   { key: "TIME", label: "TIME", desc: "Intentional time management" },
@@ -364,22 +355,19 @@ export default function SettingsPage() {
               ))}
             </div>
             {/* Link to selected category page */}
-            {profileForm.category && (
-              (() => {
-                const cat = USER_CATEGORIES.find(c => c.key === profileForm.category);
-                return cat ? (
-                  <Link href={`/community/${cat.key}`}>
-                    <a
-                      className="flex items-center gap-2 text-xs text-primary hover:underline font-medium"
-                      data-testid="link-community-page"
-                    >
-                      <span className="text-base leading-none">{cat.emoji}</span>
-                      Explore the {cat.label} community
-                      <ChevronRight className="w-3 h-3" />
-                    </a>
-                  </Link>
-                ) : null;
-              })()
+            {profileForm.category && USER_CATEGORIES.find(c => c.key === profileForm.category) && (
+              <Link href={`/community/${profileForm.category}`}>
+                <a
+                  className="flex items-center gap-2 text-xs text-primary hover:underline font-medium"
+                  data-testid="link-community-page"
+                >
+                  <span className="text-base leading-none">
+                    {USER_CATEGORIES.find(c => c.key === profileForm.category)?.emoji}
+                  </span>
+                  Explore the {USER_CATEGORIES.find(c => c.key === profileForm.category)?.label} community
+                  <ChevronRight className="w-3 h-3" />
+                </a>
+              </Link>
             )}
           </div>
 

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
-import { USER_CATEGORIES } from "@/pages/settings";
+import { USER_CATEGORIES } from "@/lib/categories";
 
 type SitePage = {
   id: number;
