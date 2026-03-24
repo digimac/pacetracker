@@ -123,7 +123,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </button>
                   )}
                 </button>
-                {/* Billing nested under Settings — visible only when expanded */}
+                {/* Subscribe nested under Settings — visible only when expanded */}
                 {path === "/settings" && settingsExpanded && (
                   <button
                     type="button"
@@ -138,7 +138,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     onClick={() => { setMobileOpen(false); setLocation("/billing"); }}
                   >
                     <CreditCard className="w-4 h-4 flex-shrink-0" />
-                    Billing
+                    Subscribe
                   </button>
                 )}
               </div>

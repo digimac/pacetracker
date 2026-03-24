@@ -51,7 +51,7 @@ export default function BillingPage() {
         // Use location.href so Stripe redirect isn't blocked as a popup
         window.location.href = data.url;
       } else if (data.error) {
-        toast({ title: "Billing error", description: data.error, variant: "destructive" });
+        toast({ title: "Subscribe error", description: data.error, variant: "destructive" });
       }
     },
     onError: (e: any) => toast({ title: "Checkout error", description: e.message || "Could not start checkout. Please try again.", variant: "destructive" }),
@@ -62,7 +62,7 @@ export default function BillingPage() {
     onSuccess: (data) => {
       if (data.url) window.location.href = data.url;
     },
-    onError: (e: any) => toast({ title: "Portal error", description: e.message || "Could not open billing portal", variant: "destructive" }),
+    onError: (e: any) => toast({ title: "Portal error", description: e.message || "Could not open subscription portal", variant: "destructive" }),
   });
 
   const monthlyPrice = billing?.prices.monthlyAmount ? `$${(billing.prices.monthlyAmount / 100).toFixed(2)}` : "$9.99";
@@ -83,7 +83,7 @@ export default function BillingPage() {
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-xl font-black tracking-tight uppercase">Plans & Billing</h1>
+        <h1 className="text-xl font-black tracking-tight uppercase">Plans & Subscribe</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Choose the plan that fits your momentum</p>
       </div>
 
@@ -112,7 +112,7 @@ export default function BillingPage() {
               data-testid="button-manage-billing"
             >
               <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-              {portalMutation.isPending ? "Opening..." : "Manage Billing"}
+              {portalMutation.isPending ? "Opening..." : "Manage Subscription"}
             </Button>
           </CardContent>
         </Card>
@@ -233,7 +233,7 @@ export default function BillingPage() {
         </Card>
       </div>
 
-      {/* Manage billing for Pro users */}
+      {/* Manage subscription for Pro users */}
       {billing?.isPro && (
         <p className="text-xs text-center text-muted-foreground mt-6">
           Update payment method, view invoices, or cancel at any time via the{" "}
@@ -241,7 +241,7 @@ export default function BillingPage() {
             className="text-primary hover:underline"
             onClick={() => portalMutation.mutate()}
           >
-            billing portal
+            subscription portal
           </button>.
         </p>
       )}
