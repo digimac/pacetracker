@@ -75,6 +75,19 @@ export default function LoginPage() {
       {/* All content above the background */}
       <div className="relative z-10 w-full max-w-sm flex flex-col items-center">
 
+        {/* Logo / App name */}
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-4">
+            <img src="/favicon.png" alt="Sweet Momentum" className="w-full h-full object-contain" />
+          </div>
+          <h2 className={`text-xl font-bold tracking-tight ${bgImage ? "text-white" : ""}`}>
+            SWEET MOMENTUM
+          </h2>
+          <p className={`text-sm mt-1 ${bgImage ? "text-white/70" : "text-muted-foreground"}`}>
+            Your daily performance system
+          </p>
+        </div>
+
         {/* Admin-configured headline */}
         {headline && (
           <h1 className="font-black tracking-tight uppercase text-center mb-2 text-white drop-shadow-lg w-full" style={{ fontFamily: '"vandertak-capslock-side", sans-serif', fontWeight: 400, fontSize: '4.75rem', lineHeight: '4.5rem' }}>
@@ -88,19 +101,6 @@ export default function LoginPage() {
             {bodyText}
           </p>
         )}
-
-        {/* Logo / App name */}
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-4">
-            <img src="/favicon.png" alt="Sweet Momentum" className="w-full h-full object-contain" />
-          </div>
-          <h2 className={`text-xl font-bold tracking-tight ${bgImage ? "text-white" : ""}`}>
-            SWEET MOMENTUM
-          </h2>
-          <p className={`text-sm mt-1 ${bgImage ? "text-white/70" : "text-muted-foreground"}`}>
-            Your daily performance system
-          </p>
-        </div>
 
         <Card className={bgImage ? "bg-card/90 backdrop-blur-sm border-white/10 w-full" : "w-full"}>
           <CardHeader className="pb-4">
