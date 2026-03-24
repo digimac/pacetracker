@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useAuth, useTheme } from "@/App";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
@@ -230,15 +230,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1">{children}</div>
           {/* Legal footer */}
           <footer className="border-t border-border px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-1">
-            <Link href="/terms">
-              <a className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">Terms &amp; Conditions</a>
-            </Link>
-            <Link href="/privacy">
-              <a className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">Privacy Policy</a>
-            </Link>
-            <Link href="/eula">
-              <a className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">EULA</a>
-            </Link>
+            <button onClick={() => navigate("/terms")} className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">Terms &amp; Conditions</button>
+            <button onClick={() => navigate("/privacy")} className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">Privacy Policy</button>
+            <button onClick={() => navigate("/eula")} className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">EULA</button>
             <span className="text-[10px] text-muted-foreground/30 ml-auto">&copy; {new Date().getFullYear()} Sweet Momentum</span>
           </footer>
         </main>

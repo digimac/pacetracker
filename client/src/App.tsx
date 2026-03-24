@@ -4,7 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect, useState, createContext, useContext } from "react";
+import { useEffect, useRef, useState, createContext, useContext } from "react";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
@@ -64,22 +64,27 @@ function Router() {
   const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
 
+  // Use a ref so the effect always reads the latest location without adding it as a dependency
+  const locationRef = useRef(location);
+  locationRef.current = location;
+
   useEffect(() => {
     if (isLoading) return;
+    const loc = locationRef.current;
     // Redirect unauthenticated users to login — EXCEPT for public pages
     const isPublic =
-      location === "/register" ||
-      location.startsWith("/forgot-password") ||
-      location.startsWith("/reset-password") ||
-      location.startsWith("/invite/");
+      loc === "/register" ||
+      loc.startsWith("/forgot-password") ||
+      loc.startsWith("/reset-password") ||
+      loc.startsWith("/invite/");
     if (!user && !isPublic) {
       setLocation("/login");
     }
     // Only redirect away from auth/root pages — never interfere with other routes
-    if (user && (location === "/login" || location === "/register" || location === "" || location === "/")) {
+    if (user && (loc === "/login" || loc === "/register" || loc === "" || loc === "/")) {
       setLocation("/dashboard");
     }
-  }, [user, isLoading]); // intentionally exclude location — only run on auth state changes
+  }, [user, isLoading]);
 
   if (isLoading) {
     return (
