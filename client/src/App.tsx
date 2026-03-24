@@ -1,10 +1,10 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
-import { useHashLocation } from "wouter/use-hash-location";
+import { useHashLocation, navigate as hashNavigate } from "wouter/use-hash-location";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect, useRef, useState, createContext, useContext } from "react";
+import { useEffect, useState, createContext, useContext } from "react";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
@@ -62,29 +62,9 @@ export const useAuth = () => useContext(AuthContext);
 
 function Router() {
   const { user, isLoading } = useAuth();
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
 
-  // Use a ref so the effect always reads the latest location without adding it as a dependency
-  const locationRef = useRef(location);
-  locationRef.current = location;
-
-  useEffect(() => {
-    if (isLoading) return;
-    const loc = locationRef.current;
-    // Redirect unauthenticated users to login — EXCEPT for public pages
-    const isPublic =
-      loc === "/register" ||
-      loc.startsWith("/forgot-password") ||
-      loc.startsWith("/reset-password") ||
-      loc.startsWith("/invite/");
-    if (!user && !isPublic) {
-      setLocation("/login");
-    }
-    // Only redirect away from auth/root pages — never interfere with other routes
-    if (user && (loc === "/login" || loc === "/register" || loc === "" || loc === "/")) {
-      setLocation("/dashboard");
-    }
-  }, [user, isLoading]);
+  // No redirect effect — all route protection is handled inline below
 
   if (isLoading) {
     return (
@@ -119,6 +99,12 @@ function Router() {
         <Route component={LoginPage} />
       </Switch>
     );
+  }
+
+  // Redirect root to dashboard
+  if (location === "/" || location === "") {
+    hashNavigate("/dashboard");
+    return null;
   }
 
   return (
