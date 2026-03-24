@@ -1075,14 +1075,19 @@ function SeoTab() {
   const [twitterHandle, setTwitterHandle] = useState("");
   const [twitterCard, setTwitterCard]     = useState("summary_large_image");
   const [keywords, setKeywords]           = useState("");
+  const [initialized, setInitialized]     = useState(false);
 
   const { data: existing, isLoading } = useQuery<SitePage | null>({
     queryKey: ["/api/pages", "seo"],
     queryFn: () => apiRequest("GET", "/api/pages/seo").then(r => r.ok ? r.json() : null).catch(() => null),
     retry: false,
+    staleTime: Infinity, // never re-fetch while the tab is open — prevents mid-type resets
   });
 
   useEffect(() => {
+    if (initialized) return; // only sync from server on first load
+    if (isLoading) return;
+    setInitialized(true);
     if (!existing) return;
     setSiteTitle(existing.title || "");
     setMetaDescription(existing.body || "");
@@ -1094,7 +1099,7 @@ function SeoTab() {
       setTwitterCard(extra.twitterCard || "summary_large_image");
       setKeywords(extra.keywords || "");
     } catch {}
-  }, [existing]);
+  }, [existing, isLoading]);
 
   const saveMutation = useMutation({
     mutationFn: () => apiRequest("PUT", "/api/admin/pages/seo", {
