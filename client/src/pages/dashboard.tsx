@@ -30,6 +30,15 @@ const CORE_METRIC_COLORS: Record<string, string> = {
   PACE: "#FF6E00",
 };
 
+// Distinct colors for custom metrics (cycled by index)
+const CUSTOM_METRIC_PALETTE = [
+  "#e879f9", "#22d3ee", "#fb923c", "#a3e635", "#38bdf8", "#f43f5e", "#4ade80", "#fbbf24",
+];
+
+function getMetricColor(metricKey: string, customIndex: number): string {
+  return CORE_METRIC_COLORS[metricKey] ?? CUSTOM_METRIC_PALETTE[customIndex % CUSTOM_METRIC_PALETTE.length];
+}
+
 function DaySparkline({ events }: { events: TimelineEvent[] }) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string; time: string; rating: string } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -89,7 +98,8 @@ function DaySparkline({ events }: { events: TimelineEvent[] }) {
           const x = timeToX(e.ratedAt!);
           const isSuccess = e.rating === "success";
           const y = isSuccess ? MID_Y - OFFSET_Y : MID_Y + OFFSET_Y;
-          const color = CORE_METRIC_COLORS[e.metricKey] || "#a78bfa"; // custom metrics get violet
+          const customIdx = validEvents.filter(ev => !CORE_METRIC_COLORS[ev.metricKey]).findIndex(ev => ev.metricKey === e.metricKey);
+          const color = getMetricColor(e.metricKey, customIdx < 0 ? 0 : customIdx);
           return (
             <g key={i}>
               {/* Connector line */}
@@ -336,22 +346,25 @@ export default function DashboardPage() {
         <Card className="mb-6">
           <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Today's Activity Timeline</CardTitle>
-            <p className="text-[10px] text-muted-foreground/60 mt-0.5">Core metric scores plotted across the day · hover a dot for details</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-0.5">Metric scores plotted across the day · hover a dot for details</p>
           </CardHeader>
           <CardContent className="px-3 pb-2">
             <DaySparkline events={timeline} />
-            {/* Legend */}
+            {/* Legend — all events present in today's timeline */}
             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 px-1">
-              {Object.entries(CORE_METRIC_COLORS).map(([key, color]) => {
-                const ev = timeline.find(e => e.metricKey === key);
-                if (!ev) return null;
-                return (
-                  <div key={key} className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                    <span className="text-[9px] font-bold tracking-widest text-muted-foreground">{key}</span>
-                  </div>
-                );
-              })}
+              {(() => {
+                let customIdx = 0;
+                return timeline.map((ev, i) => {
+                  const isCustom = !CORE_METRIC_COLORS[ev.metricKey];
+                  const color = getMetricColor(ev.metricKey, isCustom ? customIdx++ : 0);
+                  return (
+                    <div key={ev.metricKey} className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                      <span className="text-[9px] font-bold tracking-widest text-muted-foreground">{ev.metricLabel}</span>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </CardContent>
         </Card>
