@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -62,7 +62,7 @@ export const useAuth = () => useContext(AuthContext);
 
 function Router() {
   const { user, isLoading } = useAuth();
-  const [location, setLocation] = useLocation();
+  const [location, setLocation] = useHashLocation();
 
   useEffect(() => {
     if (!isLoading) {
