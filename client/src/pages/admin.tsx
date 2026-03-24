@@ -1320,7 +1320,7 @@ export default function AdminPage() {
       {/* Tab switcher */}
       <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border mb-6">
         {([
-          { key: "content", label: "Metric Content", icon: Settings2 },
+          { key: "content", label: "Metrics", icon: Settings2 },
           { key: "pages",   label: "Pages",          icon: FileText },
           { key: "members", label: "Members",         icon: Users },
           { key: "emails",  label: "Emails",          icon: Mail },
