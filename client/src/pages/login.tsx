@@ -77,7 +77,7 @@ export default function LoginPage() {
 
         {/* Admin-configured headline */}
         {headline && (
-          <h1 className="font-black tracking-tight uppercase text-center mb-2 text-white drop-shadow-lg w-full" style={{ fontFamily: '"vandertak-capslock-side", sans-serif', fontWeight: 400, fontSize: '4.75rem' }}>
+          <h1 className="font-black tracking-tight uppercase text-center mb-2 text-white drop-shadow-lg w-full" style={{ fontFamily: '"vandertak-capslock-side", sans-serif', fontWeight: 400, fontSize: '4.75rem', lineHeight: '4.5rem' }}>
             {headline}
           </h1>
         )}
