@@ -1,5 +1,4 @@
-import { Link } from "wouter";
-import { useHashLocation } from "wouter/use-hash-location";
+import { Link, useLocation } from "wouter";
 import { useAuth, useTheme } from "@/App";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
@@ -46,7 +45,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   });
   const isPro = billing?.isPro ?? false;
   const { theme, toggleTheme } = useTheme();
-  const [location, setLocation] = useHashLocation();
+  const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(
     location === "/settings" || location.startsWith("/billing")
