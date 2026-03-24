@@ -197,3 +197,19 @@ export const emailTemplates = pgTable("email_templates", {
 export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({ id: true, updatedAt: true });
 export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
+
+// Coaching session requests
+export const coachingRequests = pgTable("coaching_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  preferredDate: text("preferred_date").notNull(),   // free-text preferred date/time
+  timezone: text("timezone"),
+  topic: text("topic"),                               // what they want to work on
+  status: text("status").default("pending").notNull(), // pending | scheduled | completed | cancelled
+  zoomLink: text("zoom_link"),                         // filled in by admin after creating the meeting
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type CoachingRequest = typeof coachingRequests.$inferSelect;

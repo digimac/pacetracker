@@ -348,3 +348,92 @@ export async function sendUpgradeEmail(opts: {
     console.error(`[email] SMTP error sending upgrade email to ${toEmail}:`, smtpErr?.message || smtpErr);
   }
 }
+
+// ── Send coaching request notification ───────────────────────────────────────
+export async function sendCoachingRequestEmail(opts: {
+  userName: string;
+  userEmail: string;
+  preferredDate: string;
+  timezone: string;
+  topic: string;
+}): Promise<void> {
+  const { userName, userEmail, preferredDate, timezone, topic } = opts;
+  const transporter = createTransporter();
+  const fromAddress = SMTP_FROM_EMAIL
+    ? `"${SMTP_FROM_NAME}" <${SMTP_FROM_EMAIL}>`
+    : `"${SMTP_FROM_NAME}" <${SMTP_USER}>`;
+
+  // Email to admin
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: fromAddress,
+        to: "track@sweetmo.io",
+        replyTo: userEmail,
+        subject: `New Coaching Request — ${userName}`,
+        html: `
+          <body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+            <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+              <div style="background:#FF6E00;padding:24px 32px;">
+                <h1 style="margin:0;color:#fff;font-size:20px;font-weight:800;">New Coaching Request</h1>
+                <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Sweet Momentum Pro</p>
+              </div>
+              <div style="padding:28px 32px;">
+                <table style="width:100%;border-collapse:collapse;">
+                  <tr><td style="padding:6px 0;color:#888;font-size:12px;font-weight:700;text-transform:uppercase;width:120px;">Name</td><td style="padding:6px 0;color:#e0e0e0;font-size:14px;">${userName}</td></tr>
+                  <tr><td style="padding:6px 0;color:#888;font-size:12px;font-weight:700;text-transform:uppercase;">Email</td><td style="padding:6px 0;color:#e0e0e0;font-size:14px;"><a href="mailto:${userEmail}" style="color:#FF6E00;">${userEmail}</a></td></tr>
+                  <tr><td style="padding:6px 0;color:#888;font-size:12px;font-weight:700;text-transform:uppercase;">Preferred Time</td><td style="padding:6px 0;color:#e0e0e0;font-size:14px;">${preferredDate}</td></tr>
+                  <tr><td style="padding:6px 0;color:#888;font-size:12px;font-weight:700;text-transform:uppercase;">Timezone</td><td style="padding:6px 0;color:#e0e0e0;font-size:14px;">${timezone || "Not specified"}</td></tr>
+                  <tr><td style="padding:6px 0;color:#888;font-size:12px;font-weight:700;text-transform:uppercase;vertical-align:top;">Topic</td><td style="padding:6px 0;color:#e0e0e0;font-size:14px;">${topic || "Not specified"}</td></tr>
+                </table>
+                <p style="margin:24px 0 0;color:#888;font-size:12px;">Reply directly to this email to respond to ${userName}.</p>
+              </div>
+            </div>
+          </body>
+        `,
+        text: `New Coaching Request\n\nName: ${userName}\nEmail: ${userEmail}\nPreferred Time: ${preferredDate}\nTimezone: ${timezone}\nTopic: ${topic}\n\nReply to this email to respond.`,
+      });
+      console.log(`[email] Coaching request notification sent for ${userEmail}`);
+    } catch (e: any) {
+      console.error("[email] Coaching request admin email error:", e?.message);
+    }
+  }
+
+  // Confirmation email to user
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: fromAddress,
+        to: userEmail,
+        subject: "Your coaching session request — Sweet Momentum",
+        html: `
+          <body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+            <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+              <div style="background:#FF6E00;padding:32px;text-align:center;">
+                <h1 style="margin:0;color:#fff;font-size:24px;font-weight:800;">Request Received</h1>
+                <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Sweet Momentum Coaching</p>
+              </div>
+              <div style="padding:32px;">
+                <p style="color:#e0e0e0;font-size:15px;margin:0 0 16px;">Hi ${userName},</p>
+                <p style="color:#e0e0e0;font-size:14px;margin:0 0 24px;">Thanks for requesting a coaching session! We've received your request and will be in touch shortly with a confirmed Zoom link.</p>
+                <div style="background:#252525;border-radius:8px;padding:16px;margin:0 0 24px;">
+                  <p style="margin:0 0 6px;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;">Your Preferred Time</p>
+                  <p style="margin:0;color:#fff;font-size:14px;">${preferredDate} ${timezone ? `(${timezone})` : ""}</p>
+                  ${topic ? `<p style="margin:10px 0 4px;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;">Topic</p><p style="margin:0;color:#fff;font-size:14px;">${topic}</p>` : ""}
+                </div>
+                <p style="color:#888;font-size:12px;margin:0;">Questions? Reply to this email or reach us at <a href="mailto:track@sweetmo.io" style="color:#FF6E00;">track@sweetmo.io</a></p>
+              </div>
+            </div>
+          </body>
+        `,
+        text: `Hi ${userName},\n\nThanks for requesting a coaching session! We've received your request and will be in touch with a Zoom link.\n\nPreferred Time: ${preferredDate} ${timezone}\nTopic: ${topic}\n\nQuestions? Email track@sweetmo.io`,
+      });
+    } catch (e: any) {
+      console.error("[email] Coaching confirmation email error:", e?.message);
+    }
+  }
+
+  if (!transporter) {
+    console.log(`[email] SMTP not configured. Coaching request from ${userEmail}`);
+  }
+}

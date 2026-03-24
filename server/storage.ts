@@ -11,6 +11,7 @@ import {
   Invite, InsertInvite,
   Connection,
   EmailTemplate,
+  CoachingRequest, coachingRequests,
   users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections, emailTemplates,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
@@ -79,6 +80,9 @@ export interface IStorage {
   getConnectionsByUser(userId: number): Promise<Connection[]>;
   removeConnection(userId: number, partnerId: number): Promise<void>;
   getPartnerDailyScore(partnerId: number, date: string): Promise<{ score: number; notes: string | null } | null>;
+  // Coaching requests
+  createCoachingRequest(data: { userId: number; name: string; email: string; preferredDate: string; timezone: string; topic: string }): Promise<CoachingRequest>;
+
   // Email templates
   getEmailTemplate(key: string): Promise<EmailTemplate | undefined>;
   upsertEmailTemplate(key: string, subject: string, bodyHtml: string, bodyText: string): Promise<EmailTemplate>;
@@ -455,6 +459,11 @@ export class DrizzleStorage implements IStorage {
     if (successes === 0 && setbacks === 0) return null; // no scores recorded yet
     return { score: successes - setbacks, notes: entry.notes };
   }
+  async createCoachingRequest(data: { userId: number; name: string; email: string; preferredDate: string; timezone: string; topic: string }): Promise<CoachingRequest> {
+    const [row] = await this.db.insert(coachingRequests).values(data).returning();
+    return row;
+  }
+
   async getEmailTemplate(key: string): Promise<EmailTemplate | undefined> {
     const [row] = await this.db.select().from(emailTemplates).where(eq(emailTemplates.key, key));
     return row;
@@ -802,6 +811,11 @@ export class MemStorage implements IStorage {
     return newSchedule;
   }
   private emailTemplatesMap: Map<string, EmailTemplate> = new Map();
+  async createCoachingRequest(data: { userId: number; name: string; email: string; preferredDate: string; timezone: string; topic: string }): Promise<CoachingRequest> {
+    const [row] = await this.db.insert(coachingRequests).values(data).returning();
+    return row;
+  }
+
   async getEmailTemplate(key: string): Promise<EmailTemplate | undefined> {
     return this.emailTemplatesMap.get(key);
   }

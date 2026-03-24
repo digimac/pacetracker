@@ -32,6 +32,8 @@ const PRO_FEATURES = [
   "Up to 4 custom metrics (exercise, nutrition, reading, etc.)",
   "Full history — unlimited date range",
   "Weekly, monthly & yearly analytics",
+  "Score Map — see where members are scoring worldwide",
+  "1-on-1 coaching sessions via Zoom",
   "Priority support",
 ];
 

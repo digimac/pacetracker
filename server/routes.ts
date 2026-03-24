@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
-import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail } from "./email";
+import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail } from "./email";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
@@ -996,6 +996,44 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json(template);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Coaching session request (Pro only)
+  app.post("/api/coaching-request", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const isPro = await storage.isPro(userId);
+      if (!isPro) return res.status(403).json({ error: "Coaching sessions are available to Pro subscribers only" });
+
+      const user = await storage.getUserById(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const { preferredDate, timezone, topic } = z.object({
+        preferredDate: z.string().min(1, "Please provide a preferred date and time"),
+        timezone: z.string().optional().default(""),
+        topic: z.string().optional().default(""),
+      }).parse(req.body);
+
+      const name = user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : user.displayName || user.username;
+
+      const request = await storage.createCoachingRequest({
+        userId,
+        name,
+        email: user.email,
+        preferredDate,
+        timezone,
+        topic,
+      });
+
+      // Send emails fire-and-forget
+      sendCoachingRequestEmail({ userName: name, userEmail: user.email, preferredDate, timezone, topic }).catch(() => {});
+
+      res.json({ ok: true, id: request.id });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
     }
   });
 

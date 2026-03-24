@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
-import { Mail, MessageSquare, Twitter, Instagram, Linkedin, Globe, ArrowRight, Lightbulb, Star, Send, X, CheckCircle2, Loader2 } from "lucide-react";
+import { Mail, MessageSquare, Twitter, Instagram, Linkedin, Globe, ArrowRight, Lightbulb, Star, Send, X, CheckCircle2, Loader2, Video, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/App";
+import { useLocation } from "wouter";
 
 type SitePage = {
   id: number;
@@ -70,10 +72,125 @@ const URGENCY_OPTIONS = [
 
 type UrgencyValue = "Fun Idea" | "Nice to Have" | "Urgent Fix Needed";
 
+
+// ─── Coaching Request Modal ───────────────────────────────────────────────────
+
+function CoachingModal({ onClose }: { onClose: () => void }) {
+  const { toast } = useToast();
+  const [preferredDate, setPreferredDate] = useState("");
+  const [timezone, setTimezone] = useState(
+    Intl.DateTimeFormat().resolvedOptions().timeZone || ""
+  );
+  const [topic, setTopic] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const mutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/coaching-request", { preferredDate, timezone, topic }).then(r => r.json()),
+    onSuccess: () => setSubmitted(true),
+    onError: (e: any) => toast({ title: "Error", description: e.message || "Could not submit request. Please try again.", variant: "destructive" }),
+  });
+
+  const canSubmit = preferredDate.trim().length > 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60">
+      {submitted ? (
+        <div className="bg-card border border-border rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
+          <div className="w-14 h-14 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-7 h-7 text-green-400" />
+          </div>
+          <h2 className="text-lg font-black tracking-tight mb-2">Request Sent!</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            We've received your coaching request and will follow up with a confirmed Zoom link shortly.
+          </p>
+          <button onClick={onClose} className="text-xs text-primary hover:underline">Close</button>
+        </div>
+      ) : (
+        <div className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Video className="w-4 h-4 text-primary" />
+              <h2 className="text-base font-black tracking-tight">Request a Coaching Session</h2>
+            </div>
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors" data-testid="btn-close-coaching">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Tell us when you'd like to meet and what you'd like to work on. We'll send you a Zoom link once confirmed.
+            </p>
+
+            {/* Preferred date/time */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Preferred Date & Time <span className="text-red-400">*</span>
+              </label>
+              <Input
+                placeholder="e.g. Tuesday March 26, any time after 2pm"
+                value={preferredDate}
+                onChange={e => setPreferredDate(e.target.value)}
+                data-testid="input-coaching-date"
+              />
+            </div>
+
+            {/* Timezone */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Your Timezone</label>
+              <Input
+                placeholder="e.g. America/New_York"
+                value={timezone}
+                onChange={e => setTimezone(e.target.value)}
+                data-testid="input-coaching-timezone"
+              />
+            </div>
+
+            {/* Topic */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">What would you like to work on?</label>
+              <Textarea
+                placeholder="e.g. Building better morning routines, staying consistent with my metrics, goal-setting..."
+                value={topic}
+                onChange={e => setTopic(e.target.value)}
+                rows={3}
+                className="resize-none"
+                data-testid="input-coaching-topic"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 px-6 py-4 border-t border-border flex-shrink-0">
+            <Button variant="outline" className="flex-1" onClick={onClose} disabled={mutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 gap-2"
+              onClick={() => mutation.mutate()}
+              disabled={mutation.isPending || !canSubmit}
+              data-testid="btn-submit-coaching"
+            >
+              {mutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Video className="w-3.5 h-3.5" />}
+              {mutation.isPending ? "Sending..." : "Request Session"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Feedback Modal ──────────────────────────────────────────────────────────
 
 function FeedbackModal({ onClose }: { onClose: () => void }) {
   const { toast } = useToast();
+  const { data: billing } = useQuery<{ isPro: boolean }>({
+    queryKey: ["/api/billing/status"],
+    queryFn: () => apiRequest("GET", "/api/billing/status").then(r => r.json()),
+    enabled: !!user,
+  });
+  const isPro = billing?.isPro ?? false;
   const [feedbackType, setFeedbackType] = useState("");
   const [summary, setSummary] = useState("");
   const [urgency, setUrgency] = useState<UrgencyValue | "">("");
@@ -243,6 +360,8 @@ const CONNECT_OPTIONS = [
 ];
 
 export default function ConnectPage() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const { data: page, isLoading } = useQuery<SitePage>({
     queryKey: ["/api/pages", "connect"],
     queryFn: () => apiRequest("GET", "/api/pages/connect").then(r => r.json()),
@@ -365,6 +484,50 @@ export default function ConnectPage() {
             </div>
           </div>
         )}
+
+        {/* Coaching session card — Pro only */}
+        <div className={`rounded-xl border p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 ${
+          isPro ? "border-primary/30 bg-primary/5" : "border-border bg-muted/20 opacity-80"
+        }`}>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            isPro ? "bg-primary/20 border border-primary/30" : "bg-muted/40 border border-border"
+          }`}>
+            <Video className={`w-5 h-5 ${isPro ? "text-primary" : "text-muted-foreground"}`} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-0.5">
+              <p className="text-sm font-bold">Book a Coaching Session</p>
+              {!isPro && <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-0.5">Pro</span>}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isPro
+                ? "Request a 1-on-1 Zoom coaching session. Tell us your preferred time and what you'd like to work on."
+                : "Upgrade to Pro to book a 1-on-1 coaching session via Zoom."}
+            </p>
+          </div>
+          {isPro ? (
+            <Button
+              size="sm"
+              className="gap-1.5 flex-shrink-0"
+              onClick={() => setShowCoaching(true)}
+              data-testid="btn-request-coaching"
+            >
+              <Video className="w-3.5 h-3.5" />
+              Request Session
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 flex-shrink-0 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+              onClick={() => setLocation("/billing")}
+              data-testid="btn-upgrade-coaching"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              Upgrade to Pro
+            </Button>
+          )}
+        </div>
 
         {/* Direct email CTA */}
         {!isLoading && (

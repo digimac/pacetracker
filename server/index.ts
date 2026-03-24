@@ -124,6 +124,20 @@ app.use((req, res, next) => {
 
       -- Add goal_text to daily_entries if it doesn't exist yet
       ALTER TABLE "daily_entries" ADD COLUMN IF NOT EXISTS "goal_text" text;
+
+      -- Coaching session requests table
+      CREATE TABLE IF NOT EXISTS "coaching_requests" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "user_id" integer NOT NULL,
+        "name" text NOT NULL,
+        "email" text NOT NULL,
+        "preferred_date" text NOT NULL,
+        "timezone" text,
+        "topic" text,
+        "status" text DEFAULT 'pending' NOT NULL,
+        "zoom_link" text,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
     `);
     console.log("[startup] All tables ensured ✓");
   } catch (err: any) {
