@@ -106,15 +106,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   onClick={() => {
                     setMobileOpen(false);
                     setLocation(path);
-                    if (path === "/settings") setSettingsExpanded(e => !e);
+                    if (path === "/settings") setSettingsExpanded(true); // always expand on nav
                   }}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
                   <span className="flex-1 text-left">{label}</span>
                   {path === "/settings" && (
-                    <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${
-                      settingsExpanded ? "rotate-180" : ""
-                    }`} />
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); setSettingsExpanded(v => !v); }}
+                      className="p-0.5 rounded hover:bg-white/10"
+                    >
+                      <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${
+                        settingsExpanded ? "rotate-180" : ""
+                      }`} />
+                    </button>
                   )}
                 </button>
                 {/* Billing nested under Settings — visible only when expanded */}
