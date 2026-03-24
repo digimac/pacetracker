@@ -670,7 +670,7 @@ function GoalList() {
     <div className="mt-8">
       <div className="flex items-center gap-2 mb-4">
         <Target className="w-4 h-4 text-primary" />
-        <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Goal Inventory</h2>
+        <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Goal History</h2>
         <div className="flex-1 h-px bg-border" />
         <span className="text-[10px] text-muted-foreground/60">{goals.length} recorded</span>
       </div>
