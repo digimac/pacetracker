@@ -45,7 +45,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   });
   const isPro = billing?.isPro ?? false;
   const { theme, toggleTheme } = useTheme();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(
     location === "/settings" || location.startsWith("/billing")
@@ -93,48 +93,47 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             const active = location === path || (location === "/" && path === "/dashboard");
             return (
               <div key={path}>
-                <Link href={path}>
-                  <a
-                    data-testid={`nav-${label.toLowerCase()}`}
+                <button
+                  type="button"
+                  data-testid={`nav-${label.toLowerCase()}`}
+                  className={`
+                    w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                    ${active
+                      ? "bg-primary text-primary-foreground"
+                      : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                    }
+                  `}
+                  onClick={() => {
+                    setMobileOpen(false);
+                    setLocation(path);
+                    if (path === "/settings") setSettingsExpanded(e => !e);
+                  }}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="flex-1 text-left">{label}</span>
+                  {path === "/settings" && (
+                    <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${
+                      settingsExpanded ? "rotate-180" : ""
+                    }`} />
+                  )}
+                </button>
+                {/* Billing nested under Settings — visible only when expanded */}
+                {path === "/settings" && settingsExpanded && (
+                  <button
+                    type="button"
+                    data-testid="nav-billing"
                     className={`
-                      flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
-                      ${active
+                      w-full flex items-center gap-3 pl-9 pr-3 py-2 mt-0.5 rounded-lg text-sm font-medium transition-all duration-150
+                      ${(location === "/billing" || location.startsWith("/billing"))
                         ? "bg-primary text-primary-foreground"
                         : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
                       }
                     `}
-                    onClick={() => {
-                      setMobileOpen(false);
-                      if (path === "/settings") setSettingsExpanded(e => !e);
-                    }}
+                    onClick={() => { setMobileOpen(false); setLocation("/billing"); }}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="flex-1">{label}</span>
-                    {path === "/settings" && (
-                      <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${
-                        settingsExpanded ? "rotate-180" : ""
-                      }`} />
-                    )}
-                  </a>
-                </Link>
-                {/* Billing nested under Settings — visible only when expanded */}
-                {path === "/settings" && settingsExpanded && (
-                  <Link href="/billing">
-                    <a
-                      data-testid="nav-billing"
-                      className={`
-                        flex items-center gap-3 pl-9 pr-3 py-2 mt-0.5 rounded-lg text-sm font-medium transition-all duration-150
-                        ${(location === "/billing" || location.startsWith("/billing"))
-                          ? "bg-primary text-primary-foreground"
-                          : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
-                        }
-                      `}
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      <CreditCard className="w-4 h-4 flex-shrink-0" />
-                      Billing
-                    </a>
-                  </Link>
+                    <CreditCard className="w-4 h-4 flex-shrink-0" />
+                    Billing
+                  </button>
                 )}
               </div>
             );
@@ -149,31 +148,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             ] as const).map(({ label, icon: Icon, path }) => {
               const active = location === path;
               return (
-                <Link key={path} href={path}>
-                  <a
-                    data-testid={`nav-${label.toLowerCase().replace(/ /g, "-")}`}
-                    className={`
-                      flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
-                      ${active
-                        ? "bg-primary text-primary-foreground"
-                        : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
-                      }
-                    `}
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    {label}
-                  </a>
-                </Link>
+                <button
+                  key={path}
+                  type="button"
+                  data-testid={`nav-${label.toLowerCase().replace(/ /g, "-")}`}
+                  className={`
+                    w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                    ${active
+                      ? "bg-primary text-primary-foreground"
+                      : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                    }
+                  `}
+                  onClick={() => { setMobileOpen(false); setLocation(path); }}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  {label}
+                </button>
               );
             })}
           </div>
 
           {/* Globe — Pro only */}
           {isPro && (
-            <Link href="/globe">
-              <a
-                data-testid="nav-globe"
+            <button
+              type="button"
+              data-testid="nav-globe"
+              onClick={() => { setMobileOpen(false); setLocation("/globe"); }}
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                   ${location === "/globe"
@@ -185,16 +185,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 <Globe className="w-4 h-4 flex-shrink-0" />
                 Score Map
-              </a>
-            </Link>
+              </button>
           )}
 
           {/* Admin link — only visible to admin user */}
           {isAdmin && (
             <div className="pt-2 mt-2 border-t border-[hsl(var(--sidebar-border))]">
-              <Link href="/admin">
-                <a
-                  data-testid="nav-admin"
+              <button
+              type="button"
+              data-testid="nav-admin"
+              onClick={() => { setMobileOpen(false); setLocation("/admin"); }}
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                     ${location === "/admin"
@@ -206,8 +206,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 >
                   <ShieldCheck className="w-4 h-4 flex-shrink-0" />
                   Admin
-                </a>
-              </Link>
+                </button>
             </div>
           )}
         </nav>
