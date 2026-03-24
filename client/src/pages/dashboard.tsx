@@ -95,22 +95,22 @@ function DaySparkline({ events }: { events: TimelineEvent[] }) {
         onMouseLeave={() => setTooltip(null)}
       >
         {/* Midline */}
-        <line x1={PAD_X} y1={MID_Y} x2={W - PAD_X} y2={MID_Y} stroke="hsl(215 10% 22%)" strokeWidth={1} />
+        <line x1={PAD_X} y1={MID_Y} x2={W - PAD_X} y2={MID_Y} stroke="currentColor" strokeOpacity={0.2} strokeWidth={1} />
 
         {/* Hour ticks */}
         {ticks.map(t => {
           const x = PAD_X + (((t.hour * 60) / 1440) * (W - PAD_X * 2));
           return (
             <g key={t.hour}>
-              <line x1={x} y1={MID_Y - 4} x2={x} y2={MID_Y + 4} stroke="hsl(215 10% 30%)" strokeWidth={1} />
-              <text x={x} y={H - 4} textAnchor="middle" fontSize={9} fill="hsl(215 10% 45%)">{t.label}</text>
+              <line x1={x} y1={MID_Y - 4} x2={x} y2={MID_Y + 4} stroke="currentColor" strokeOpacity={0.3} strokeWidth={1} />
+              <text x={x} y={H - 4} textAnchor="middle" fontSize={9} fill="hsl(var(--foreground))" opacity={0.6}>{t.label}</text>
             </g>
           );
         })}
 
         {/* Start / end labels */}
-        <text x={PAD_X} y={H - 4} textAnchor="middle" fontSize={9} fill="hsl(215 10% 35%)">12am</text>
-        <text x={W - PAD_X} y={H - 4} textAnchor="middle" fontSize={9} fill="hsl(215 10% 35%)">12am</text>
+        <text x={PAD_X} y={H - 4} textAnchor="middle" fontSize={9} fill="hsl(var(--foreground))" opacity={0.5}>12am</text>
+        <text x={W - PAD_X} y={H - 4} textAnchor="middle" fontSize={9} fill="hsl(var(--foreground))" opacity={0.5}>12am</text>
 
         {/* Events */}
         {validEvents.map((e, i) => {
@@ -370,8 +370,8 @@ export default function DashboardPage() {
             />
           )}
           <CardHeader className="pb-1 pt-4 px-4 relative">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Today's Activity Timeline</CardTitle>
-            <p className="text-[10px] text-muted-foreground/60 mt-0.5">Metric scores plotted across the day · hover a dot for details</p>
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">Today's Activity Timeline</CardTitle>
+            <p className="text-[10px] text-foreground/70 mt-0.5">Metric scores plotted across the day · hover a dot for details</p>
           </CardHeader>
           <CardContent className="px-3 pb-2 relative">
             <DaySparkline events={timeline} />
@@ -385,7 +385,7 @@ export default function DashboardPage() {
                   return (
                     <div key={ev.metricKey} className="flex items-center gap-1">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                      <span className="text-[9px] font-bold tracking-widest text-muted-foreground">{ev.metricLabel}</span>
+                      <span className="text-[9px] font-bold tracking-widest text-foreground/80">{ev.metricLabel}</span>
                     </div>
                   );
                 });
