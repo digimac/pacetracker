@@ -42,6 +42,7 @@ const PAGE_DEFS = [
   { key: "terms",    label: "Terms & Conditions",  icon: FileText,    accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
   { key: "privacy",  label: "Privacy Policy",      icon: ShieldCheck, accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
   { key: "eula",     label: "EULA",                icon: FileText,    accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
+  { key: "timeline", label: "Timeline Background", icon: ImageIcon,   accent: "text-cyan-400",   border: "border-cyan-500/30",   color: "from-cyan-500/10 to-cyan-600/5" },
 ];
 
 // ─── Page Editor ─────────────────────────────────────────────────────────────
@@ -142,6 +143,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
       {expanded && (
         <div className="px-5 pb-5 border-t border-white/5 pt-4 space-y-5">
           {/* Title + Subtitle */}
+          {pageKey !== "timeline" && (
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Headline" : ["terms","privacy","eula"].includes(pageKey) ? "Document Title" : "Page Title"}</label>
@@ -152,18 +154,21 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
               <Input value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="Short tagline" className="text-sm" maxLength={200} />
             </div>
           </div>
+          )}
 
           {/* Hero image */}
           <div>
             <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
-              <ImageIcon className="w-3 h-3" /> {pageKey === "login" ? "Background Image URL" : ["terms","privacy","eula"].includes(pageKey) ? "Header Image URL (optional)" : "Hero Image URL"}
+              <ImageIcon className="w-3 h-3" /> {pageKey === "login" ? "Background Image URL" : pageKey === "timeline" ? "Background Image URL" : ["terms","privacy","eula"].includes(pageKey) ? "Header Image URL (optional)" : "Hero Image URL"}
             </label>
             <Input value={heroImageUrl} onChange={e => setHeroImageUrl(e.target.value)} placeholder="https://..." className="text-sm font-mono" />
             {pageKey === "login" && <p className="text-[10px] text-muted-foreground/60 mt-1">Used as a subtle full-screen background on the login page. A dark overlay is applied automatically.</p>}
             {["terms","privacy","eula"].includes(pageKey) && <p className="text-[10px] text-muted-foreground/60 mt-1">Optional banner image shown at the top of the page.</p>}
+            {pageKey === "timeline" && <p className="text-[10px] text-muted-foreground/60 mt-1">Displayed at 30% opacity behind the activity timeline on the dashboard. Works best with a texture, pattern, or atmospheric photo.</p>}
           </div>
 
           {/* Body */}
+          {pageKey !== "timeline" && (
           <div>
             <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Body Text" : ["terms","privacy","eula"].includes(pageKey) ? "Document Body" : "Intro Body"}</label>
             <Textarea
@@ -174,6 +179,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
               className="resize-none text-sm"
             />
           </div>
+          )}
 
           {/* Content sections — hidden for login page */}
           {!["login", "terms", "privacy", "eula"].includes(pageKey) && (

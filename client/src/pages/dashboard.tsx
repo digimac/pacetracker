@@ -260,6 +260,13 @@ export default function DashboardPage() {
     refetchOnWindowFocus: true,
   });
 
+  const { data: timelineBg } = useQuery<{ heroImageUrl: string | null } | null>({
+    queryKey: ["/api/pages", "timeline"],
+    queryFn: () => apiRequest("GET", "/api/pages/timeline").then(r => r.ok ? r.json() : null).catch(() => null),
+    staleTime: 5 * 60 * 1000,
+  });
+  const timelineBgUrl = timelineBg?.heroImageUrl?.trim() || null;
+
   // Stats
   const totalDays = results.length;
   const totalScore = results.reduce((s, r) => s + r.total, 0);
@@ -354,12 +361,19 @@ export default function DashboardPage() {
 
       {/* Today's Metric Timeline Sparkline */}
       {timeline.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader className="pb-1 pt-4 px-4">
+        <Card className="mb-6 relative overflow-hidden">
+          {/* Admin-configured background image at 30% opacity */}
+          {timelineBgUrl && (
+            <div
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+              style={{ backgroundImage: `url(${timelineBgUrl})`, opacity: 0.3 }}
+            />
+          )}
+          <CardHeader className="pb-1 pt-4 px-4 relative">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Today's Activity Timeline</CardTitle>
             <p className="text-[10px] text-muted-foreground/60 mt-0.5">Metric scores plotted across the day · hover a dot for details</p>
           </CardHeader>
-          <CardContent className="px-3 pb-2">
+          <CardContent className="px-3 pb-2 relative">
             <DaySparkline events={timeline} />
             {/* Legend — all events present in today's timeline */}
             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 px-1">

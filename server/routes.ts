@@ -707,7 +707,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.put("/api/admin/pages/:pageKey", requireAdmin, async (req, res) => {
     try {
       const pageKey = req.params.pageKey;
-      if (!["story", "tracking", "connect", "login", "terms", "privacy", "eula"].includes(pageKey)) {
+      if (!["story", "tracking", "connect", "login", "terms", "privacy", "eula", "timeline"].includes(pageKey)) {
         return res.status(400).json({ error: "Invalid page key" });
       }
       const data = insertSitePageSchema.parse({ ...req.body, pageKey });
