@@ -43,6 +43,7 @@ export const dailyEntries = pgTable("daily_entries", {
   userId: integer("user_id").notNull(),
   entryDate: date("entry_date").notNull(),
   notes: text("notes"),
+  goalText: text("goal_text"),  // user's stated goal for this day
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

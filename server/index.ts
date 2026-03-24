@@ -121,6 +121,9 @@ app.use((req, res, next) => {
 
       -- Add rated_at timestamp to metric_scores if it doesn't exist yet
       ALTER TABLE "metric_scores" ADD COLUMN IF NOT EXISTS "rated_at" timestamp DEFAULT now() NOT NULL;
+
+      -- Add goal_text to daily_entries if it doesn't exist yet
+      ALTER TABLE "daily_entries" ADD COLUMN IF NOT EXISTS "goal_text" text;
     `);
     console.log("[startup] All tables ensured ✓");
   } catch (err: any) {

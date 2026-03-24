@@ -284,24 +284,33 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const userId = req.session!.userId!;
       const dateStr = req.params.date;
-      const { scores, notes } = z.object({
+      const { scores, notes, goalText } = z.object({
         scores: z.array(z.object({
           metricKey: z.string(),
           metricLabel: z.string(),
           rating: z.enum(["success", "setback", "skip"]),
         })),
         notes: z.string().optional(),
+        goalText: z.string().optional(),
       }).parse(req.body);
 
       let entry = await storage.getDailyEntry(userId, dateStr);
       if (!entry) {
-        // Only persist notes on creation if something was actually written
-        entry = await storage.createDailyEntry({ userId, entryDate: dateStr, notes: notes?.trim() || null });
-      } else if (notes !== undefined) {
-        // Only overwrite existing notes if the user typed something,
-        // or explicitly sent null to clear — never overwrite with empty string
-        if (notes.trim() !== "" || notes === null) {
-          await storage.updateDailyEntry(entry.id, { notes: notes.trim() || null });
+        entry = await storage.createDailyEntry({
+          userId, entryDate: dateStr,
+          notes: notes?.trim() || null,
+          goalText: goalText?.trim() || null,
+        });
+      } else {
+        const updates: Record<string, any> = {};
+        if (notes !== undefined && (notes.trim() !== "" || notes === null)) {
+          updates.notes = notes.trim() || null;
+        }
+        if (goalText !== undefined) {
+          updates.goalText = goalText.trim() || null;
+        }
+        if (Object.keys(updates).length > 0) {
+          await storage.updateDailyEntry(entry.id, updates);
         }
       }
 
@@ -309,6 +318,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json({ entry, scores: saved });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Goal list — all days with a goal recorded, newest first
+  app.get("/api/goals", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const sched = await storage.getUserSchedule(userId);
+      const tz = sched?.timezone || "UTC";
+      // Fetch a broad range — last 2 years
+      const end = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+      const startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - 2);
+      const start = startDate.toLocaleDateString("en-CA", { timeZone: tz });
+      const entries = await storage.getDailyEntriesByRange(userId, start, end);
+      const goals = entries
+        .filter(e => (e as any).goalText)
+        .map(e => ({
+          entryDate: e.entryDate,
+          goalText: (e as any).goalText as string,
+        }))
+        .sort((a, b) => b.entryDate.localeCompare(a.entryDate));
+      res.json(goals);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 

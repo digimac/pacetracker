@@ -13,12 +13,14 @@ import {
 import { useState, useEffect } from "react";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, XCircle, Minus,
-  X, Save, CalendarDays, List, TrendingUp, Award,
+  X, Save, CalendarDays, List, TrendingUp, Award, Target,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { MetricScore, CustomMetric } from "@shared/schema";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+type GoalEntry = { entryDate: string; goalText: string };
 
 type DayResult = {
   entry: { id: number; entryDate: string; notes?: string | null };
@@ -645,6 +647,54 @@ export default function HistoryPage() {
           customMetrics={customMetrics}
         />
       )}
+
+      {/* Goal Inventory */}
+      <GoalList />
+    </div>
+  );
+}
+
+// ─── Goal List ────────────────────────────────────────────────────────────────
+
+function GoalList() {
+  const { data: goals = [], isLoading } = useQuery<GoalEntry[]>({
+    queryKey: ["/api/goals"],
+    queryFn: () => apiRequest("GET", "/api/goals").then(r => r.json()),
+    staleTime: 60_000,
+  });
+
+  if (isLoading) return null;
+  if (goals.length === 0) return null;
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center gap-2 mb-4">
+        <Target className="w-4 h-4 text-primary" />
+        <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Goal Inventory</h2>
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-[10px] text-muted-foreground/60">{goals.length} recorded</span>
+      </div>
+      <div className="space-y-2">
+        {goals.map((g, i) => {
+          const date = new Date(g.entryDate + "T12:00:00");
+          const dateLabel = date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+          return (
+            <div
+              key={i}
+              className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors"
+              data-testid={`goal-row-${g.entryDate}`}
+            >
+              <div className="flex-shrink-0 mt-0.5">
+                <div className="w-2 h-2 rounded-full bg-primary mt-1" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-foreground leading-snug">{g.goalText}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 font-medium">{dateLabel}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

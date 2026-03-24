@@ -3,6 +3,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, XCircle, Minus, Save, ChevronRight, Info } from "lucide-react";
@@ -186,6 +187,7 @@ export default function TodayPage() {
 
   const [ratings, setRatings] = useState<Record<string, Rating>>({});
   const [notes, setNotes] = useState("");
+  const [goalText, setGoalText] = useState("");
   const [activeModal, setActiveModal] = useState<{ key: string; label: string } | null>(null);
 
   // Fetch today's entry
@@ -218,6 +220,7 @@ export default function TodayPage() {
       });
       setRatings(scoreMap);
       setNotes(entryData.entry?.notes || "");
+      setGoalText((entryData.entry as any)?.goalText || "");
     } else {
       const defaults: Record<string, Rating> = {};
       CORE_METRICS.forEach(m => defaults[m.key] = "skip");
@@ -252,11 +255,12 @@ export default function TodayPage() {
         metricLabel: m.metricLabel,
         rating: ratings[m.metricKey] || "skip",
       }));
-      return apiRequest("POST", `/api/entries/${today}/scores`, { scores, notes }).then(r => r.json());
+      return apiRequest("POST", `/api/entries/${today}/scores`, { scores, notes, goalText }).then(r => r.json());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/entries", today] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
       toast({ title: "Saved", description: "Today's metrics have been recorded." });
     },
     onError: () => toast({ title: "Error", description: "Could not save.", variant: "destructive" }),
@@ -311,16 +315,29 @@ export default function TodayPage() {
         </div>
         <div className="space-y-2">
           {CORE_METRICS.map(m => (
-            <MetricCard
-              key={m.key}
-              metricKey={m.key}
-              label={m.label}
-              description={(metricContentMap[m.key] as any)?.prompt || metricContentMap[m.key]?.subtext || m.description}
-              rating={ratings[m.key] || "skip"}
-              onRate={handleRate}
-              showInfo={true}
-              onInfo={() => setActiveModal({ key: m.key, label: m.label })}
-            />
+            <div key={m.key}>
+              <MetricCard
+                metricKey={m.key}
+                label={m.label}
+                description={(metricContentMap[m.key] as any)?.prompt || metricContentMap[m.key]?.subtext || m.description}
+                rating={ratings[m.key] || "skip"}
+                onRate={handleRate}
+                showInfo={true}
+                onInfo={() => setActiveModal({ key: m.key, label: m.label })}
+              />
+              {m.key === "GOAL" && (
+                <div className="mt-1.5 ml-1">
+                  <Input
+                    placeholder="What is your goal for today?"
+                    value={goalText}
+                    onChange={e => setGoalText(e.target.value)}
+                    className="text-sm h-9 bg-muted/30 border-border/50 placeholder:text-muted-foreground/50"
+                    data-testid="input-goal-text"
+                    maxLength={300}
+                  />
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </section>
