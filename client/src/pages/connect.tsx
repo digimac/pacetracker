@@ -185,12 +185,6 @@ function CoachingModal({ onClose }: { onClose: () => void }) {
 
 function FeedbackModal({ onClose }: { onClose: () => void }) {
   const { toast } = useToast();
-  const { data: billing } = useQuery<{ isPro: boolean }>({
-    queryKey: ["/api/billing/status"],
-    queryFn: () => apiRequest("GET", "/api/billing/status").then(r => r.json()),
-    enabled: !!user,
-  });
-  const isPro = billing?.isPro ?? false;
   const [feedbackType, setFeedbackType] = useState("");
   const [summary, setSummary] = useState("");
   const [urgency, setUrgency] = useState<UrgencyValue | "">("");
