@@ -17,8 +17,7 @@ import {
   Globe,
   BookOpen,
   Monitor,
-  MessageSquare,
-  ChevronDown,
+  MessageSquare
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -27,10 +26,11 @@ import PerplexityAttribution from "@/components/PerplexityAttribution";
 const ADMIN_EMAIL = "track@sweetmo.io";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { label: "Today", icon: CalendarCheck, path: "/today" },
-  { label: "History", icon: History, path: "/history" },
-  { label: "Settings", icon: Settings, path: "/settings" },
+  { label: "Dashboard",  icon: LayoutDashboard, path: "/dashboard" },
+  { label: "Today",      icon: CalendarCheck,   path: "/today" },
+  { label: "History",   icon: History,         path: "/history" },
+  { label: "Subscribe", icon: CreditCard,       path: "/billing" },
+  { label: "Settings",  icon: Settings,         path: "/settings" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -48,9 +48,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   function navigate(path: string) { window.location.hash = path; }
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [settingsExpanded, setSettingsExpanded] = useState(
-    location === "/settings" || location.startsWith("/billing")
-  );
+
 
   async function handleLogout() {
     await apiRequest("POST", "/api/auth/logout");
@@ -107,41 +105,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   onClick={() => {
                     setMobileOpen(false);
                     navigate(path);
-                    if (path === "/settings") setSettingsExpanded(true); // always expand on nav
                   }}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
                   <span className="flex-1 text-left">{label}</span>
-                  {path === "/settings" && (
-                    <button
-                      type="button"
-                      onClick={e => { e.stopPropagation(); setSettingsExpanded(v => !v); }}
-                      className="p-0.5 rounded hover:bg-white/10"
-                    >
-                      <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${
-                        settingsExpanded ? "rotate-180" : ""
-                      }`} />
-                    </button>
-                  )}
+
                 </button>
-                {/* Subscribe nested under Settings — visible only when expanded */}
-                {path === "/settings" && settingsExpanded && (
-                  <button
-                    type="button"
-                    data-testid="nav-billing"
-                    className={`
-                      w-full flex items-center gap-3 pl-9 pr-3 py-2 mt-0.5 rounded-lg text-sm font-medium transition-all duration-150
-                      ${(location === "/billing" || location.startsWith("/billing"))
-                        ? "bg-primary text-primary-foreground"
-                        : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
-                      }
-                    `}
-                    onClick={() => { setMobileOpen(false); navigate("/billing"); }}
-                  >
-                    <CreditCard className="w-4 h-4 flex-shrink-0" />
-                    Subscribe
-                  </button>
-                )}
+
               </div>
             );
           })}
