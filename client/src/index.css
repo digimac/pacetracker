@@ -6,22 +6,22 @@
   :root {
     /* PaceTracker — Bold dark slate + electric blue accent */
     --background: 220 16% 8%;
-    --foreground: 210 20% 92%;
+    --foreground: 0 0% 100%;          /* pure white body text in dark mode */
 
     --card: 220 14% 11%;
-    --card-foreground: 210 20% 92%;
+    --card-foreground: 0 0% 100%;
 
     --popover: 220 14% 11%;
-    --popover-foreground: 210 20% 92%;
+    --popover-foreground: 0 0% 100%;
 
     --primary: 210 100% 56%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 12% 16%;
-    --secondary-foreground: 210 15% 75%;
+    --secondary-foreground: 0 0% 90%;
 
     --muted: 220 12% 14%;
-    --muted-foreground: 215 10% 52%;
+    --muted-foreground: 215 15% 68%;  /* readable secondary text in dark mode */
 
     --accent: 210 100% 56%;
     --accent-foreground: 0 0% 100%;
@@ -45,11 +45,11 @@
 
     /* Sidebar */
     --sidebar-background: 220 18% 6%;
-    --sidebar-foreground: 210 15% 80%;
+    --sidebar-foreground: 0 0% 92%;
     --sidebar-primary: 210 100% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 12% 14%;
-    --sidebar-accent-foreground: 210 15% 80%;
+    --sidebar-accent-foreground: 0 0% 92%;
     --sidebar-border: 220 10% 14%;
     --sidebar-ring: 210 100% 56%;
   }
@@ -57,22 +57,22 @@
   /* Light mode override */
   .light {
     --background: 210 20% 97%;
-    --foreground: 220 16% 12%;
+    --foreground: 0 0% 0%;            /* pure black body text in light mode */
 
     --card: 0 0% 100%;
-    --card-foreground: 220 16% 12%;
+    --card-foreground: 0 0% 0%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 16% 12%;
+    --popover-foreground: 0 0% 0%;
 
     --primary: 210 100% 40%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 15% 92%;
-    --secondary-foreground: 220 16% 20%;
+    --secondary-foreground: 0 0% 10%;
 
     --muted: 210 15% 94%;
-    --muted-foreground: 215 10% 48%;
+    --muted-foreground: 215 12% 35%;  /* readable secondary text in light mode */
 
     --accent: 210 100% 40%;
     --accent-foreground: 0 0% 100%;
@@ -92,11 +92,11 @@
     --skip-fg: 220 10% 28%;
 
     --sidebar-background: 210 20% 95%;
-    --sidebar-foreground: 220 16% 20%;
+    --sidebar-foreground: 0 0% 10%;
     --sidebar-primary: 210 100% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 15% 90%;
-    --sidebar-accent-foreground: 220 16% 20%;
+    --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 210 15% 82%;
     --sidebar-ring: 210 100% 40%;
   }
