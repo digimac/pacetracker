@@ -89,7 +89,7 @@ function DaySparkline({ events }: { events: TimelineEvent[] }) {
           const x = timeToX(e.ratedAt!);
           const isSuccess = e.rating === "success";
           const y = isSuccess ? MID_Y - OFFSET_Y : MID_Y + OFFSET_Y;
-          const color = CORE_METRIC_COLORS[e.metricKey] || "#94a3b8";
+          const color = CORE_METRIC_COLORS[e.metricKey] || "#a78bfa"; // custom metrics get violet
           return (
             <g key={i}>
               {/* Connector line */}

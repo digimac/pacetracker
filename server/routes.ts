@@ -312,6 +312,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Rate a single metric immediately (captures exact timestamp for sparkline)
+  app.post("/api/entries/:date/scores/one", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const dateStr = req.params.date;
+      const { metricKey, metricLabel, rating } = z.object({
+        metricKey: z.string(),
+        metricLabel: z.string(),
+        rating: z.enum(["success", "setback", "skip"]),
+      }).parse(req.body);
+
+      // Get or create today's entry
+      let entry = await storage.getDailyEntry(userId, dateStr);
+      if (!entry) {
+        entry = await storage.createDailyEntry({ userId, entryDate: dateStr, notes: null });
+      }
+
+      // Upsert just this one metric with a fresh ratedAt
+      await storage.upsertSingleMetricScore(entry.id, userId, { metricKey, metricLabel, rating });
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   // Today's metric timeline — all scored metrics with their ratedAt timestamps
   app.get("/api/today/timeline", requireAuth, async (req, res) => {
     try {
@@ -322,15 +347,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const entry = await storage.getDailyEntry(userId, today);
       if (!entry) return res.json([]);
       const scores = await storage.getMetricScoresByEntry(entry.id);
-      // Only return core metrics with a non-skip rating that have a ratedAt
+      // Return all rated (non-skip) metrics with a ratedAt — core + custom
       const timeline = scores
-        .filter(s => s.rating !== "skip" && ["TIME","GOAL","TEAM","TASK","VIEW","PACE"].includes(s.metricKey))
+        .filter(s => s.rating !== "skip")
         .map(s => ({
           metricKey: s.metricKey,
           metricLabel: s.metricLabel,
           rating: s.rating,
           ratedAt: (s as any).ratedAt ?? null,
-        }));
+        }))
+        .filter(s => s.ratedAt !== null)
+        .sort((a, b) => new Date(a.ratedAt!).getTime() - new Date(b.ratedAt!).getTime());
       res.json(timeline);
     } catch (e: any) {
       res.status(500).json({ error: e.message });

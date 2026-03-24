@@ -42,6 +42,7 @@ export interface IStorage {
   getMetricScoresByEntry(entryId: number): Promise<MetricScore[]>;
   getMetricScoresByUserAndDate(userId: number, date: string): Promise<MetricScore[]>;
   upsertMetricScores(entryId: number, userId: number, scores: { metricKey: string; metricLabel: string; rating: string }[]): Promise<MetricScore[]>;
+  upsertSingleMetricScore(entryId: number, userId: number, score: { metricKey: string; metricLabel: string; rating: string }): Promise<MetricScore>;
 
   // User Schedule
   getUserSchedule(userId: number): Promise<UserSchedule | undefined>;
@@ -228,8 +229,9 @@ export class DrizzleStorage implements IStorage {
         .where(and(eq(metricScores.entryId, entryId), eq(metricScores.metricKey, s.metricKey)))
         .limit(1);
       if (existing.length > 0) {
+        // Preserve ratedAt — only update rating/label (ratedAt was set when user first tapped)
         const [updated] = await this.db.update(metricScores)
-          .set({ rating: s.rating, metricLabel: s.metricLabel, ratedAt: new Date() })
+          .set({ rating: s.rating, metricLabel: s.metricLabel })
           .where(eq(metricScores.id, existing[0].id))
           .returning();
         results.push(updated);
@@ -241,6 +243,24 @@ export class DrizzleStorage implements IStorage {
       }
     }
     return results;
+  }
+
+  async upsertSingleMetricScore(entryId: number, userId: number, score: { metricKey: string; metricLabel: string; rating: string }): Promise<MetricScore> {
+    const existing = await this.db.select().from(metricScores)
+      .where(and(eq(metricScores.entryId, entryId), eq(metricScores.metricKey, score.metricKey)))
+      .limit(1);
+    if (existing.length > 0) {
+      const [updated] = await this.db.update(metricScores)
+        .set({ rating: score.rating, metricLabel: score.metricLabel, ratedAt: new Date() })
+        .where(eq(metricScores.id, existing[0].id))
+        .returning();
+      return updated;
+    } else {
+      const [inserted] = await this.db.insert(metricScores)
+        .values({ entryId, userId, metricKey: score.metricKey, metricLabel: score.metricLabel, rating: score.rating, ratedAt: new Date() })
+        .returning();
+      return inserted;
+    }
   }
 
   // User Schedule
@@ -609,18 +629,32 @@ export class MemStorage implements IStorage {
     return this.getMetricScoresByEntry(entry.id);
   }
   async upsertMetricScores(entryId: number, userId: number, scores: { metricKey: string; metricLabel: string; rating: string }[]): Promise<MetricScore[]> {
-    const toDelete = Array.from(this.metricScores.values()).filter(s => s.entryId === entryId);
-    toDelete.forEach(s => this.metricScores.delete(s.id));
-    const newScores: MetricScore[] = scores.map(s => ({
-      id: this.metricScoreIdCounter++,
-      entryId,
-      userId,
-      metricKey: s.metricKey,
-      metricLabel: s.metricLabel,
-      rating: s.rating,
-    }));
-    newScores.forEach(s => this.metricScores.set(s.id, s));
-    return newScores;
+    const results: MetricScore[] = [];
+    for (const s of scores) {
+      const existing = Array.from(this.metricScores.values()).find(r => r.entryId === entryId && r.metricKey === s.metricKey);
+      if (existing) {
+        // Preserve ratedAt — only update rating/label
+        const updated = { ...existing, rating: s.rating, metricLabel: s.metricLabel };
+        this.metricScores.set(existing.id, updated);
+        results.push(updated);
+      } else {
+        const rec: MetricScore = { id: this.metricScoreIdCounter++, entryId, userId, metricKey: s.metricKey, metricLabel: s.metricLabel, rating: s.rating, ratedAt: new Date() };
+        this.metricScores.set(rec.id, rec);
+        results.push(rec);
+      }
+    }
+    return results;
+  }
+  async upsertSingleMetricScore(entryId: number, userId: number, score: { metricKey: string; metricLabel: string; rating: string }): Promise<MetricScore> {
+    const existing = Array.from(this.metricScores.values()).find(s => s.entryId === entryId && s.metricKey === score.metricKey);
+    if (existing) {
+      const updated = { ...existing, rating: score.rating, metricLabel: score.metricLabel, ratedAt: new Date() };
+      this.metricScores.set(existing.id, updated);
+      return updated;
+    }
+    const rec: MetricScore = { id: this.metricScoreIdCounter++, entryId, userId, metricKey: score.metricKey, metricLabel: score.metricLabel, rating: score.rating, ratedAt: new Date() };
+    this.metricScores.set(rec.id, rec);
+    return rec;
   }
   async getSubscription(userId: number): Promise<Subscription | undefined> { return this.subscriptionsMap.get(userId); }
   async upsertSubscription(data: Partial<Subscription> & { userId: number }): Promise<Subscription> {

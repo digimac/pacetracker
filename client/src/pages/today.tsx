@@ -227,6 +227,18 @@ export default function TodayPage() {
 
   function handleRate(key: string, rating: Rating) {
     setRatings(r => ({ ...r, [key]: rating }));
+    // Fire immediately so each metric gets its own ratedAt timestamp for the sparkline
+    const label =
+      CORE_METRICS.find(m => m.key === key)?.label ||
+      customMetrics.find(m => `custom_${m.id}` === key)?.name ||
+      key;
+    apiRequest("POST", `/api/entries/${today}/scores/one`, {
+      metricKey: key,
+      metricLabel: label,
+      rating,
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["/api/today/timeline"] });
+    }).catch(() => {}); // silent — batch save is the authoritative record
   }
 
   const saveMutation = useMutation({
