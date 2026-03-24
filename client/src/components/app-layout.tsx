@@ -89,30 +89,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV_ITEMS.map(({ label, icon: Icon, path }) => {
-            const active = location === path || (location === "/" && path === "/dashboard");
+            const active = location === path || (location === "/" && path === "/dashboard") || (location === "" && path === "/dashboard");
             return (
-              <div key={path}>
-                <button
-                  type="button"
-                  data-testid={`nav-${label.toLowerCase()}`}
-                  className={`
-                    w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
-                    ${active
-                      ? "bg-primary text-primary-foreground"
-                      : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
-                    }
-                  `}
-                  onClick={() => {
-                    setMobileOpen(false);
-                    navigate(path);
-                  }}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="flex-1 text-left">{label}</span>
-
-                </button>
-
-              </div>
+              <button
+                key={path}
+                type="button"
+                data-testid={`nav-${label.toLowerCase()}`}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                  ${active
+                    ? "bg-primary text-primary-foreground"
+                    : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                  }
+                `}
+                onClick={() => { setMobileOpen(false); navigate(path); }}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 text-left">{label}</span>
+              </button>
             );
           })}
 
@@ -122,27 +116,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               { label: "The Story", icon: BookOpen, path: "/story" },
               { label: "Daily Tracking", icon: Monitor, path: "/tracking" },
               { label: "Connect", icon: MessageSquare, path: "/connect" },
-            ] as const).map(({ label, icon: Icon, path }) => {
-              const active = location === path;
-              return (
-                <button
-                  key={path}
-                  type="button"
-                  data-testid={`nav-${label.toLowerCase().replace(/ /g, "-")}`}
-                  className={`
-                    w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
-                    ${active
-                      ? "bg-primary text-primary-foreground"
-                      : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
-                    }
-                  `}
-                  onClick={() => { setMobileOpen(false); navigate(path); }}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  {label}
-                </button>
-              );
-            })}
+            ] as const).map(({ label, icon: Icon, path }) => (
+              <button
+                key={path}
+                type="button"
+                data-testid={`nav-${label.toLowerCase().replace(/ /g, "-")}`}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                  ${location === path
+                    ? "bg-primary text-primary-foreground"
+                    : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                  }
+                `}
+                onClick={() => { setMobileOpen(false); navigate(path); }}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* Globe — Pro only */}
@@ -150,40 +141,38 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               data-testid="nav-globe"
+              className={`
+                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                ${location === "/globe"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                }
+              `}
               onClick={() => { setMobileOpen(false); navigate("/globe"); }}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
-                  ${location === "/globe"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
-                  }
-                `}
-                onClick={() => setMobileOpen(false)}
-              >
-                <Globe className="w-4 h-4 flex-shrink-0" />
-                Score Map
-              </button>
+            >
+              <Globe className="w-4 h-4 flex-shrink-0" />
+              Score Map
+            </button>
           )}
 
           {/* Admin link — only visible to admin user */}
           {isAdmin && (
             <div className="pt-2 mt-2 border-t border-[hsl(var(--sidebar-border))]">
               <button
-              type="button"
-              data-testid="nav-admin"
-              onClick={() => { setMobileOpen(false); navigate("/admin"); }}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
-                    ${location === "/admin"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
-                    }
-                  `}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <ShieldCheck className="w-4 h-4 flex-shrink-0" />
-                  Admin
-                </button>
+                type="button"
+                data-testid="nav-admin"
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                  ${location === "/admin"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                  }
+                `}
+                onClick={() => { setMobileOpen(false); navigate("/admin"); }}
+              >
+                <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+                Admin
+              </button>
             </div>
           )}
         </nav>
