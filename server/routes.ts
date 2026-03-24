@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
 import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail } from "./email";
+import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
 import { z } from "zod";
@@ -86,6 +87,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       });
 
       await new Promise<void>((resolve, reject) => req.session!.save(err => err ? reject(err) : resolve())).catch(() => {});
+      // Sync to HubSpot (fire-and-forget)
+      hubspotSyncNewUser(user, "America/New_York").catch(() => {});
       res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Registration failed" });
@@ -573,11 +576,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         status: "active",
         currentPeriodEnd: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
       });
-      // Fire-and-forget upgrade notification email
+      // Fire-and-forget upgrade notification email + HubSpot sync
       sendUpgradeEmail({
         toEmail: target.email,
         displayName: target.displayName || target.username,
       }).catch(err => console.error("[email] upgrade email error:", err));
+      hubspotSyncPlanChange(target, "pro").catch(() => {});
       res.json({ ok: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -595,8 +599,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         userId: targetId,
         plan: "free",
         status: "inactive",
-        currentPeriodEnd: new Date(Date.now() - 1000), // immediately expired
+        currentPeriodEnd: new Date(Date.now() - 1000),
       });
+      hubspotSyncPlanChange(target, "free").catch(() => {});
       res.json({ ok: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -610,6 +615,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const target = await storage.getUserById(targetId);
       if (!target) return res.status(404).json({ error: "User not found" });
       if (target.email === ADMIN_EMAIL) return res.status(400).json({ error: "Cannot delete admin account" });
+      hubspotSyncDeleteUser(target.email).catch(() => {});
       await storage.deleteUser(targetId);
       res.json({ ok: true });
     } catch (e: any) {
@@ -875,6 +881,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         timezone: "America/New_York", dailyGoal: "",
       });
       await new Promise<void>((resolve, reject) => req.session!.save(err => err ? reject(err) : resolve()));
+
+      // Sync to HubSpot (fire-and-forget)
+      hubspotSyncNewUser(user, "America/New_York").catch(() => {});
 
       // Accept the invite now that session is saved
       const result = await acceptInviteForUser(req.params.token, user.id);
