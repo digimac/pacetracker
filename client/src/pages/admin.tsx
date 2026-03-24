@@ -42,7 +42,16 @@ const PAGE_DEFS = [
   { key: "terms",    label: "Terms & Conditions",  icon: FileText,    accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
   { key: "privacy",  label: "Privacy Policy",      icon: ShieldCheck, accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
   { key: "eula",     label: "EULA",                icon: FileText,    accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
-  { key: "timeline", label: "Timeline Background", icon: ImageIcon,   accent: "text-cyan-400",   border: "border-cyan-500/30",   color: "from-cyan-500/10 to-cyan-600/5" },
+  { key: "timeline",         label: "Timeline Background", icon: ImageIcon,   accent: "text-cyan-400",   border: "border-cyan-500/30",   color: "from-cyan-500/10 to-cyan-600/5" },
+  // Community category pages
+  { key: "cat_athlete",      label: "Athlete",       icon: Users, accent: "text-green-400",  border: "border-green-500/30",  color: "from-green-500/10 to-green-600/5" },
+  { key: "cat_graduate",     label: "Graduate",      icon: Users, accent: "text-blue-400",   border: "border-blue-500/30",   color: "from-blue-500/10 to-blue-600/5" },
+  { key: "cat_recovery",     label: "Recovery",      icon: Users, accent: "text-emerald-400",border: "border-emerald-500/30",color: "from-emerald-500/10 to-emerald-600/5" },
+  { key: "cat_veteran",      label: "Veteran",       icon: Users, accent: "text-red-400",    border: "border-red-500/30",    color: "from-red-500/10 to-red-600/5" },
+  { key: "cat_caregiver",    label: "Caregiver",     icon: Users, accent: "text-pink-400",   border: "border-pink-500/30",   color: "from-pink-500/10 to-pink-600/5" },
+  { key: "cat_entrepreneur", label: "Entrepreneur",  icon: Users, accent: "text-amber-400",  border: "border-amber-500/30",  color: "from-amber-500/10 to-amber-600/5" },
+  { key: "cat_writer",       label: "Writer",         icon: Users, accent: "text-violet-400", border: "border-violet-500/30", color: "from-violet-500/10 to-violet-600/5" },
+  { key: "cat_musician",     label: "Musician",      icon: Users, accent: "text-orange-400", border: "border-orange-500/30", color: "from-orange-500/10 to-orange-600/5" },
 ];
 
 // ─── Page Editor ─────────────────────────────────────────────────────────────

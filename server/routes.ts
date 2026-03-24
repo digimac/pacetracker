@@ -723,7 +723,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.put("/api/admin/pages/:pageKey", requireAdmin, async (req, res) => {
     try {
       const pageKey = req.params.pageKey;
-      if (!["story", "tracking", "connect", "login", "terms", "privacy", "eula", "timeline", "seo"].includes(pageKey)) {
+      const CATEGORY_KEYS = ["cat_athlete","cat_graduate","cat_recovery","cat_veteran","cat_caregiver","cat_entrepreneur","cat_writer","cat_musician"];
+      if (!["story", "tracking", "connect", "login", "terms", "privacy", "eula", "timeline", "seo", ...CATEGORY_KEYS].includes(pageKey)) {
         return res.status(400).json({ error: "Invalid page key" });
       }
       const data = insertSitePageSchema.parse({ ...req.body, pageKey });

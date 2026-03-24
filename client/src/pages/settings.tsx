@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -356,10 +356,31 @@ export default function SettingsPage() {
                   }`}
                 >
                   <span className="text-lg leading-none">{cat.emoji}</span>
-                  <span className="text-xs font-semibold">{cat.label}</span>
+                  <span className="text-xs font-semibold flex-1">{cat.label}</span>
+                  {profileForm.category === cat.key && (
+                    <ChevronRight className="w-3 h-3 text-primary flex-shrink-0" />
+                  )}
                 </button>
               ))}
             </div>
+            {/* Link to selected category page */}
+            {profileForm.category && (
+              (() => {
+                const cat = USER_CATEGORIES.find(c => c.key === profileForm.category);
+                return cat ? (
+                  <Link href={`/community/${cat.key}`}>
+                    <a
+                      className="flex items-center gap-2 text-xs text-primary hover:underline font-medium"
+                      data-testid="link-community-page"
+                    >
+                      <span className="text-base leading-none">{cat.emoji}</span>
+                      Explore the {cat.label} community
+                      <ChevronRight className="w-3 h-3" />
+                    </a>
+                  </Link>
+                ) : null;
+              })()
+            )}
           </div>
 
           <Button

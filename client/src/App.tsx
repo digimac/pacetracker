@@ -22,6 +22,7 @@ import TrackingGuidePage from "@/pages/tracking-guide";
 import ConnectPage from "@/pages/connect";
 import InvitePage from "@/pages/invite";
 import { TermsPage, PrivacyPage, EulaPage } from "@/pages/legal";
+import CategoryPage from "@/pages/community";
 import AppLayout from "@/components/app-layout";
 
 function BillingSuccessPage() {
@@ -127,6 +128,15 @@ function Router() {
         <Route path="/tracking" component={TrackingGuidePage} />
         <Route path="/connect" component={ConnectPage} />
         <Route path="/admin" component={AdminPage} />
+        {/* Community category pages */}
+        <Route path="/community/athlete"      component={() => <CategoryPage categoryKey="athlete" />} />
+        <Route path="/community/graduate"     component={() => <CategoryPage categoryKey="graduate" />} />
+        <Route path="/community/recovery"     component={() => <CategoryPage categoryKey="recovery" />} />
+        <Route path="/community/veteran"      component={() => <CategoryPage categoryKey="veteran" />} />
+        <Route path="/community/caregiver"    component={() => <CategoryPage categoryKey="caregiver" />} />
+        <Route path="/community/entrepreneur" component={() => <CategoryPage categoryKey="entrepreneur" />} />
+        <Route path="/community/writer"       component={() => <CategoryPage categoryKey="writer" />} />
+        <Route path="/community/musician"     component={() => <CategoryPage categoryKey="musician" />} />
         <Route component={DashboardPage} />
       </Switch>
     </AppLayout>
