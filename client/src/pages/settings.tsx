@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import type { CustomMetric, UserSchedule } from "@shared/schema";
-import { Plus, Trash2, Save, Clock, Lock, Zap, Globe, GripVertical, Users, Send, X, CheckCircle, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Save, Clock, Lock, Zap, Globe, GripVertical, Users, Send, X, CheckCircle, RefreshCw, ChevronRight } from "lucide-react";
 import { useAuth } from "@/App";
 import { TIMEZONE_OPTIONS, getBrowserTimezone } from "@/hooks/use-user-timezone";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
