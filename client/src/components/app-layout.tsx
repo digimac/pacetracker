@@ -1,4 +1,5 @@
 import { useLocation } from "wouter";
+import { navigate as hashNavigate } from "wouter/use-hash-location";
 import { useAuth, useTheme } from "@/App";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
@@ -46,7 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isPro = billing?.isPro ?? false;
   const { theme, toggleTheme } = useTheme();
   const [location] = useLocation();
-  function navigate(path: string) { window.location.hash = path; }
+  function navigate(path: string) { hashNavigate(path); }
   const [mobileOpen, setMobileOpen] = useState(false);
 
 
