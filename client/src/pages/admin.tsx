@@ -12,7 +12,7 @@ import {
   ShieldCheck, Save, ImageIcon, Quote, BookOpen,
   ChevronDown, ChevronUp, Loader2, Users, Settings2,
   Crown, Clock, Globe, FileText, Plus, Trash2, Link, Mail,
-  ArrowUp, ArrowDown, UserX, AlertTriangle,
+  ArrowUp, ArrowDown, UserX, AlertTriangle, Search,
 } from "lucide-react";
 import type { MetricContent } from "@shared/schema";
 
@@ -1063,12 +1063,175 @@ function EmailTemplatesTab() {
   );
 }
 
+
+// ─── SEO Tab ──────────────────────────────────────────────────────────────────
+
+function SeoTab() {
+  const { toast } = useToast();
+  const [siteTitle, setSiteTitle]         = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [ogImage, setOgImage]             = useState("");
+  const [canonicalUrl, setCanonicalUrl]   = useState("");
+  const [twitterHandle, setTwitterHandle] = useState("");
+  const [twitterCard, setTwitterCard]     = useState("summary_large_image");
+  const [keywords, setKeywords]           = useState("");
+
+  const { data: existing, isLoading } = useQuery<SitePage | null>({
+    queryKey: ["/api/pages", "seo"],
+    queryFn: () => apiRequest("GET", "/api/pages/seo").then(r => r.ok ? r.json() : null).catch(() => null),
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (!existing) return;
+    setSiteTitle(existing.title || "");
+    setMetaDescription(existing.body || "");
+    setOgImage(existing.heroImageUrl || "");
+    setCanonicalUrl(existing.ctaUrl || "");
+    setTwitterHandle(existing.subtitle || "");
+    try {
+      const extra = existing.sections ? JSON.parse(existing.sections) : {};
+      setTwitterCard(extra.twitterCard || "summary_large_image");
+      setKeywords(extra.keywords || "");
+    } catch {}
+  }, [existing]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => apiRequest("PUT", "/api/admin/pages/seo", {
+      pageKey: "seo",
+      title: siteTitle,
+      body: metaDescription,
+      heroImageUrl: ogImage,
+      ctaUrl: canonicalUrl,
+      subtitle: twitterHandle,
+      sections: JSON.stringify({ twitterCard, keywords }),
+    }).then(r => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pages", "seo"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/seo"] });
+      toast({ title: "SEO settings saved", description: "Meta tags updated for all pages." });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message || "Save failed", variant: "destructive" }),
+  });
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+
+  const Field = ({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) => (
+    <div className="space-y-1.5">
+      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</label>
+      {hint && <p className="text-[10px] text-muted-foreground/60 -mt-0.5">{hint}</p>}
+      {children}
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        Control how Sweet Momentum appears in search results, browser tabs, and social share previews.
+      </p>
+
+      {/* Core */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <p className="text-xs font-black uppercase tracking-widest text-foreground/70">Core</p>
+
+        <Field label="Site Title" hint="Shown in browser tabs and as the Google headline. Recommended: 50–60 characters.">
+          <Input value={siteTitle} onChange={e => setSiteTitle(e.target.value)} placeholder="Sweet Momentum — Daily Performance Metrics" maxLength={70} data-testid="seo-site-title" />
+          <p className="text-[10px] text-muted-foreground/50 text-right">{siteTitle.length}/70</p>
+        </Field>
+
+        <Field label="Meta Description" hint="Shown as the snippet under your link in Google results. Recommended: 150–160 characters.">
+          <Textarea value={metaDescription} onChange={e => setMetaDescription(e.target.value)} placeholder="Track your daily performance with TIME, GOAL, TEAM, TASK, VIEW, and PACE metrics." rows={3} className="resize-none text-sm" maxLength={200} data-testid="seo-meta-description" />
+          <p className="text-[10px] text-muted-foreground/50 text-right">{metaDescription.length}/200</p>
+        </Field>
+
+        <Field label="Canonical URL" hint="The preferred URL for your site — prevents duplicate content issues. e.g. https://sweetmo.io">
+          <Input value={canonicalUrl} onChange={e => setCanonicalUrl(e.target.value)} placeholder="https://sweetmo.io" className="font-mono text-sm" data-testid="seo-canonical-url" />
+        </Field>
+
+        <Field label="Keywords" hint="Comma-separated. Not used by Google, but helpful for other search engines and analytics tools.">
+          <Input value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="daily performance, habit tracking, momentum, metrics" data-testid="seo-keywords" />
+        </Field>
+      </div>
+
+      {/* Social / Open Graph */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <p className="text-xs font-black uppercase tracking-widest text-foreground/70">Social Share (Open Graph)</p>
+
+        <Field label="OG Image URL" hint="Image shown when the site is shared on social media, iMessage, Slack, etc. Recommended: 1200×630px.">
+          <Input value={ogImage} onChange={e => setOgImage(e.target.value)} placeholder="https://sweetmo.io/og-image.jpg" className="font-mono text-sm" data-testid="seo-og-image" />
+          {ogImage && (
+            <div className="mt-2 rounded-lg overflow-hidden border border-border h-32 bg-muted">
+              <img src={ogImage} alt="OG preview" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            </div>
+          )}
+        </Field>
+      </div>
+
+      {/* Twitter / X */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <p className="text-xs font-black uppercase tracking-widest text-foreground/70">Twitter / X Card</p>
+
+        <Field label="Twitter Handle" hint="Your @handle — shown on Twitter card previews. Include the @ symbol.">
+          <Input value={twitterHandle} onChange={e => setTwitterHandle(e.target.value)} placeholder="@sweetmo_io" data-testid="seo-twitter-handle" />
+        </Field>
+
+        <Field label="Card Type">
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { value: "summary_large_image", label: "Large Image", desc: "Big image + title + description" },
+              { value: "summary",             label: "Summary",     desc: "Small thumbnail + text" },
+            ] as const).map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setTwitterCard(opt.value)}
+                className={`text-left p-3 rounded-lg border text-xs transition-all ${
+                  twitterCard === opt.value
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-border bg-muted/20 text-muted-foreground hover:border-primary/50"
+                }`}
+                data-testid={`seo-twitter-card-${opt.value}`}
+              >
+                <p className="font-bold">{opt.label}</p>
+                <p className="text-[10px] mt-0.5 opacity-70">{opt.desc}</p>
+              </button>
+            ))}
+          </div>
+        </Field>
+      </div>
+
+      {/* Preview */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <p className="text-xs font-black uppercase tracking-widest text-foreground/70">Google Preview</p>
+        <div className="bg-muted/30 rounded-lg p-4 space-y-1">
+          <p className="text-xs text-muted-foreground font-mono">{canonicalUrl || "https://sweetmo.io"}</p>
+          <p className="text-sm font-semibold text-blue-400 leading-tight">{siteTitle || "Sweet Momentum — Daily Performance Metrics"}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{metaDescription || "Track your daily performance with TIME, GOAL, TEAM, TASK, VIEW, and PACE metrics."}</p>
+        </div>
+      </div>
+
+      <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full gap-2" data-testid="btn-save-seo">
+        {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        Save SEO Settings
+      </Button>
+
+      {existing?.updatedAt && (
+        <p className="text-xs text-muted-foreground/50 text-center">Last saved {new Date(existing.updatedAt).toLocaleString()}</p>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"content" | "members" | "pages" | "emails">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "members" | "pages" | "emails" | "seo">("content");
   const [savingPageKey, setSavingPageKey] = useState<string | null>(null);
 
   // Redirect if not admin
@@ -1147,6 +1310,7 @@ export default function AdminPage() {
           { key: "pages",   label: "Pages",          icon: FileText },
           { key: "members", label: "Members",         icon: Users },
           { key: "emails",  label: "Emails",          icon: Mail },
+          { key: "seo",     label: "SEO",             icon: Search },
         ] as const).map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -1227,6 +1391,8 @@ export default function AdminPage() {
       {activeTab === "members" && <MembersTab />}
 
       {activeTab === "emails" && <EmailTemplatesTab />}
+
+      {activeTab === "seo" && <SeoTab />}
     </div>
   );
 }

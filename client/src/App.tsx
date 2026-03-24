@@ -1,7 +1,7 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState, createContext, useContext } from "react";
@@ -133,6 +133,67 @@ function Router() {
   );
 }
 
+
+// ── SEO meta tag injector ─────────────────────────────────────────────────────
+// Reads admin-configured SEO settings and writes them into <head> dynamically.
+function SeoMetaTags() {
+  const { data: seo } = useQuery<any>({
+    queryKey: ["/api/public/seo"],
+    queryFn: () => fetch("/api/public/seo", { credentials: "include" }).then(r => r.json()).catch(() => null),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (!seo) return;
+
+    const set = (selector: string, attr: string, value: string) => {
+      let el = document.querySelector(selector) as HTMLElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        if (attr === "name")     (el as HTMLMetaElement).name    = selector.match(/name="([^"]+)"/)?.[1] || "";
+        if (attr === "property") (el as HTMLMetaElement).setAttribute("property", selector.match(/property="([^"]+)"/)?.[1] || "");
+        document.head.appendChild(el);
+      }
+      (el as HTMLMetaElement).content = value;
+    };
+
+    const setLink = (rel: string, value: string) => {
+      let el = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
+      if (!el) { el = document.createElement("link"); el.rel = rel; document.head.appendChild(el); }
+      el.href = value;
+    };
+
+    if (seo.title) {
+      document.title = seo.title;
+      set('meta[property="og:title"]',   "property", seo.title);
+      set('meta[name="twitter:title"]',  "name",     seo.title);
+    }
+    if (seo.body) {
+      set('meta[name="description"]',          "name",     seo.body);
+      set('meta[property="og:description"]',   "property", seo.body);
+      set('meta[name="twitter:description"]',  "name",     seo.body);
+    }
+    if (seo.heroImageUrl) {
+      set('meta[property="og:image"]',   "property", seo.heroImageUrl);
+      set('meta[name="twitter:image"]',  "name",     seo.heroImageUrl);
+    }
+    if (seo.ctaUrl) {
+      set('meta[property="og:url"]', "property", seo.ctaUrl);
+      setLink("canonical", seo.ctaUrl);
+    }
+    if (seo.subtitle) {
+      set('meta[name="twitter:site"]', "name", seo.subtitle);
+    }
+    try {
+      const extra = seo.sections ? JSON.parse(seo.sections) : {};
+      if (extra.twitterCard) set('meta[name="twitter:card"]', "name", extra.twitterCard);
+      if (extra.keywords)    set('meta[name="keywords"]',     "name", extra.keywords);
+    } catch {}
+  }, [seo]);
+
+  return null;
+}
+
 export default function App() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -158,6 +219,7 @@ export default function App() {
       <AuthContext.Provider value={{ user, setUser, isLoading }}>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
+            <SeoMetaTags />
             <WouterRouter hook={useHashLocation}>
               <Router />
             </WouterRouter>

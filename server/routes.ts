@@ -674,6 +674,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Public SEO config — no auth required (injected into <head> on every page)
+  app.get("/api/public/seo", async (req, res) => {
+    try {
+      const page = await storage.getSitePage("seo");
+      res.json(page || null);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Public login page config — no auth required (used before user is logged in)
   app.get("/api/public/login-page", async (req, res) => {
     try {
@@ -707,7 +717,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.put("/api/admin/pages/:pageKey", requireAdmin, async (req, res) => {
     try {
       const pageKey = req.params.pageKey;
-      if (!["story", "tracking", "connect", "login", "terms", "privacy", "eula", "timeline"].includes(pageKey)) {
+      if (!["story", "tracking", "connect", "login", "terms", "privacy", "eula", "timeline", "seo"].includes(pageKey)) {
         return res.status(400).json({ error: "Invalid page key" });
       }
       const data = insertSitePageSchema.parse({ ...req.body, pageKey });
