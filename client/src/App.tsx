@@ -65,18 +65,21 @@ function Router() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!isLoading) {
-      // Redirect unauthenticated users to login — EXCEPT for public pages
-      const isPublic =
-        location === "/register" ||
-        location.startsWith("/forgot-password") ||
-        location.startsWith("/reset-password") ||
-        location.startsWith("/invite/");
-      if (!user && !isPublic) setLocation("/login");
-      // Redirect authenticated users away from auth pages
-      if (user && (location === "/login" || location === "/register" || location === "/")) setLocation("/dashboard");
+    if (isLoading) return;
+    // Redirect unauthenticated users to login — EXCEPT for public pages
+    const isPublic =
+      location === "/register" ||
+      location.startsWith("/forgot-password") ||
+      location.startsWith("/reset-password") ||
+      location.startsWith("/invite/");
+    if (!user && !isPublic) {
+      setLocation("/login");
     }
-  }, [user, isLoading, location]);
+    // Only redirect away from auth/root pages — never interfere with other routes
+    if (user && (location === "/login" || location === "/register" || location === "" || location === "/")) {
+      setLocation("/dashboard");
+    }
+  }, [user, isLoading]); // intentionally exclude location — only run on auth state changes
 
   if (isLoading) {
     return (
