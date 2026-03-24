@@ -21,6 +21,7 @@ import StoryPage from "@/pages/story";
 import TrackingGuidePage from "@/pages/tracking-guide";
 import ConnectPage from "@/pages/connect";
 import InvitePage from "@/pages/invite";
+import { TermsPage, PrivacyPage, EulaPage } from "@/pages/legal";
 import AppLayout from "@/components/app-layout";
 
 function BillingSuccessPage() {
@@ -90,6 +91,9 @@ function Router() {
   // These routes render regardless of auth state — bypasses Switch entirely
   if (location.startsWith("/reset-password")) return <ResetPasswordPage />;
   if (location.startsWith("/forgot-password")) return <ForgotPasswordPage />;
+  if (location === "/terms")   return <TermsPage />;
+  if (location === "/privacy") return <PrivacyPage />;
+  if (location === "/eula")    return <EulaPage />;
   if (location.startsWith("/invite/")) {
     // Pass token via Route so useParams works inside InvitePage
     return (

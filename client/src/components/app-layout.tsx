@@ -261,8 +261,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Button>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
-          {children}
+        <main className="flex-1 overflow-y-auto flex flex-col">
+          <div className="flex-1">{children}</div>
+          {/* Legal footer */}
+          <footer className="border-t border-border px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link href="/terms">
+              <a className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">Terms &amp; Conditions</a>
+            </Link>
+            <Link href="/privacy">
+              <a className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">Privacy Policy</a>
+            </Link>
+            <Link href="/eula">
+              <a className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">EULA</a>
+            </Link>
+            <span className="text-[10px] text-muted-foreground/30 ml-auto">&copy; {new Date().getFullYear()} Sweet Momentum</span>
+          </footer>
         </main>
       </div>
     </div>

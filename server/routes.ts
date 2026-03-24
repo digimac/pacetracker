@@ -660,6 +660,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // Site Pages — public read (authenticated users)
+  // Public legal pages — no auth required
+  app.get("/api/public/legal/:key", async (req, res) => {
+    try {
+      const { key } = req.params;
+      if (!["terms", "privacy", "eula"].includes(key)) {
+        return res.status(400).json({ error: "Invalid legal page key" });
+      }
+      const page = await storage.getSitePage(key);
+      res.json(page || null);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Public login page config — no auth required (used before user is logged in)
   app.get("/api/public/login-page", async (req, res) => {
     try {
@@ -693,7 +707,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.put("/api/admin/pages/:pageKey", requireAdmin, async (req, res) => {
     try {
       const pageKey = req.params.pageKey;
-      if (!["story", "tracking", "connect", "login"].includes(pageKey)) {
+      if (!["story", "tracking", "connect", "login", "terms", "privacy", "eula"].includes(pageKey)) {
         return res.status(400).json({ error: "Invalid page key" });
       }
       const data = insertSitePageSchema.parse({ ...req.body, pageKey });

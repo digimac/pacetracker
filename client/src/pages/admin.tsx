@@ -39,6 +39,9 @@ const PAGE_DEFS = [
   { key: "tracking", label: "Daily Tracking",     icon: Clock,     accent: "text-emerald-400", border: "border-emerald-500/30", color: "from-emerald-500/10 to-emerald-600/5" },
   { key: "connect",  label: "Connect",            icon: Globe,     accent: "text-blue-400", border: "border-blue-500/30", color: "from-blue-500/10 to-blue-600/5" },
   { key: "login",    label: "Login Page",         icon: ShieldCheck, accent: "text-orange-400", border: "border-orange-500/30", color: "from-orange-500/10 to-orange-600/5" },
+  { key: "terms",    label: "Terms & Conditions",  icon: FileText,    accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
+  { key: "privacy",  label: "Privacy Policy",      icon: ShieldCheck, accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
+  { key: "eula",     label: "EULA",                icon: FileText,    accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
 ];
 
 // ─── Page Editor ─────────────────────────────────────────────────────────────
@@ -141,7 +144,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           {/* Title + Subtitle */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Headline" : "Page Title"}</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Headline" : ["terms","privacy","eula"].includes(pageKey) ? "Document Title" : "Page Title"}</label>
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={label} className="text-sm" maxLength={100} />
             </div>
             <div>
@@ -153,15 +156,16 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           {/* Hero image */}
           <div>
             <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
-              <ImageIcon className="w-3 h-3" /> {pageKey === "login" ? "Background Image URL" : "Hero Image URL"}
+              <ImageIcon className="w-3 h-3" /> {pageKey === "login" ? "Background Image URL" : ["terms","privacy","eula"].includes(pageKey) ? "Header Image URL (optional)" : "Hero Image URL"}
             </label>
             <Input value={heroImageUrl} onChange={e => setHeroImageUrl(e.target.value)} placeholder="https://..." className="text-sm font-mono" />
             {pageKey === "login" && <p className="text-[10px] text-muted-foreground/60 mt-1">Used as a subtle full-screen background on the login page. A dark overlay is applied automatically.</p>}
+            {["terms","privacy","eula"].includes(pageKey) && <p className="text-[10px] text-muted-foreground/60 mt-1">Optional banner image shown at the top of the page.</p>}
           </div>
 
           {/* Body */}
           <div>
-            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Body Text" : "Intro Body"}</label>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Body Text" : ["terms","privacy","eula"].includes(pageKey) ? "Document Body" : "Intro Body"}</label>
             <Textarea
               value={body}
               onChange={e => setBody(e.target.value)}
@@ -172,7 +176,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           </div>
 
           {/* Content sections — hidden for login page */}
-          {pageKey !== "login" && (
+          {!["login", "terms", "privacy", "eula"].includes(pageKey) && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Content Sections</label>
@@ -216,10 +220,10 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
               ))}
             </div>
           </div>
-          )} {/* end sections pageKey !== login */}
+          )} {/* end sections legal/login hidden */}
 
           {/* CTA + Connect specifics — hidden for login page */}
-          {pageKey !== "login" && (
+          {!["login", "terms", "privacy", "eula"].includes(pageKey) && (
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
