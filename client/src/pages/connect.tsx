@@ -368,6 +368,7 @@ export default function ConnectPage() {
   });
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [showCoaching, setShowCoaching] = useState(false);
 
   const socialLinks: SocialLink[] = (() => {
     try {
@@ -387,6 +388,7 @@ export default function ConnectPage() {
     <div className="min-h-full">
       {/* Feedback modal */}
       {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
+      {showCoaching && <CoachingModal onClose={() => setShowCoaching(false)} />}
 
       {/* Hero */}
       <div className="relative overflow-hidden border-b border-border">
