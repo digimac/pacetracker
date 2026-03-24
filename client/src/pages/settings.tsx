@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +32,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const METRIC_EMOJIS = ["⭐", "💪", "🧠", "📚", "🥗", "🏃", "😴", "💧", "🎯", "🌱"];
 
-export { USER_CATEGORIES } from "@/lib/categories";
+import { USER_CATEGORIES } from "@/lib/categories";
 
 const CORE_METRIC_INFO = [
   { key: "TIME", label: "TIME", desc: "Intentional time management" },
@@ -356,18 +356,18 @@ export default function SettingsPage() {
             </div>
             {/* Link to selected category page */}
             {profileForm.category && USER_CATEGORIES.find(c => c.key === profileForm.category) && (
-              <Link href={`/community/${profileForm.category}`}>
-                <a
-                  className="flex items-center gap-2 text-xs text-primary hover:underline font-medium"
-                  data-testid="link-community-page"
-                >
-                  <span className="text-base leading-none">
-                    {USER_CATEGORIES.find(c => c.key === profileForm.category)?.emoji}
-                  </span>
-                  Explore the {USER_CATEGORIES.find(c => c.key === profileForm.category)?.label} community
-                  <ChevronRight className="w-3 h-3" />
-                </a>
-              </Link>
+              <button
+                type="button"
+                onClick={() => setLocation(`/community/${profileForm.category}`)}
+                className="flex items-center gap-2 text-xs text-primary hover:underline font-medium"
+                data-testid="link-community-page"
+              >
+                <span className="text-base leading-none">
+                  {USER_CATEGORIES.find(c => c.key === profileForm.category)?.emoji}
+                </span>
+                Explore the {USER_CATEGORIES.find(c => c.key === profileForm.category)?.label} community
+                <ChevronRight className="w-3 h-3" />
+              </button>
             )}
           </div>
 
