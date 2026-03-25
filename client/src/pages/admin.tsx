@@ -15,6 +15,7 @@ import {
   ArrowUp, ArrowDown, UserX, AlertTriangle, Search,
 } from "lucide-react";
 import type { MetricContent } from "@shared/schema";
+import { CloudinaryUpload } from "@/components/cloudinary-upload";
 
 type SitePage = {
   id: number;
@@ -169,13 +170,20 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           {/* Hero image */}
           <div>
             <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
-              <ImageIcon className="w-3 h-3" /> {pageKey === "login" ? "Background Image URL" : pageKey === "timeline" ? "Background Image URL" : ["terms","privacy","eula"].includes(pageKey) ? "Header Image URL (optional)" : pageKey === "start" ? "Hero Right Panel Image URL" : "Hero Image URL"}
+              <ImageIcon className="w-3 h-3" /> {pageKey === "login" ? "Background Image" : pageKey === "timeline" ? "Background Image" : ["terms","privacy","eula"].includes(pageKey) ? "Header Image (optional)" : pageKey === "start" ? "Hero Right Panel Image" : "Hero Image"}
             </label>
-            <Input value={heroImageUrl} onChange={e => setHeroImageUrl(e.target.value)} placeholder="https://..." className="text-sm font-mono" />
-            {pageKey === "login" && <p className="text-[10px] text-muted-foreground/60 mt-1">Used as a subtle full-screen background on the login page. A dark overlay is applied automatically.</p>}
-            {["terms","privacy","eula"].includes(pageKey) && <p className="text-[10px] text-muted-foreground/60 mt-1">Optional banner image shown at the top of the page.</p>}
-            {pageKey === "timeline" && <p className="text-[10px] text-muted-foreground/60 mt-1">Displayed at 30% opacity behind the activity timeline on the dashboard. Works best with a texture, pattern, or atmospheric photo.</p>}
-            {pageKey === "start" && <p className="text-[10px] text-muted-foreground/60 mt-1">Displayed in the right panel of the hero section. Works best with a dark, atmospheric photo (1200×800px+).</p>}
+            <CloudinaryUpload
+              value={heroImageUrl}
+              onChange={setHeroImageUrl}
+              testId={`page-hero-${pageKey}`}
+              hint={
+                pageKey === "login" ? "Used as a subtle full-screen background on the login page. A dark overlay is applied automatically." :
+                ["terms","privacy","eula"].includes(pageKey) ? "Optional banner image shown at the top of the page." :
+                pageKey === "timeline" ? "Displayed at 18% opacity behind the activity timeline on the dashboard. Works best with a texture, pattern, or atmospheric photo." :
+                pageKey === "start" ? "Displayed in the right panel of the hero section. Works best with a dark, atmospheric photo (1200×800px+)." :
+                undefined
+              }
+            />
           </div>
 
           {/* Body */}
@@ -227,11 +235,12 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
                     rows={3}
                     className="resize-none text-sm"
                   />
-                  <Input
+                  <CloudinaryUpload
                     value={sec.imageUrl || ""}
-                    onChange={e => updateSection(i, "imageUrl", e.target.value)}
-                    placeholder="Image URL (optional) — https://..."
-                    className="text-sm font-mono"
+                    onChange={url => updateSection(i, "imageUrl", url)}
+                    placeholder="https://res.cloudinary.com/... (optional)"
+                    testId={`section-image-${i}`}
+                    previewHeight={96}
                   />
                 </div>
               ))}
@@ -476,28 +485,17 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
             <p className="text-[10px] text-muted-foreground mt-1 text-right">{story.length}/2000</p>
           </div>
 
-          {/* Image URL */}
+          {/* Image */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5">
-              <ImageIcon className="w-3.5 h-3.5" /> Image URL
+              <ImageIcon className="w-3.5 h-3.5" /> Metric Image
             </label>
-            <Input
-              placeholder="https://images.unsplash.com/..."
+            <CloudinaryUpload
               value={imageUrl}
-              onChange={e => setImageUrl(e.target.value)}
-              className="text-sm font-mono"
-              data-testid={`input-image-${metricKey.toLowerCase()}`}
+              onChange={setImageUrl}
+              testId={`metric-image-${metricKey.toLowerCase()}`}
+              hint="Shown in the metric info modal. Landscape images work best."
             />
-            {imageUrl && (
-              <div className="mt-2 rounded-lg overflow-hidden border border-border h-32 bg-muted">
-                <img
-                  src={imageUrl}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                  onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                />
-              </div>
-            )}
           </div>
 
           {/* Quote */}
