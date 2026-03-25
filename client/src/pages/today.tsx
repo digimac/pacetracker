@@ -379,7 +379,7 @@ export default function TodayPage() {
       {/* Notes */}
       <section className="mb-6">
         <div className="flex items-baseline justify-between mb-2">
-          <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Daily Notes</h2>
+          <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Today's Notes for Tomorrow's Goal</h2>
           <span className="text-[10px] text-muted-foreground/50">Optional · saved with your score</span>
         </div>
         <Textarea
