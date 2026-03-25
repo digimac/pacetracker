@@ -230,11 +230,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-y-auto flex flex-col">
           <div className="flex-1">{children}</div>
           {/* Legal footer */}
-          <footer className="border-t border-border px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-1">
-            <button onClick={() => navigate("/terms")} className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">Terms &amp; Conditions</button>
-            <button onClick={() => navigate("/privacy")} className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">Privacy Policy</button>
-            <button onClick={() => navigate("/eula")} className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">EULA</button>
-            <span className="text-[10px] text-muted-foreground/30 ml-auto">&copy; {new Date().getFullYear()} Sweet Momentum</span>
+          <footer className="border-t border-border px-4 py-3 space-y-1.5">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <button onClick={() => navigate("/terms")} className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">Terms &amp; Conditions</button>
+              <button onClick={() => navigate("/privacy")} className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">Privacy Policy</button>
+              <button onClick={() => navigate("/eula")} className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">EULA</button>
+              <span className="text-[10px] text-muted-foreground/30 ml-auto">&copy; {new Date().getFullYear()} Sweet Momentum</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground/40 leading-snug">
+              Sweet Momentum, sweetmo.io, and the Pacetracker app are a service of Projection Creative LLC. Built in Louisville, KY.
+            </p>
           </footer>
         </main>
       </div>
