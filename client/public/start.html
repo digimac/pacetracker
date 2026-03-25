@@ -281,15 +281,15 @@
   <section id="layout-hero">
     <div class="container" style="display:contents;">
       <div class="hero-left container fade-in">
-        <div class="tag">🏅 Daily Performance System</div>
-        <h1>Build <span class="highlight">Sweet</span><br>Momentum<br>Every Day</h1>
-        <p>Six core metrics. One daily score. A simple system to track your performance, stay accountable, and build unstoppable momentum — day by day.</p>
+        <div class="tag" id="hero-tag">🏅 Daily Performance System</div>
+        <h1 id="hero-headline">Build <span class="highlight">Sweet</span><br>Momentum<br>Every Day</h1>
+        <p id="hero-body">Six core metrics. One daily score. A simple system to track your performance, stay accountable, and build unstoppable momentum — day by day.</p>
         <div class="hero-cta">
-          <a href="/#/register" class="btn btn-primary">Start for Free →</a>
+          <a href="/#/register" class="btn btn-primary" id="hero-cta-primary">Start for Free →</a>
           <a href="#layout-features" class="btn btn-ghost">See how it works</a>
         </div>
       </div>
-      <div class="hero-right">
+      <div class="hero-right" id="hero-right">
         <div class="hero-mockup fade-in" style="transition-delay:0.2s;">
           <div class="mockup-card">
             <div class="mockup-header">
@@ -313,10 +313,10 @@
     <div class="container">
       <div class="section-header fade-in">
         <div class="tag">✦ What you get</div>
-        <h2>Everything you need to<br>track what matters</h2>
+        <h2 id="features-headline">Everything you need to<br>track what matters</h2>
         <p>Sweet Momentum strips performance tracking down to its essential form — no fluff, just signal.</p>
       </div>
-      <div class="features-grid">
+      <div class="features-grid" id="features-grid">
         <div class="feature-card featured fade-in">
           <div class="feature-icon">📊</div>
           <h3>6 Core Daily Metrics</h3>
@@ -383,10 +383,10 @@
   <!-- ══ LAYOUT 4 — CTA ══ -->
   <section id="layout-cta">
     <div class="tag fade-in">🚀 Free to start</div>
-    <h2 class="fade-in">Every great day<br>starts with a <span>score.</span></h2>
-    <p class="fade-in">Join Sweet Momentum and start building your daily performance record today. Free forever on core metrics. Upgrade when you're ready.</p>
+    <h2 class="fade-in" id="cta-headline">Every great day<br>starts with a <span>score.</span></h2>
+    <p class="fade-in" id="cta-body">Join Sweet Momentum and start building your daily performance record today. Free forever on core metrics. Upgrade when you're ready.</p>
     <div class="cta-actions fade-in">
-      <a href="/#/register" class="btn btn-primary" style="font-size:16px;padding:16px 40px;">Create Free Account →</a>
+      <a href="/#/register" class="btn btn-primary" style="font-size:16px;padding:16px 40px;" id="cta-primary">Create Free Account →</a>
       <a href="/#/login" class="btn btn-ghost" style="font-size:15px;">Already have an account</a>
     </div>
     <p class="cta-note fade-in">No credit card required &nbsp;·&nbsp; Free tier always available &nbsp;·&nbsp; Cancel Pro anytime</p>
@@ -407,6 +407,80 @@
 
   <script>
     document.getElementById('yr').textContent = new Date().getFullYear();
+
+    // ── Hydrate from admin config ──────────────────────────────────────────
+    fetch('/api/public/start')
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null)
+      .then(page => {
+        if (!page) return;
+
+        // Hero headline
+        if (page.title) {
+          document.getElementById('hero-headline').textContent = page.title;
+        }
+        // Hero sub-copy
+        if (page.subtitle) {
+          document.getElementById('hero-body').textContent = page.subtitle;
+        }
+        // Hero right panel image
+        if (page.heroImageUrl) {
+          const hr = document.getElementById('hero-right');
+          if (hr) {
+            hr.style.backgroundImage = `url(${page.heroImageUrl})`;
+            hr.style.backgroundSize = 'cover';
+            hr.style.backgroundPosition = 'center';
+          }
+        }
+        // Features section headline
+        if (page.body) {
+          document.getElementById('features-headline').textContent = page.body;
+        }
+        // Feature cards (sections JSON)
+        if (page.sections) {
+          try {
+            const sections = JSON.parse(page.sections);
+            if (sections.length > 0) {
+              const grid = document.getElementById('features-grid');
+              grid.innerHTML = '';
+              sections.forEach((s, i) => {
+                const card = document.createElement('div');
+                card.className = 'feature-card fade-in' + (i === 0 ? ' featured' : '');
+                card.innerHTML = `
+                  <div class="feature-icon">${s.imageUrl || '✦'}</div>
+                  <h3>${s.heading || ''}</h3>
+                  <p>${s.text || ''}</p>
+                `;
+                grid.appendChild(card);
+              });
+            }
+          } catch(e) {}
+        }
+        // CTA button label
+        if (page.ctaLabel) {
+          const btn = document.getElementById('hero-cta-primary');
+          if (btn) btn.textContent = page.ctaLabel + ' →';
+          const cta = document.getElementById('cta-primary');
+          if (cta) cta.textContent = page.ctaLabel + ' →';
+        }
+        // CTA URL
+        if (page.ctaUrl) {
+          const btn = document.getElementById('hero-cta-primary');
+          if (btn) btn.href = page.ctaUrl;
+          const cta = document.getElementById('cta-primary');
+          if (cta) cta.href = page.ctaUrl;
+        }
+        // CTA sub-note (contactEmail field repurposed as CTA description)
+        if (page.contactEmail) {
+          document.getElementById('cta-body').textContent = page.contactEmail;
+        }
+
+        // Re-observe new .fade-in elements
+        document.querySelectorAll('.fade-in:not(.observed)').forEach(el => {
+          el.classList.add('observed');
+          observer.observe(el);
+        });
+      });
 
     // Scroll fade-in observer
     const observer = new IntersectionObserver((entries) => {

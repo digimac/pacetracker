@@ -43,6 +43,7 @@ const PAGE_DEFS = [
   { key: "privacy",  label: "Privacy Policy",      icon: ShieldCheck, accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
   { key: "eula",     label: "EULA",                icon: FileText,    accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
   { key: "timeline",         label: "Timeline Background", icon: ImageIcon,   accent: "text-cyan-400",   border: "border-cyan-500/30",   color: "from-cyan-500/10 to-cyan-600/5" },
+  { key: "start", label: "Start Page", icon: Globe, accent: "text-green-400", border: "border-green-500/30", color: "from-green-500/10 to-green-600/5" },
   // Community category pages
   { key: "cat_athlete",      label: "Athlete",       icon: Users, accent: "text-green-400",  border: "border-green-500/30",  color: "from-green-500/10 to-green-600/5" },
   { key: "cat_graduate",     label: "Graduate",      icon: Users, accent: "text-blue-400",   border: "border-blue-500/30",   color: "from-blue-500/10 to-blue-600/5" },
@@ -155,11 +156,11 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           {pageKey !== "timeline" && (
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Headline" : ["terms","privacy","eula"].includes(pageKey) ? "Document Title" : "Page Title"}</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Headline" : ["terms","privacy","eula"].includes(pageKey) ? "Document Title" : pageKey === "start" ? "Hero Headline" : "Page Title"}</label>
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={label} className="text-sm" maxLength={100} />
             </div>
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Subtitle</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "start" ? "Hero Sub-copy" : "Subtitle"}</label>
               <Input value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="Short tagline" className="text-sm" maxLength={200} />
             </div>
           </div>
@@ -168,18 +169,19 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           {/* Hero image */}
           <div>
             <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
-              <ImageIcon className="w-3 h-3" /> {pageKey === "login" ? "Background Image URL" : pageKey === "timeline" ? "Background Image URL" : ["terms","privacy","eula"].includes(pageKey) ? "Header Image URL (optional)" : "Hero Image URL"}
+              <ImageIcon className="w-3 h-3" /> {pageKey === "login" ? "Background Image URL" : pageKey === "timeline" ? "Background Image URL" : ["terms","privacy","eula"].includes(pageKey) ? "Header Image URL (optional)" : pageKey === "start" ? "Hero Right Panel Image URL" : "Hero Image URL"}
             </label>
             <Input value={heroImageUrl} onChange={e => setHeroImageUrl(e.target.value)} placeholder="https://..." className="text-sm font-mono" />
             {pageKey === "login" && <p className="text-[10px] text-muted-foreground/60 mt-1">Used as a subtle full-screen background on the login page. A dark overlay is applied automatically.</p>}
             {["terms","privacy","eula"].includes(pageKey) && <p className="text-[10px] text-muted-foreground/60 mt-1">Optional banner image shown at the top of the page.</p>}
             {pageKey === "timeline" && <p className="text-[10px] text-muted-foreground/60 mt-1">Displayed at 30% opacity behind the activity timeline on the dashboard. Works best with a texture, pattern, or atmospheric photo.</p>}
+            {pageKey === "start" && <p className="text-[10px] text-muted-foreground/60 mt-1">Displayed in the right panel of the hero section. Works best with a dark, atmospheric photo (1200×800px+).</p>}
           </div>
 
           {/* Body */}
           {pageKey !== "timeline" && (
           <div>
-            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Body Text" : ["terms","privacy","eula"].includes(pageKey) ? "Document Body" : "Intro Body"}</label>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Body Text" : ["terms","privacy","eula"].includes(pageKey) ? "Document Body" : pageKey === "start" ? "Features Section Headline" : "Intro Body"}</label>
             <Textarea
               value={body}
               onChange={e => setBody(e.target.value)}
@@ -1375,7 +1377,7 @@ export default function AdminPage() {
       {activeTab === "pages" && (
         <>
           <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-            Configure the three content pages accessible to all users: <strong>Story of Momentum</strong>, <strong>Daily Tracking</strong>, and <strong>Connect</strong>.
+            Configure all site pages — including the marketing landing page, content pages, and legal docs.
           </p>
           {pagesLoading ? (
             <div className="flex items-center justify-center py-20">
