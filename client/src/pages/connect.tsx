@@ -533,32 +533,7 @@ export default function ConnectPage() {
           )}
         </div>
 
-        {/* Direct email CTA */}
-        {!isLoading && (
-          <div className="rounded-xl border border-border bg-muted/30 p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-              <Send className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold mb-0.5">Drop us a line</p>
-              <p className="text-xs text-muted-foreground">
-                We read every message. Reach us directly at{" "}
-                <a href={`mailto:${contactEmail}`} className="text-primary hover:underline font-medium">
-                  {contactEmail}
-                </a>
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1.5 flex-shrink-0"
-              onClick={() => window.open(`mailto:${contactEmail}`, "_blank")}
-            >
-              <Mail className="w-3.5 h-3.5" />
-              Email Us
-            </Button>
-          </div>
-        )}
+
 
         {/* Bottom nav */}
         <div className="border-t border-border pt-8 flex items-center justify-between">
