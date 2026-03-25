@@ -366,7 +366,7 @@ export default function DashboardPage() {
           {timelineBgUrl && (
             <div
               className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none"
-              style={{ backgroundImage: `url(${timelineBgUrl})`, opacity: 0.3 }}
+              style={{ backgroundImage: `url(${timelineBgUrl})`, opacity: 0.18 }}
             />
           )}
           <CardHeader className="pb-1 pt-4 px-4 relative">
