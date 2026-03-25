@@ -61,6 +61,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      {/* Skip to main content — visible on keyboard focus, hidden otherwise */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:font-semibold focus:text-sm focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
@@ -88,7 +95,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav aria-label="Main navigation" className="flex-1 px-3 py-4 space-y-1">
           {NAV_ITEMS.map(({ label, icon: Icon, path }) => {
             const active = location === path || (location === "/" && path === "/dashboard") || (location === "" && path === "/dashboard");
             return (
@@ -227,7 +234,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Button>
         </header>
 
-        <main className="flex-1 overflow-y-auto flex flex-col">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto flex flex-col outline-none">
           <div className="flex-1">{children}</div>
           {/* Legal footer */}
           <footer className="border-t border-border px-4 py-3 space-y-1.5">

@@ -273,8 +273,9 @@ export default function SettingsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">First Name</Label>
+              <Label htmlFor="settings-first-name" className="text-xs">First Name</Label>
               <Input
+                id="settings-first-name"
                 placeholder="First"
                 value={profileForm.firstName}
                 onChange={e => setProfileForm(f => ({ ...f, firstName: e.target.value }))}
@@ -282,8 +283,9 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Last Name</Label>
+              <Label htmlFor="settings-last-name" className="text-xs">Last Name</Label>
               <Input
+                id="settings-last-name"
                 placeholder="Last"
                 value={profileForm.lastName}
                 onChange={e => setProfileForm(f => ({ ...f, lastName: e.target.value }))}
@@ -297,8 +299,9 @@ export default function SettingsPage() {
             <p className="text-[11px] text-muted-foreground/70 -mt-1">Used to pinpoint your dot on the Score Map. General location only — not exact.</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5 col-span-2">
-                <Label className="text-xs">City</Label>
+                <Label htmlFor="settings-city" className="text-xs">City</Label>
                 <Input
+                  id="settings-city"
                   placeholder="e.g. New York"
                   value={profileForm.city}
                   onChange={e => setProfileForm(f => ({ ...f, city: e.target.value }))}
@@ -306,8 +309,9 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">State / Province</Label>
+                <Label htmlFor="settings-region" className="text-xs">State / Province</Label>
                 <Input
+                  id="settings-region"
                   placeholder="e.g. NY"
                   value={profileForm.region}
                   onChange={e => setProfileForm(f => ({ ...f, region: e.target.value }))}
@@ -315,8 +319,9 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Country</Label>
+                <Label htmlFor="settings-country" className="text-xs">Country</Label>
                 <Input
+                  id="settings-country"
                   placeholder="e.g. USA"
                   value={profileForm.country}
                   onChange={e => setProfileForm(f => ({ ...f, country: e.target.value }))}
@@ -498,6 +503,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex gap-2">
                 <Input
+                  aria-label="Custom metric name"
                   placeholder="Metric name (e.g. Exercise)"
                   value={newMetric.name}
                   onChange={e => setNewMetric(m => ({ ...m, name: e.target.value }))}
@@ -513,6 +519,7 @@ export default function SettingsPage() {
                 </Button>
               </div>
               <Input
+                aria-label="Custom metric description (optional)"
                 placeholder="Description (optional)"
                 value={newMetric.description}
                 onChange={e => setNewMetric(m => ({ ...m, description: e.target.value }))}
@@ -535,8 +542,9 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Wake Time</Label>
+              <Label htmlFor="settings-wake-time" className="text-xs">Wake Time</Label>
               <Input
+                id="settings-wake-time"
                 type="time"
                 value={scheduleForm.wakeTime}
                 onChange={e => setScheduleForm(f => ({ ...f, wakeTime: e.target.value }))}
@@ -544,8 +552,9 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Sleep Time</Label>
+              <Label htmlFor="settings-sleep-time" className="text-xs">Sleep Time</Label>
               <Input
+                id="settings-sleep-time"
                 type="time"
                 value={scheduleForm.sleepTime}
                 onChange={e => setScheduleForm(f => ({ ...f, sleepTime: e.target.value }))}
@@ -553,8 +562,9 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Work Start</Label>
+              <Label htmlFor="settings-work-start" className="text-xs">Work Start</Label>
               <Input
+                id="settings-work-start"
                 type="time"
                 value={scheduleForm.workStartTime}
                 onChange={e => setScheduleForm(f => ({ ...f, workStartTime: e.target.value }))}
@@ -562,8 +572,9 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Work End</Label>
+              <Label htmlFor="settings-work-end" className="text-xs">Work End</Label>
               <Input
+                id="settings-work-end"
                 type="time"
                 value={scheduleForm.workEndTime}
                 onChange={e => setScheduleForm(f => ({ ...f, workEndTime: e.target.value }))}
@@ -609,8 +620,9 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Daily Goal Statement</Label>
+            <Label htmlFor="settings-daily-goal" className="text-xs">Daily Goal Statement</Label>
             <Textarea
+              id="settings-daily-goal"
               placeholder="Your guiding daily intention..."
               value={scheduleForm.dailyGoal}
               onChange={e => setScheduleForm(f => ({ ...f, dailyGoal: e.target.value }))}
@@ -762,8 +774,9 @@ function ConnectionsCard() {
         {showInviteForm && (
           <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Email address</Label>
+              <Label htmlFor="settings-invite-email" className="text-xs">Email address</Label>
               <Input
+                id="settings-invite-email"
                 type="email"
                 placeholder="friend@example.com"
                 value={inviteEmail}
@@ -772,8 +785,9 @@ function ConnectionsCard() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Personal message <span className="text-muted-foreground">(optional)</span></Label>
+              <Label htmlFor="settings-invite-message" className="text-xs">Personal message <span className="text-muted-foreground">(optional)</span></Label>
               <Textarea
+                id="settings-invite-message"
                 placeholder="Add a short note to your invite..."
                 value={inviteMessage}
                 onChange={e => setInviteMessage(e.target.value)}
