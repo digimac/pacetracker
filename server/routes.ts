@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
-import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail } from "./email";
+import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail } from "./email";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
@@ -1006,6 +1006,81 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
       const template = await storage.upsertEmailTemplate(key, subject, bodyHtml, bodyText);
       res.json(template);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Admin: send weekly digest to all users (or a single user for testing)
+  app.post("/api/admin/send-weekly-digest", requireAdmin, async (req, res) => {
+    try {
+      const { userId: targetUserId } = req.body; // optional — omit to send to all
+
+      // Compute last Monday → Sunday in UTC
+      const now = new Date();
+      const dayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon … 6=Sat
+      const daysToLastMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const lastMonday = new Date(now);
+      lastMonday.setUTCDate(now.getUTCDate() - daysToLastMonday - 7);
+      const lastSunday = new Date(lastMonday);
+      lastSunday.setUTCDate(lastMonday.getUTCDate() + 6);
+
+      const toISO = (d: Date) => d.toISOString().slice(0, 10);
+      const weekStart = toISO(lastMonday);
+      const weekEnd   = toISO(lastSunday);
+
+      // Build list of all 7 dates
+      const allDates: string[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(lastMonday);
+        d.setUTCDate(lastMonday.getUTCDate() + i);
+        allDates.push(toISO(d));
+      }
+
+      const users = targetUserId
+        ? [await storage.getUserById(Number(targetUserId))].filter(Boolean)
+        : await storage.getAllUsers();
+
+      let sent = 0;
+      let errors = 0;
+
+      for (const u of users as any[]) {
+        try {
+          // Fetch entries in range
+          const dbEntries = await storage.getDailyEntriesByRange(u.id, weekStart, weekEnd);
+          const entryMap = new Map(dbEntries.map(e => [e.entryDate, e]));
+
+          // For each date, build summary
+          const entrySummaries = await Promise.all(allDates.map(async date => {
+            const entry = entryMap.get(date);
+            if (!entry) return { entryDate: date, score: 0, scored: false, metrics: [] };
+            const scores = await storage.getMetricScoresByEntry(entry.id);
+            const successes = scores.filter(s => s.rating === "success").length;
+            const setbacks  = scores.filter(s => s.rating === "setback").length;
+            const score = successes - setbacks;
+            return {
+              entryDate: date,
+              score,
+              scored: scores.length > 0,
+              metrics: scores.map(s => ({ label: s.metricLabel, rating: s.rating })),
+            };
+          }));
+
+          await sendWeeklyDigestEmail({
+            toEmail: u.email,
+            displayName: u.displayName || u.email,
+            weekStart,
+            weekEnd,
+            entries: entrySummaries,
+          });
+          sent++;
+        } catch (userErr: any) {
+          console.error(`[digest] Error for user ${u.email}:`, userErr?.message);
+          errors++;
+        }
+      }
+
+      res.json({ ok: true, sent, errors, weekStart, weekEnd });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }

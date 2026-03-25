@@ -851,6 +851,28 @@ Click the link below to reset your password:
 This link expires in 1 hour.`,
   },
   {
+    key: "weekly_digest",
+    label: "Weekly Summary Digest",
+    description: "Sent each Monday to all members with a recap of their previous week's scores. Available variables: {{displayName}}, {{weekRange}}, {{daysScored}}, {{avgScore}}, {{bestDay}}, {{dayRows}}.",
+    defaultSubject: "Your Sweet Momentum week in review — {{weekRange}}",
+    defaultBodyHtml: `<body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+  <div style="max-width:580px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+    <div style="background:#FF6E00;padding:32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;">Sweet Momentum</h1>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Weekly Summary &mdash; {{weekRange}}</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="color:#e0e0e0;font-size:16px;margin:0 0 24px;">Hey {{displayName}},</p>
+      <p style="color:#e0e0e0;font-size:14px;margin:0 0 24px;">Here's your Sweet Momentum week in review. Days scored: <strong style="color:#FF6E00;">{{daysScored}}/7</strong> &nbsp;&bull;&nbsp; Avg score: <strong style="color:#85FF00;">{{avgScore}}</strong> &nbsp;&bull;&nbsp; Best day: <strong style="color:#fff;">{{bestDay}}</strong></p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:28px;"><thead><tr style="border-bottom:1px solid #333;"><th style="text-align:left;padding:6px 12px;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;">Day</th><th style="text-align:left;padding:6px 12px;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;">Score</th><th style="text-align:left;padding:6px 12px;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;">Metrics</th></tr></thead><tbody>{{dayRows}}</tbody></table>
+      <div style="text-align:center;margin:32px 0;"><a href="https://sweetmo.io" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;">Open Sweet Momentum</a></div>
+      <p style="color:#555;font-size:12px;text-align:center;margin:0;">Reply to this email to unsubscribe.</p>
+    </div>
+  </div>
+</body>`,
+    defaultBodyText: `Hey {{displayName}},\n\nYour Sweet Momentum week in review — {{weekRange}}\n\nDays scored: {{daysScored}}/7\nAvg score: {{avgScore}}\nBest day: {{bestDay}}\n\n{{dayRows}}\n\nOpen the app: https://sweetmo.io`,
+  },
+  {
     key: "upgrade",
     label: "Pro Upgrade Notification",
     description: "Sent to a member when their account is upgraded to Pro by an admin.",
@@ -1082,11 +1104,66 @@ function EmailTemplateEditor({
 }
 
 function EmailTemplatesTab() {
+  const { toast } = useToast();
+  const [sendingDigest, setSendingDigest] = useState(false);
+  const [digestTestId, setDigestTestId] = useState("");
+
+  async function sendDigest(all: boolean) {
+    setSendingDigest(true);
+    try {
+      const body: any = {};
+      if (!all && digestTestId) body.userId = digestTestId;
+      const res = await apiRequest("POST", "/api/admin/send-weekly-digest", body);
+      const data = await res.json();
+      toast({ title: all ? `Digest sent to ${data.sent} member(s)` : "Test digest sent", description: `Week of ${data.weekStart} → ${data.weekEnd}${data.errors ? ` (${data.errors} error(s))` : ""}` });
+    } catch (e: any) {
+      toast({ title: "Send failed", description: e.message, variant: "destructive" });
+    } finally {
+      setSendingDigest(false);
+    }
+  }
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <p className="text-sm text-muted-foreground leading-relaxed">
         Customise the emails sent by Sweet Momentum. Use the variables shown inside each editor to insert dynamic content. Changes take effect immediately for all future sends.
       </p>
+
+      {/* Weekly digest send controls */}
+      <div className="border border-border rounded-lg p-4 space-y-3">
+        <div>
+          <p className="text-sm font-semibold">Send Weekly Digest</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Sends last week's score summary to all members. Use the test field to send to a single user ID first.</p>
+        </div>
+        <div className="flex gap-2 items-center">
+          <Input
+            value={digestTestId}
+            onChange={e => setDigestTestId(e.target.value)}
+            placeholder="User ID (optional — for test send)"
+            className="text-sm w-52"
+            data-testid="digest-test-user-id"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={sendingDigest || !digestTestId}
+            onClick={() => sendDigest(false)}
+            data-testid="digest-test-btn"
+          >
+            {sendingDigest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send Test"}
+          </Button>
+          <Button
+            size="sm"
+            variant="default"
+            disabled={sendingDigest}
+            onClick={() => sendDigest(true)}
+            data-testid="digest-send-all-btn"
+          >
+            {sendingDigest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send to All Members"}
+          </Button>
+        </div>
+      </div>
+
       {TEMPLATE_DEFS.map(def => (
         <EmailTemplateEditor key={def.key} def={def} />
       ))}

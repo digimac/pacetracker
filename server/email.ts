@@ -516,3 +516,164 @@ export async function sendWelcomeEmail(opts: {
     console.error(`[email] SMTP error sending welcome email to ${toEmail}:`, smtpErr?.message || smtpErr);
   }
 }
+
+// ── Send weekly digest email ──────────────────────────────────────────────────
+export async function sendWeeklyDigestEmail(opts: {
+  toEmail: string;
+  displayName: string;
+  weekStart: string; // YYYY-MM-DD (Monday)
+  weekEnd: string;   // YYYY-MM-DD (Sunday)
+  entries: Array<{
+    entryDate: string;
+    score: number;
+    scored: boolean;
+    metrics: Array<{ label: string; rating: string }>;
+  }>;
+}): Promise<void> {
+  const { toEmail, displayName, weekStart, weekEnd, entries } = opts;
+
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.log(`[email] SMTP not configured. Weekly digest for ${toEmail} skipped.`);
+    return;
+  }
+
+  const fromAddress = SMTP_FROM_EMAIL
+    ? `"${SMTP_FROM_NAME}" <${SMTP_FROM_EMAIL}>`
+    : `"${SMTP_FROM_NAME}" <${SMTP_USER}>`;
+
+  const scoredEntries = entries.filter(e => e.scored);
+  const totalScore   = scoredEntries.reduce((sum, e) => sum + e.score, 0);
+  const avgScore     = scoredEntries.length > 0 ? (totalScore / scoredEntries.length).toFixed(1) : "—";
+  const daysScored   = scoredEntries.length;
+  const bestDay      = scoredEntries.length > 0 ? scoredEntries.reduce((a, b) => a.score >= b.score ? a : b) : null;
+
+  // Format date label e.g. "Mon Mar 17"
+  const fmtDate = (d: string) => {
+    const dt = new Date(d + "T12:00:00Z");
+    return dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  };
+  const fmtWeekRange = `${fmtDate(weekStart)} – ${fmtDate(weekEnd)}`;
+
+  // Rating pill colours
+  const ratingColour = (r: string) =>
+    r === "success" ? "#85FF00" : r === "setback" ? "#FF4444" : "#555";
+  const ratingLabel = (r: string) =>
+    r === "success" ? "✓" : r === "setback" ? "✗" : "–";
+
+  // Build per-day rows
+  const dayRows = entries.map(e => {
+    if (!e.scored) {
+      return `<tr><td style="padding:8px 12px;color:#555;font-size:13px;">${fmtDate(e.entryDate)}</td><td colspan="2" style="padding:8px 12px;color:#444;font-size:13px;">No score recorded</td></tr>`;
+    }
+    const pills = e.metrics.map(m =>
+      `<span style="display:inline-block;background:${ratingColour(m.rating)};color:#0f0f0f;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin:1px;">${m.label} ${ratingLabel(m.rating)}</span>`
+    ).join(" ");
+    const scoreColour = e.score >= 7 ? "#FF6E00" : e.score >= 4 ? "#85FF00" : "#e0e0e0";
+    return `<tr>
+      <td style="padding:8px 12px;color:#e0e0e0;font-size:13px;white-space:nowrap;">${fmtDate(e.entryDate)}</td>
+      <td style="padding:8px 12px;font-size:18px;font-weight:800;color:${scoreColour};white-space:nowrap;">${e.score}</td>
+      <td style="padding:8px 12px;">${pills}</td>
+    </tr>`;
+  }).join("\n");
+
+  // Plain-text version
+  const textLines = entries.map(e => {
+    if (!e.scored) return `${fmtDate(e.entryDate)}: No score recorded`;
+    const pills = e.metrics.map(m => `${m.label}:${ratingLabel(m.rating)}`).join(" ");
+    return `${fmtDate(e.entryDate)}: Score ${e.score}  ${pills}`;
+  });
+
+  const defaultSubject = `Your Sweet Momentum week in review — {{weekRange}}`;
+  const defaultHtml = `
+    <body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+      <div style="max-width:580px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+        <div style="background:#FF6E00;padding:32px;text-align:center;">
+          <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;letter-spacing:1px;">Sweet Momentum</h1>
+          <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Weekly Summary — {{weekRange}}</p>
+        </div>
+        <div style="padding:32px;">
+          <p style="color:#e0e0e0;font-size:16px;margin:0 0 24px;">Hey {{displayName}},</p>
+
+          <!-- Summary stats -->
+          <div style="display:flex;gap:12px;margin-bottom:28px;">
+            <div style="flex:1;background:#111;border-radius:8px;padding:16px;text-align:center;">
+              <p style="margin:0;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Days Scored</p>
+              <p style="margin:6px 0 0;color:#FF6E00;font-size:28px;font-weight:800;">{{daysScored}}/7</p>
+            </div>
+            <div style="flex:1;background:#111;border-radius:8px;padding:16px;text-align:center;">
+              <p style="margin:0;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Avg Score</p>
+              <p style="margin:6px 0 0;color:#85FF00;font-size:28px;font-weight:800;">{{avgScore}}</p>
+            </div>
+            <div style="flex:1;background:#111;border-radius:8px;padding:16px;text-align:center;">
+              <p style="margin:0;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Best Day</p>
+              <p style="margin:6px 0 0;color:#e0e0e0;font-size:16px;font-weight:700;">{{bestDay}}</p>
+            </div>
+          </div>
+
+          <!-- Day-by-day table -->
+          <table style="width:100%;border-collapse:collapse;margin-bottom:28px;">
+            <thead>
+              <tr style="border-bottom:1px solid #333;">
+                <th style="text-align:left;padding:6px 12px;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;">Day</th>
+                <th style="text-align:left;padding:6px 12px;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;">Score</th>
+                <th style="text-align:left;padding:6px 12px;color:#888;font-size:11px;font-weight:700;text-transform:uppercase;">Metrics</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{dayRows}}
+            </tbody>
+          </table>
+
+          <div style="text-align:center;margin:32px 0;">
+            <a href="${APP_URL}" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;">
+              Open Sweet Momentum
+            </a>
+          </div>
+          <p style="color:#555;font-size:12px;text-align:center;margin:0;">
+            You're receiving this because you have a Sweet Momentum account.<br>
+            Reply to this email to unsubscribe.
+          </p>
+        </div>
+      </div>
+    </body>
+  `;
+  const defaultText = `Hey {{displayName}},\n\nYour Sweet Momentum week in review — {{weekRange}}\n\nDays scored: {{daysScored}}/7\nAvg score: {{avgScore}}\nBest day: {{bestDay}}\n\n${textLines.join("\n")}\n\nOpen the app: ${APP_URL}`;
+
+  // ── Try DB template, fall back to default ──
+  let subject = defaultSubject;
+  let html    = defaultHtml;
+  let text    = defaultText;
+
+  try {
+    const tpl = await storage.getEmailTemplate("weekly_digest");
+    if (tpl) {
+      subject = tpl.subject;
+      html    = tpl.bodyHtml;
+      text    = tpl.bodyText;
+    }
+  } catch (dbErr) {
+    console.warn("[email] Could not load weekly_digest template from DB, using default:", dbErr);
+  }
+
+  // Interpolate all variables
+  const bestDayLabel = bestDay ? fmtDate(bestDay.entryDate) : "—";
+  const interpolate = (s: string) => s
+    .replace(/\{\{displayName\}\}/g, displayName)
+    .replace(/\{\{weekRange\}\}/g, fmtWeekRange)
+    .replace(/\{\{daysScored\}\}/g, String(daysScored))
+    .replace(/\{\{avgScore\}\}/g, String(avgScore))
+    .replace(/\{\{bestDay\}\}/g, bestDayLabel)
+    .replace(/\{\{dayRows\}\}/g, dayRows);
+
+  subject = interpolate(subject);
+  html    = interpolate(html);
+  text    = interpolate(text);
+
+  try {
+    await transporter.sendMail({ from: fromAddress, to: toEmail, subject, html, text });
+    console.log(`[email] Weekly digest sent to ${toEmail}`);
+  } catch (smtpErr: any) {
+    console.error(`[email] SMTP error sending weekly digest to ${toEmail}:`, smtpErr?.message || smtpErr);
+  }
+}
