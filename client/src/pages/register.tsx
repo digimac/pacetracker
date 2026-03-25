@@ -99,6 +99,14 @@ export default function RegisterPage() {
           </div>
           <h1 className="text-xl font-bold tracking-tight">SWEET MOMENTUM</h1>
           <p className="text-sm text-muted-foreground mt-1">Start tracking your daily performance</p>
+          <a
+            href="https://sweetmo.io/start"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-3 text-sm font-semibold text-primary hover:underline underline-offset-4"
+          >
+            What is SweetMo.io?
+          </a>
         </div>
 
         {/* Step 1: Account Creation */}
