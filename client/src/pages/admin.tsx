@@ -783,6 +783,28 @@ function MembersTab() {
 
 const TEMPLATE_DEFS = [
   {
+    key: "welcome",
+    label: "Welcome Email",
+    description: "Sent automatically when a new member creates an account.",
+    defaultSubject: "Welcome to Sweet Momentum, {{displayName}}!",
+    defaultBodyHtml: `<body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+  <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+    <div style="background:#FF6E00;padding:32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;">Sweet Momentum</h1>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Daily Performance Tracking</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey {{displayName}},</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 16px;">Welcome to <strong style="color:#FF6E00;">Sweet Momentum</strong> — your daily performance tracking app. You're all set to start scoring your day across the 6 core metrics: Time, Goal, Team, Task, View, and Pace.</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">Head to the <strong style="color:#fff;">Today</strong> page to record your first daily score.</p>
+      <div style="text-align:center;margin:32px 0;"><a href="https://sweetmo.io" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;">Go to Sweet Momentum</a></div>
+      <p style="color:#666;font-size:12px;text-align:center;margin:0;">Questions? Reply to this email — we're happy to help.</p>
+    </div>
+  </div>
+</body>`,
+    defaultBodyText: `Hey {{displayName}},\n\nWelcome to Sweet Momentum! You're all set to start tracking your daily performance across 6 core metrics.\n\nHead to the Today page to record your first score:\nhttps://sweetmo.io\n\nQuestions? Reply to this email.`,
+  },
+  {
     key: "invite",
     label: "Momentum Partner Invite",
     description: "Sent when a member invites someone to become their momentum partner.",

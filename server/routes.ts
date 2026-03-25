@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
-import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail } from "./email";
+import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail } from "./email";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
@@ -89,6 +89,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       await new Promise<void>((resolve, reject) => req.session!.save(err => err ? reject(err) : resolve())).catch(() => {});
       // Sync to HubSpot (fire-and-forget)
       hubspotSyncNewUser(user, "America/New_York").catch(() => {});
+      // Send welcome email (fire-and-forget)
+      sendWelcomeEmail({ toEmail: user.email, displayName: user.displayName }).catch(() => {});
       res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Registration failed" });
