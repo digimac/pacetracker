@@ -712,6 +712,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  app.get("/api/public/register-page", async (req, res) => {
+    try {
+      const page = await storage.getSitePage("register");
+      res.json(page || null);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get("/api/pages/:pageKey", requireAuth, async (req, res) => {
     try {
       const page = await storage.getSitePage(req.params.pageKey);
@@ -736,7 +745,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const pageKey = req.params.pageKey;
       const CATEGORY_KEYS = ["cat_athlete","cat_graduate","cat_recovery","cat_veteran","cat_caregiver","cat_entrepreneur","cat_writer","cat_musician"];
-      if (!["story", "tracking", "connect", "login", "terms", "privacy", "eula", "timeline", "seo", "start", ...CATEGORY_KEYS].includes(pageKey)) {
+      if (!["story", "tracking", "connect", "login", "register", "terms", "privacy", "eula", "timeline", "seo", "start", ...CATEGORY_KEYS].includes(pageKey)) {
         return res.status(400).json({ error: "Invalid page key" });
       }
       const data = insertSitePageSchema.parse({ ...req.body, pageKey });

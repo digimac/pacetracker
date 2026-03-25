@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,16 +90,34 @@ export default function RegisterPage() {
 
   const hasLocationData = location.city.trim() || location.country.trim();
 
+  // Fetch admin-configured register page background
+  const { data: config } = useQuery<{ heroImageUrl?: string | null } | null>({
+    queryKey: ["/api/public/register-page"],
+    queryFn: () => apiRequest("GET", "/api/public/register-page").then(r => r.json()),
+    staleTime: 5 * 60_000,
+  });
+  const bgImage = config?.heroImageUrl?.trim() || null;
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
+      {/* Background image */}
+      {bgImage && (
+        <>
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${bgImage})` }}
+          />
+          <div className="absolute inset-0 bg-black/60" />
+        </>
+      )}
+      <div className="w-full max-w-sm relative z-10">
         {/* Logo / Header */}
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-4">
             <img src="/favicon.png" alt="Sweet Momentum" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">SWEET MOMENTUM</h1>
-          <p className="text-sm text-muted-foreground mt-1">Start tracking your daily performance</p>
+          <h1 className={`text-xl font-bold tracking-tight ${bgImage ? "text-white" : ""}`}>SWEET MOMENTUM</h1>
+          <p className={`text-sm mt-1 ${bgImage ? "text-white/70" : "text-muted-foreground"}`}>Start tracking your daily performance</p>
           <a
             href="https://sweetmo.io/start"
             target="_blank"
@@ -111,7 +130,7 @@ export default function RegisterPage() {
 
         {/* Step 1: Account Creation */}
         {step === "account" && (
-          <Card>
+          <Card className={bgImage ? "bg-card/90 backdrop-blur-sm border-white/10" : ""}>
             <CardHeader className="pb-4">
               <CardTitle className="text-lg">Create Account</CardTitle>
               <CardDescription>Set up your Sweet Momentum profile</CardDescription>
@@ -173,7 +192,7 @@ export default function RegisterPage() {
 
         {/* Step 2: Optional Location */}
         {step === "location" && (
-          <Card>
+          <Card className={bgImage ? "bg-card/90 backdrop-blur-sm border-white/10" : ""}>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
@@ -252,7 +271,7 @@ export default function RegisterPage() {
 
         {/* Step 3: Community Category */}
         {step === "category" && (
-          <Card>
+          <Card className={bgImage ? "bg-card/90 backdrop-blur-sm border-white/10" : ""}>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center text-lg">

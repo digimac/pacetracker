@@ -40,6 +40,7 @@ const PAGE_DEFS = [
   { key: "tracking", label: "Daily Tracking",     icon: Clock,     accent: "text-emerald-400", border: "border-emerald-500/30", color: "from-emerald-500/10 to-emerald-600/5" },
   { key: "connect",  label: "Connect",            icon: Globe,     accent: "text-blue-400", border: "border-blue-500/30", color: "from-blue-500/10 to-blue-600/5" },
   { key: "login",    label: "Login Page",         icon: ShieldCheck, accent: "text-orange-400", border: "border-orange-500/30", color: "from-orange-500/10 to-orange-600/5" },
+  { key: "register", label: "Register Page",       icon: ShieldCheck, accent: "text-yellow-400", border: "border-yellow-500/30", color: "from-yellow-500/10 to-yellow-600/5" },
   { key: "terms",    label: "Terms & Conditions",  icon: FileText,    accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
   { key: "privacy",  label: "Privacy Policy",      icon: ShieldCheck, accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
   { key: "eula",     label: "EULA",                icon: FileText,    accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
@@ -178,6 +179,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
               testId={`page-hero-${pageKey}`}
               hint={
                 pageKey === "login" ? "Used as a subtle full-screen background on the login page. A dark overlay is applied automatically." :
+                pageKey === "register" ? "Used as a full-screen background on the registration page. A dark overlay is applied automatically." :
                 ["terms","privacy","eula"].includes(pageKey) ? "Optional banner image shown at the top of the page." :
                 pageKey === "timeline" ? "Displayed at 18% opacity behind the activity timeline on the dashboard. Works best with a texture, pattern, or atmospheric photo." :
                 pageKey === "start" ? "Displayed in the right panel of the hero section. Works best with a dark, atmospheric photo (1200×800px+)." :
