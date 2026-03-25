@@ -75,11 +75,8 @@ export default function LoginPage() {
       {/* All content above the background */}
       <div className="relative z-10 w-full max-w-sm flex flex-col items-center">
 
-        {/* Logo / App name */}
+        {/* App name */}
         <div className="text-center mb-6">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-4">
-            <img src="/favicon.png" alt="Sweet Momentum" className="w-full h-full object-contain" />
-          </div>
           <h2 className={`font-bold tracking-tight ${bgImage ? "text-white" : ""}`} style={{ fontSize: '3.25rem', lineHeight: '2.5rem' }}>
             SWEET MOMENTUM
           </h2>
