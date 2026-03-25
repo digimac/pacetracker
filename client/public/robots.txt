@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /start
+Disallow: /api/
+
+Sitemap: https://sweetmo.io/sitemap.xml
