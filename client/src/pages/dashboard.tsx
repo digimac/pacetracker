@@ -13,7 +13,7 @@ import { TrendingUp, TrendingDown, Minus, Calendar, Target, Zap } from "lucide-r
 import { useLocation } from "wouter";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
 import { useUserTimezone, getTodayInTimezone } from "@/hooks/use-user-timezone";
-import { DaySparkline, TimelineEvent, CORE_METRIC_COLORS } from "@/components/day-sparkline";
+import { DaySparkline, TimelineEvent, CORE_METRIC_COLORS, getMetricColor } from "@/components/day-sparkline";
 
 
 type DayResult = {
