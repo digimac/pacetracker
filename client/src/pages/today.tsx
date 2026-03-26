@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, XCircle, Minus, Save, ChevronRight, Info } from "lucide-react";
+import { CheckCircle2, XCircle, Minus, Save, ChevronRight, Info, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import type { MetricScore, CustomMetric, MetricContent } from "@shared/schema";
@@ -211,6 +211,14 @@ export default function TodayPage() {
   const metricContentMap: Record<string, MetricContent> = {};
   metricContentArray.forEach(c => { metricContentMap[c.metricKey] = c; });
 
+  // Momentum partners
+  type PartnerConn = { connectionId: number; partnerId: number; partnerName: string; todayScore: number | null };
+  const { data: partners = [] } = useQuery<PartnerConn[]>({
+    queryKey: ["/api/connections"],
+    queryFn: () => apiRequest("GET", "/api/connections").then(r => r.json()),
+    staleTime: 60_000,
+  });
+
   // Initialize from existing entry
   useEffect(() => {
     if (entryData) {
@@ -403,6 +411,53 @@ export default function TodayPage() {
         <Save className="w-4 h-4 mr-2" />
         {saveMutation.isPending ? "Saving..." : "Save Today's Score"}
       </Button>
+
+      {/* Momentum Partners */}
+      {partners.length > 0 && (
+        <section className="mt-4">
+          <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">Momentum Partners</p>
+          <div className="grid grid-cols-4 gap-2">
+            {partners.map(p => {
+              const score = p.todayScore;
+              const scoreColor =
+                score === null ? "text-muted-foreground" :
+                score >= 7 ? "text-[#FF6E00]" :
+                score > 0 ? "text-green-400" :
+                score < 0 ? "text-red-400" : "text-muted-foreground";
+              const initials = p.partnerName
+                .split(" ")
+                .map((w: string) => w[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2);
+              return (
+                <div
+                  key={p.connectionId}
+                  className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-muted/20 px-2 py-3 text-center"
+                  data-testid={`partner-card-${p.partnerId}`}
+                >
+                  {/* Avatar */}
+                  <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0">
+                    {initials ? (
+                      <span className="text-xs font-bold text-primary">{initials}</span>
+                    ) : (
+                      <User className="w-4 h-4 text-primary" />
+                    )}
+                  </div>
+                  {/* Name */}
+                  <p className="text-[11px] font-semibold leading-tight text-foreground w-full truncate">
+                    {p.partnerName}
+                  </p>
+                  {/* Score */}
+                  <p className={`text-lg font-black leading-none ${scoreColor}`}>
+                    {score === null ? "—" : score > 0 ? `+${score}` : score}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Metric Info Modal */}
       {activeModal && (
