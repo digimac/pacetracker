@@ -384,37 +384,9 @@ export default function TodayPage() {
         </div>
       )}
 
-      {/* Notes */}
-      <section className="mb-6">
-        <div className="flex items-baseline justify-between mb-2">
-          <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Today's Notes for Tomorrow's Goal</h2>
-          <span className="text-[10px] text-muted-foreground/50">Optional · saved with your score</span>
-        </div>
-        <Textarea
-          placeholder="How did today go? Add a reflection once you've scored the day..."
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          rows={3}
-          className="resize-none"
-          data-testid="textarea-notes"
-        />
-      </section>
-
-      {/* Save */}
-      <Button
-        onClick={() => saveMutation.mutate()}
-        disabled={saveMutation.isPending}
-        className="w-full"
-        size="lg"
-        data-testid="button-save"
-      >
-        <Save className="w-4 h-4 mr-2" />
-        {saveMutation.isPending ? "Saving..." : "Save Today's Score"}
-      </Button>
-
       {/* Momentum Partners */}
       {partners.length > 0 && (
-        <section className="mt-4">
+        <section className="mb-6">
           <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">Momentum Partners</p>
           <div className="grid grid-cols-4 gap-2">
             {partners.map(p => {
@@ -458,6 +430,34 @@ export default function TodayPage() {
           </div>
         </section>
       )}
+
+      {/* Notes */}
+      <section className="mb-6">
+        <div className="flex items-baseline justify-between mb-2">
+          <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Today's Notes for Tomorrow's Goal</h2>
+          <span className="text-[10px] text-muted-foreground/50">Optional · saved with your score</span>
+        </div>
+        <Textarea
+          placeholder="How did today go? Add a reflection once you've scored the day..."
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          rows={3}
+          className="resize-none"
+          data-testid="textarea-notes"
+        />
+      </section>
+
+      {/* Save */}
+      <Button
+        onClick={() => saveMutation.mutate()}
+        disabled={saveMutation.isPending}
+        className="w-full"
+        size="lg"
+        data-testid="button-save"
+      >
+        <Save className="w-4 h-4 mr-2" />
+        {saveMutation.isPending ? "Saving..." : "Save Today's Score"}
+      </Button>
 
       {/* Metric Info Modal */}
       {activeModal && (
