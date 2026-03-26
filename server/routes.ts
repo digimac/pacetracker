@@ -376,6 +376,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Per-date metric timeline (used by history day drawer)
+  app.get("/api/entries/:date/timeline", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const { date } = req.params; // YYYY-MM-DD
+      const entry = await storage.getDailyEntry(userId, date);
+      if (!entry) return res.json([]);
+      const scores = await storage.getMetricScoresByEntry(entry.id);
+      const timeline = scores
+        .filter(s => s.rating !== "skip")
+        .map(s => ({
+          metricKey: s.metricKey,
+          metricLabel: s.metricLabel,
+          rating: s.rating,
+          ratedAt: (s as any).ratedAt ?? null,
+        }))
+        .filter(s => s.ratedAt !== null)
+        .sort((a, b) => new Date(a.ratedAt!).getTime() - new Date(b.ratedAt!).getTime());
+      res.json(timeline);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Today's metric timeline — all scored metrics with their ratedAt timestamps
   app.get("/api/today/timeline", requireAuth, async (req, res) => {
     try {

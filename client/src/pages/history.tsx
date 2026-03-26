@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { MetricScore, CustomMetric } from "@shared/schema";
+import { DaySparkline } from "@/components/day-sparkline";
+import type { TimelineEvent } from "@/components/day-sparkline";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -127,6 +129,14 @@ function DayDrawer({
     return map;
   });
   const [notes, setNotes] = useState(existingResult?.entry.notes || "");
+
+  // Fetch timestamp timeline for this date
+  const { data: timeline = [] } = useQuery<TimelineEvent[]>({
+    queryKey: ["/api/entries", dateStr, "timeline"],
+    queryFn: () => apiRequest("GET", `/api/entries/${dateStr}/timeline`).then(r => r.json()),
+    enabled: !!existingResult, // only fetch if there's actually a score for this day
+    staleTime: 60_000,
+  });
 
   // Re-init if existingResult changes (e.g., loaded async)
   useEffect(() => {
@@ -280,6 +290,16 @@ function DayDrawer({
                 );
               })}
             </>
+          )}
+
+          {/* Activity Timeline Sparkline */}
+          {timeline.length > 0 && (
+            <div className="pt-1">
+              <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-2">Activity Timeline</p>
+              <div className="rounded-lg border border-border bg-muted/30 px-3 pt-3 pb-1">
+                <DaySparkline events={timeline} />
+              </div>
+            </div>
           )}
 
           {/* Notes */}
