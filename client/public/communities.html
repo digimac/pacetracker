@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Community — Sweet Momentum</title>
+  <meta name="description" content="Sweet Momentum is built for every journey. Find your community and discover the 4 custom metrics designed for your unique path." />
+  <meta property="og:title" content="Find Your Community — Sweet Momentum" />
+  <meta property="og:description" content="Athletes, graduates, musicians, entrepreneurs and more. Track what matters most to your journey." />
+  <meta property="og:url" content="https://sweetmo.io/communities" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="stylesheet" href="https://use.typekit.net/exm3tjn.css" />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800,900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0a;
+      --surface:   #111111;
+      --surface2:  #1a1a1a;
+      --border:    rgba(255,255,255,0.08);
+      --text:      #ffffff;
+      --muted:     rgba(255,255,255,0.55);
+      --accent:    #FF6E00;
+      --accent2:   #85FF00;
+      --radius:    14px;
+      --font-body: 'Cabinet Grotesk', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent); background: rgba(255,110,0,0.12);
+      border: 1px solid rgba(255,110,0,0.25); border-radius: 100px;
+      padding: 5px 14px;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-body); font-size: 14px; font-weight: 800;
+      text-decoration: none; border-radius: var(--radius); cursor: pointer;
+      border: none; transition: all 0.15s ease;
+    }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      padding: 12px 28px;
+    }
+    .btn-primary:hover { background: #e55e00; transform: translateY(-1px); }
+    .btn-outline {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border); padding: 10px 20px;
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.04); }
+    .btn-apply {
+      width: 100%; justify-content: center;
+      background: rgba(133,255,0,0.12); color: var(--accent2);
+      border: 1px solid rgba(133,255,0,0.3); padding: 11px 20px;
+      font-size: 13px; border-radius: 10px; margin-top: 12px;
+    }
+    .btn-apply:hover { background: rgba(133,255,0,0.2); transform: translateY(-1px); }
+    .btn-apply.applied {
+      background: rgba(133,255,0,0.2); color: var(--accent2);
+      cursor: default; transform: none;
+    }
+    .btn-apply.pro-only {
+      background: rgba(255,110,0,0.1); color: var(--accent);
+      border-color: rgba(255,110,0,0.3);
+    }
+    .btn-apply.pro-only:hover { background: rgba(255,110,0,0.2); }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 16px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(10,10,10,0.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; }
+    .nav-logo span { font-size: 14px; font-weight: 800; letter-spacing: 0.06em; color: var(--text); }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+    .nav-link { font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; padding: 8px 12px; transition: color 0.15s; }
+    .nav-link:hover { color: var(--text); }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 140px 0 80px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 900; line-height: 1.05; letter-spacing: -0.03em;
+      margin: 20px 0 24px;
+    }
+    .hero h1 .highlight { color: var(--accent); }
+    .hero p {
+      font-size: 18px; color: var(--muted); max-width: 560px;
+      margin: 0 auto 40px; line-height: 1.7;
+    }
+    .hero-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+
+    /* ── Category Grid ── */
+    .categories-section { padding: 80px 0 120px; }
+    .section-intro { text-align: center; margin-bottom: 64px; }
+    .section-intro h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 900; letter-spacing: -0.02em; margin-bottom: 12px; }
+    .section-intro p { font-size: 16px; color: var(--muted); max-width: 480px; margin: 0 auto; }
+
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .category-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .category-card:hover { border-color: rgba(255,255,255,0.18); transform: translateY(-3px); }
+
+    .category-image {
+      width: 100%; height: 160px;
+      object-fit: cover;
+      display: block;
+      background: var(--surface2);
+    }
+    .category-image-placeholder {
+      width: 100%; height: 160px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem;
+      background: linear-gradient(135deg, var(--surface2), var(--surface));
+    }
+
+    .category-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+    .category-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .category-emoji { font-size: 1.4rem; }
+    .category-title { font-size: 16px; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+
+    .category-tagline { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
+
+    .metrics-label {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 8px;
+    }
+    .metrics-list { list-style: none; margin-bottom: 4px; }
+    .metrics-list li {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 6px 0; border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .metrics-list li:last-child { border-bottom: none; }
+    .metric-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent2); flex-shrink: 0; margin-top: 6px;
+    }
+    .metric-name { font-weight: 800; color: var(--text); margin-right: 4px; }
+    .metric-desc { color: var(--muted); }
+
+    .category-cta { margin-top: auto; }
+
+    /* Auth state notices */
+    .notice-logged-out, .notice-free { display: none; }
+    .state-guest .notice-logged-out { display: block; }
+    .state-free .notice-free { display: block; }
+
+    /* ── How It Works ── */
+    .how-section { padding: 80px 0; border-top: 1px solid var(--border); }
+    .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 48px; }
+    .how-card { text-align: center; padding: 32px 24px; }
+    .how-number {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,110,0,0.15); border: 1px solid rgba(255,110,0,0.3);
+      color: var(--accent); font-weight: 900; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .how-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+    .how-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+    /* ── CTA ── */
+    .cta-section {
+      padding: 120px 24px; text-align: center;
+      background: linear-gradient(180deg, transparent 0%, rgba(255,110,0,0.04) 100%);
+    }
+    .cta-section h2 { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 900; letter-spacing: -0.02em; margin-bottom: 16px; }
+    .cta-section p { font-size: 18px; color: var(--muted); max-width: 480px; margin: 0 auto 48px; }
+    .cta-actions { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+
+    /* ── Footer ── */
+    footer { padding: 40px 24px; text-align: center; border-top: 1px solid var(--border); }
+    .footer-links { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+    .footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+    footer p { font-size: 12px; color: rgba(255,255,255,0.25); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 20px;
+      font-size: 14px; font-weight: 600;
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.25s ease;
+      max-width: 320px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { border-color: rgba(133,255,0,0.4); color: var(--accent2); }
+    #toast.error { border-color: rgba(255,80,80,0.4); color: #ff8080; }
+    #toast.info { border-color: rgba(255,110,0,0.4); color: var(--accent); }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      .categories-grid { grid-template-columns: repeat(2, 1fr); }
+      .how-grid { grid-template-columns: 1fr; gap: 16px; }
+    }
+    @media (max-width: 600px) {
+      .categories-grid { grid-template-columns: 1fr; }
+      nav { padding: 12px 16px; }
+    }
+
+    /* ── Animations ── */
+    .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <a href="/start" class="nav-logo">
+      <img src="/favicon.png" alt="Sweet Momentum" />
+      <span>SWEET MOMENTUM</span>
+    </a>
+    <div class="nav-actions">
+      <a href="/start" class="nav-link">Home</a>
+      <a href="/#/register" class="btn btn-primary" style="font-size:13px;padding:10px 22px;">Get Started Free</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="tag">🌐 8 Communities</div>
+      <h1>Track What Matters<br>For <span class="highlight">Your Journey</span></h1>
+      <p>Sweet Momentum is built for every path. Each community comes with 4 custom metrics designed specifically for your goals — so you track what actually moves the needle.</p>
+      <div class="hero-actions">
+        <a href="/#/register" class="btn btn-primary">Create Free Account</a>
+        <a href="/start" class="btn btn-outline">Learn More</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Category Grid -->
+  <section class="categories-section">
+    <div class="container">
+      <div class="section-intro fade-in">
+        <h2>Find Your Community</h2>
+        <p>Click any category to add its 4 custom metrics to your dashboard — instantly.</p>
+      </div>
+
+      <div class="categories-grid" id="categories-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="how-section">
+    <div class="container">
+      <div class="section-intro fade-in">
+        <h2>How It Works</h2>
+        <p>From sign-up to your first community score in under 2 minutes.</p>
+      </div>
+      <div class="how-grid">
+        <div class="how-card fade-in">
+          <div class="how-number">1</div>
+          <h3>Create Your Free Account</h3>
+          <p>Sign up in seconds. No credit card required. Your 6 core metrics are ready on day one.</p>
+        </div>
+        <div class="how-card fade-in">
+          <div class="how-number">2</div>
+          <h3>Choose Your Community</h3>
+          <p>Select the category that fits your journey. Apply its 4 custom metrics to your dashboard with one click.</p>
+        </div>
+        <div class="how-card fade-in">
+          <div class="how-number">3</div>
+          <h3>Score Every Day</h3>
+          <p>Mark each metric as a Win, Loss, or Skip. Build your streak, track your momentum, stay accountable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <h2>Ready to Build Your<br><span style="color:var(--accent)">Sweet Momentum?</span></h2>
+      <p>Join for free. Upgrade to Pro when you're ready for custom metrics and the full experience.</p>
+      <div class="cta-actions">
+        <a href="/#/register" class="btn btn-primary" style="font-size:16px;padding:16px 40px;">Get Started Free</a>
+        <a href="/start" class="btn btn-outline">Learn More →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-links">
+      <a href="/start">Home</a>
+      <a href="/#/terms">Terms</a>
+      <a href="/#/privacy">Privacy</a>
+      <a href="/#/eula">EULA</a>
+    </div>
+    <p>Sweet Momentum, sweetmo.io, and the Pacetracker app are a service of Projection Creative LLC. Built in Louisville, KY.</p>
+    <p style="margin-top:8px;">© <span id="year"></span> Sweet Momentum · <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer" style="color:rgba(255,255,255,0.25);text-decoration:none;">Created with Perplexity Computer</a></p>
+  </footer>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // ── Category Definitions ──────────────────────────────────────────────────
+    const CATEGORIES = [
+      {
+        key: 'athlete',
+        label: 'Athlete',
+        emoji: '🏅',
+        tagline: 'Built for competitors who train hard, recover smart, and track every edge.',
+        color: '#FF6E00',
+        image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&h=320&fit=crop&auto=format',
+        metrics: [
+          { name: 'Train',    desc: 'Completed a full training session' },
+          { name: 'Recover',  desc: 'Active recovery or rest protocol' },
+          { name: 'Fuel',     desc: 'Nutrition and hydration on target' },
+          { name: 'Compete',  desc: 'Competition or performance event' },
+        ],
+      },
+      {
+        key: 'graduate',
+        label: 'Graduate',
+        emoji: '🎓',
+        tagline: 'For students and new grads navigating the high-stakes transition to career.',
+        color: '#60a5fa',
+        image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=320&fit=crop&auto=format',
+        metrics: [
+          { name: 'Study',   desc: 'Focused study or coursework session' },
+          { name: 'Apply',   desc: 'Job or opportunity application sent' },
+          { name: 'Network', desc: 'Connected with a professional contact' },
+          { name: 'Skill',   desc: 'Practiced or learned a career skill' },
+        ],
+      },
+      {
+        key: 'recovery',
+        label: 'Recovery',
+        emoji: '🌿',
+        tagline: 'A private, daily accountability system for every step of the recovery journey.',
+        color: '#34d399',
+        image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&h=320&fit=crop&auto=format',
+        metrics: [
+          { name: 'Sober',   desc: 'Maintained sobriety today' },
+          { name: 'Meeting', desc: 'Attended a support meeting' },
+          { name: 'Connect', desc: 'Reached out to a sponsor or peer' },
+          { name: 'Reflect', desc: 'Journaling, prayer, or meditation' },
+        ],
+      },
+      {
+        key: 'veteran',
+        label: 'Veteran',
+        emoji: '🎖️',
+        tagline: 'For those who served — tracking the mission of the next chapter.',
+        color: '#f59e0b',
+        image: 'https://images.unsplash.com/photo-1551445523-324a0fdab051?w=600&h=320&fit=crop&auto=format',
+        metrics: [
+          { name: 'Purpose', desc: 'Worked toward a meaningful daily goal' },
+          { name: 'Wellness',desc: 'Physical or mental health check-in' },
+          { name: 'Serve',   desc: 'Volunteered or supported the community' },
+          { name: 'Advance', desc: 'Career, education, or skill progress' },
+        ],
+      },
+      {
+        key: 'caregiver',
+        label: 'Caregiver',
+        emoji: '🤝',
+        tagline: 'For those who give everything to others — and need to track their own momentum too.',
+        color: '#f472b6',
+        image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600&h=320&fit=crop&auto=format',
+        metrics: [
+          { name: 'Care',    desc: 'Provided focused, quality care today' },
+          { name: 'Self',    desc: 'Dedicated time to your own wellbeing' },
+          { name: 'Prepare', desc: 'Planned, researched, or organised care' },
+          { name: 'Connect', desc: 'Sought support or shared with others' },
+        ],
+      },
+      {
+        key: 'entrepreneur',
+        label: 'Entrepreneur',
+        emoji: '🚀',
+        tagline: 'Ship fast, sell hard, and build something that matters — one day at a time.',
+        color: '#a78bfa',
+        image: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=600&h=320&fit=crop&auto=format',
+        metrics: [
+          { name: 'Build',   desc: 'Shipped a feature, product, or deliverable' },
+          { name: 'Sell',    desc: 'Outreach, pitch, or revenue-generating activity' },
+          { name: 'Learn',   desc: 'Studied market, competitor, or business skill' },
+          { name: 'Capital', desc: 'Investor contact, funding, or financial activity' },
+        ],
+      },
+      {
+        key: 'writer',
+        label: 'Writer',
+        emoji: '✍️',
+        tagline: 'Words are the work. Track your output, your craft, and your publishing momentum.',
+        color: '#22d3ee',
+        image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&h=320&fit=crop&auto=format',
+        metrics: [
+          { name: 'Draft',   desc: 'Wrote new content — any format, any count' },
+          { name: 'Edit',    desc: 'Revised and refined existing work' },
+          { name: 'Publish', desc: 'Published or submitted a piece' },
+          { name: 'Read',    desc: 'Read for craft, research, or inspiration' },
+        ],
+      },
+      {
+        key: 'musician',
+        label: 'Musician',
+        emoji: '🎵',
+        tagline: 'For performers and creators who need to practice, promote, and book — every day.',
+        color: '#fb923c',
+        image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&h=320&fit=crop&auto=format',
+        metrics: [
+          { name: 'Solo',     desc: 'Individual practice session' },
+          { name: 'Rehearse', desc: 'Group rehearsal or band practice' },
+          { name: 'Promote',  desc: 'Promotion, social, or marketing activity' },
+          { name: 'Booking',  desc: 'Confirmed a gig, show, or venue' },
+        ],
+      },
+    ];
+
+    // ── Auth State ────────────────────────────────────────────────────────────
+    let authState = 'guest'; // 'guest' | 'free' | 'pro'
+    let applyingKey = null;
+
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!res.ok) { authState = 'guest'; return; }
+        const data = await res.json();
+        if (!data.user) { authState = 'guest'; return; }
+        // Check Pro status
+        const billingRes = await fetch('/api/billing/status', { credentials: 'include' });
+        const billing = billingRes.ok ? await billingRes.json() : {};
+        authState = billing.isPro ? 'pro' : 'free';
+      } catch {
+        authState = 'guest';
+      }
+    }
+
+    // ── Fetch user's existing custom metrics to grey out already-applied ─────
+    let existingMetricNames = new Set();
+    async function fetchExistingMetrics() {
+      if (authState === 'guest') return;
+      try {
+        const res = await fetch('/api/metrics/custom', { credentials: 'include' });
+        if (!res.ok) return;
+        const metrics = await res.json();
+        existingMetricNames = new Set(metrics.map(m => m.name.toLowerCase()));
+      } catch {}
+    }
+
+    // ── Render Grid ───────────────────────────────────────────────────────────
+    function renderGrid() {
+      const grid = document.getElementById('categories-grid');
+      grid.innerHTML = CATEGORIES.map(cat => {
+        // Check if all 4 metrics already applied
+        const allApplied = cat.metrics.every(m => existingMetricNames.has(m.name.toLowerCase()));
+
+        let ctaHtml = '';
+        if (authState === 'guest') {
+          ctaHtml = `<a href="/#/register" class="btn btn-apply" style="text-decoration:none;">
+            Create Account to Apply Metrics →
+          </a>`;
+        } else if (authState === 'free') {
+          ctaHtml = `<button class="btn btn-apply pro-only" onclick="showUpgradePrompt()">
+            🔒 Pro Feature — Upgrade to Apply
+          </button>`;
+        } else if (allApplied) {
+          ctaHtml = `<button class="btn btn-apply applied" disabled>
+            ✓ Metrics Already Applied
+          </button>`;
+        } else {
+          ctaHtml = `<button class="btn btn-apply" onclick="applyMetrics('${cat.key}')">
+            + Apply ${cat.label} Metrics
+          </button>`;
+        }
+
+        const metricsHtml = cat.metrics.map(m => `
+          <li>
+            <span class="metric-dot" style="background:${cat.color};"></span>
+            <span><span class="metric-name">${m.name}</span><span class="metric-desc">— ${m.desc}</span></span>
+          </li>
+        `).join('');
+
+        return `
+          <div class="category-card fade-in" data-key="${cat.key}">
+            <img
+              class="category-image"
+              src="${cat.image}"
+              alt="${cat.label} community"
+              loading="lazy"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+            />
+            <div class="category-image-placeholder" style="display:none;">${cat.emoji}</div>
+            <div class="category-body">
+              <div class="category-header">
+                <span class="category-emoji">${cat.emoji}</span>
+                <span class="category-title" style="color:${cat.color}">${cat.label}</span>
+              </div>
+              <p class="category-tagline">${cat.tagline}</p>
+              <p class="metrics-label">Custom Metrics</p>
+              <ul class="metrics-list">${metricsHtml}</ul>
+              <div class="category-cta">${ctaHtml}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Re-run fade-in observer
+      observeFadeIns();
+    }
+
+    // ── Apply Metrics ─────────────────────────────────────────────────────────
+    async function applyMetrics(categoryKey) {
+      if (applyingKey) return;
+      const cat = CATEGORIES.find(c => c.key === categoryKey);
+      if (!cat) return;
+
+      applyingKey = categoryKey;
+      showToast(`Applying ${cat.label} metrics…`, 'info');
+
+      // Fetch current metrics to avoid duplicates
+      let existing = [];
+      try {
+        const r = await fetch('/api/metrics/custom', { credentials: 'include' });
+        existing = r.ok ? await r.json() : [];
+      } catch {}
+
+      const existingNames = new Set(existing.map(m => m.name.toLowerCase()));
+      const toAdd = cat.metrics.filter(m => !existingNames.has(m.name.toLowerCase()));
+      const slotsAvailable = 4 - existing.length;
+
+      if (slotsAvailable <= 0) {
+        showToast('You already have 4 custom metrics. Remove one first.', 'error');
+        applyingKey = null;
+        return;
+      }
+
+      const adding = toAdd.slice(0, slotsAvailable);
+      let added = 0;
+
+      for (const m of adding) {
+        try {
+          const r = await fetch('/api/metrics/custom', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: m.name, description: m.desc, emoji: null }),
+          });
+          if (r.ok) added++;
+        } catch {}
+      }
+
+      applyingKey = null;
+
+      if (added > 0) {
+        showToast(`✓ ${added} ${cat.label} metric${added > 1 ? 's' : ''} added to your dashboard!`, 'success');
+        // Refresh to update button states
+        await fetchExistingMetrics();
+        renderGrid();
+      } else if (toAdd.length === 0) {
+        showToast(`${cat.label} metrics are already on your dashboard.`, 'info');
+      } else {
+        showToast('Something went wrong. Please try again.', 'error');
+      }
+    }
+
+    function showUpgradePrompt() {
+      showToast('Upgrade to Pro to unlock custom metrics for your community.', 'info');
+      setTimeout(() => { window.location.href = '/#/billing'; }, 1800);
+    }
+
+    // ── Toast ─────────────────────────────────────────────────────────────────
+    let toastTimer = null;
+    function showToast(msg, type = 'info') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.className = ''; }, 3500);
+    }
+
+    // ── Intersection Observer for fade-in ─────────────────────────────────────
+    function observeFadeIns() {
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+      }, { threshold: 0.1 });
+      document.querySelectorAll('.fade-in:not(.visible)').forEach(el => io.observe(el));
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    (async () => {
+      await checkAuth();
+      await fetchExistingMetrics();
+      renderGrid();
+      observeFadeIns();
+    })();
+  </script>
+</body>
+</html>
