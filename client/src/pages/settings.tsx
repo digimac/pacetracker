@@ -101,6 +101,7 @@ export default function SettingsPage() {
     region: user?.region || "",
     country: user?.country || "",
     category: (user as any)?.category || "",
+    phone: (user as any)?.phone || "",
   });
 
   // Keep form in sync if user context loads after mount
@@ -112,8 +113,9 @@ export default function SettingsPage() {
       region: user?.region || "",
       country: user?.country || "",
       category: (user as any)?.category || "",
+      phone: (user as any)?.phone || "",
     });
-  }, [user?.firstName, user?.lastName, user?.city, user?.region, user?.country, (user as any)?.category]);
+  }, [user?.firstName, user?.lastName, user?.city, user?.region, user?.country, (user as any)?.category, (user as any)?.phone]);
 
   const saveProfile = useMutation({
     mutationFn: () => apiRequest("PATCH", "/api/auth/profile", profileForm).then(r => r.json()),
@@ -329,6 +331,20 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Mobile Phone */}
+          <div className="pt-2 border-t border-border space-y-1.5">
+            <Label htmlFor="settings-phone" className="text-xs">Mobile Phone Number</Label>
+            <Input
+              id="settings-phone"
+              type="tel"
+              placeholder="+1 (555) 000-0000"
+              value={profileForm.phone}
+              onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))}
+              data-testid="input-phone"
+            />
+            <p className="text-[11px] text-muted-foreground/60">Optional. Used for SMS notifications when available. Include country code (e.g. +1 for US).</p>
           </div>
 
 

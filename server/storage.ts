@@ -23,7 +23,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
-  updateUserProfile(userId: number, updates: { firstName?: string | null; lastName?: string | null; city?: string | null; region?: string | null; country?: string | null; category?: string | null }): Promise<User | undefined>;
+  updateUserProfile(userId: number, updates: { firstName?: string | null; lastName?: string | null; city?: string | null; region?: string | null; country?: string | null; category?: string | null; phone?: string | null }): Promise<User | undefined>;
   deleteUser(userId: number): Promise<void>;
 
   // Custom Metrics
@@ -126,7 +126,7 @@ export class DrizzleStorage implements IStorage {
     return this.db.select().from(users).orderBy(asc(users.createdAt));
   }
 
-  async updateUserProfile(userId: number, updates: { firstName?: string | null; lastName?: string | null; city?: string | null; region?: string | null; country?: string | null; category?: string | null }): Promise<User | undefined> {
+  async updateUserProfile(userId: number, updates: { firstName?: string | null; lastName?: string | null; city?: string | null; region?: string | null; country?: string | null; category?: string | null; phone?: string | null }): Promise<User | undefined> {
     const rows = await this.db.update(users).set(updates).where(eq(users.id, userId)).returning();
     return rows[0];
   }
@@ -575,7 +575,7 @@ export class MemStorage implements IStorage {
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.usersMap.values()).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
-  async updateUserProfile(userId: number, updates: { firstName?: string | null; lastName?: string | null; city?: string | null; region?: string | null; country?: string | null; category?: string | null }): Promise<User | undefined> {
+  async updateUserProfile(userId: number, updates: { firstName?: string | null; lastName?: string | null; city?: string | null; region?: string | null; country?: string | null; category?: string | null; phone?: string | null }): Promise<User | undefined> {
     const user = this.usersMap.get(userId);
     if (!user) return undefined;
     const updated = { ...user, ...updates };
