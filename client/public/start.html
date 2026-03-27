@@ -228,6 +228,123 @@
     }
 
     /* ══════════════════════════════════════════════════
+       LAYOUT 3b — COMMUNITIES: Lateral scroll strip
+       ═══════════════════════════════════════════════ */
+    #layout-communities {
+      padding: 100px 0 0;
+      overflow: hidden;
+    }
+    .communities-intro {
+      padding: 0 24px;
+      max-width: 1200px;
+      margin: 0 auto 48px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .communities-intro-left h2 {
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      font-weight: 900; letter-spacing: -0.03em; line-height: 1.1;
+      margin-bottom: 12px;
+    }
+    .communities-intro-left h2 em { font-style: normal; color: var(--accent2); }
+    .communities-intro-left p { font-size: 15px; color: var(--muted); max-width: 420px; line-height: 1.7; }
+    .communities-cta-link {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 14px; font-weight: 800; color: var(--accent);
+      text-decoration: none; border: 1px solid rgba(255,110,0,0.35);
+      border-radius: 100px; padding: 10px 22px;
+      background: rgba(255,110,0,0.08);
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .communities-cta-link:hover { background: rgba(255,110,0,0.18); border-color: rgba(255,110,0,0.6); }
+
+    /* Scroll track */
+    .communities-track-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      cursor: grab;
+      padding: 0 24px 56px;
+    }
+    .communities-track-wrap::-webkit-scrollbar { display: none; }
+    .communities-track-wrap.dragging { cursor: grabbing; }
+    .communities-track {
+      display: flex;
+      gap: 16px;
+      width: max-content;
+    }
+
+    /* Category card */
+    .comm-card {
+      flex-shrink: 0;
+      width: 260px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s, transform 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .comm-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-4px); }
+    .comm-card-img {
+      width: 100%; height: 140px;
+      object-fit: cover; display: block;
+      background: var(--surface2);
+    }
+    .comm-card-placeholder {
+      width: 100%; height: 140px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem;
+      background: linear-gradient(135deg, var(--surface2) 0%, var(--bg) 100%);
+    }
+    .comm-card-body { padding: 18px; flex: 1; display: flex; flex-direction: column; }
+    .comm-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .comm-card-emoji { font-size: 1.2rem; }
+    .comm-card-label {
+      font-size: 13px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .comm-card-tagline { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 14px; }
+    .comm-card-metrics { list-style: none; margin-bottom: 16px; }
+    .comm-card-metrics li {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+      padding: 4px 0; border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .comm-card-metrics li:last-child { border: none; }
+    .comm-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .comm-metric-name { color: var(--text); }
+    .comm-card-action {
+      margin-top: auto;
+      display: block; text-align: center;
+      font-size: 12px; font-weight: 800; letter-spacing: 0.04em;
+      padding: 9px 16px; border-radius: 8px;
+      border: 1px solid rgba(133,255,0,0.3);
+      color: var(--accent2); background: rgba(133,255,0,0.08);
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .comm-card-action:hover { background: rgba(133,255,0,0.18); }
+
+    /* Scroll hint fade edges */
+    .communities-fade-wrap {
+      position: relative;
+    }
+    .communities-fade-wrap::before,
+    .communities-fade-wrap::after {
+      content: ''; position: absolute; top: 0; bottom: 56px; width: 60px; z-index: 2; pointer-events: none;
+    }
+    .communities-fade-wrap::before { left: 0; background: linear-gradient(to right, var(--bg), transparent); }
+    .communities-fade-wrap::after  { right: 0; background: linear-gradient(to left,  var(--bg), transparent); }
+
+    /* ══════════════════════════════════════════════════
        LAYOUT 4 — CTA: Full-bleed dark with centered copy
        ═══════════════════════════════════════════════ */
     #layout-cta {
@@ -381,6 +498,24 @@
     </div>
   </section>
 
+  <!-- ══ LAYOUT 3b — COMMUNITIES ══ -->
+  <section id="layout-communities">
+    <div class="communities-intro fade-in">
+      <div class="communities-intro-left">
+        <h2>Built for <em>Your</em> Journey</h2>
+        <p>Every path is different. Sweet Momentum adapts to yours — with 4 custom metrics designed specifically for your community. Scroll to explore all 8.</p>
+      </div>
+      <a href="/communities" class="communities-cta-link">Explore All Communities →</a>
+    </div>
+    <div class="communities-fade-wrap">
+      <div class="communities-track-wrap" id="comm-track-wrap">
+        <div class="communities-track" id="comm-track">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ══ LAYOUT 4 — CTA ══ -->
   <section id="layout-cta">
     <div class="tag fade-in">🚀 Free to start</div>
@@ -488,6 +623,91 @@
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
     }, { threshold: 0.12 });
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // ── Communities horizontal scroll strip ───────────────────────────────────
+    const COMM_CATEGORIES = [
+      { key: 'athlete',      label: 'Athlete',      emoji: '🏅', color: '#FF6E00',
+        tagline: 'Train harder. Recover smarter. Compete with purpose.',
+        image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=520&h=280&fit=crop&auto=format',
+        metrics: ['Train', 'Recover', 'Fuel', 'Compete'] },
+      { key: 'graduate',     label: 'Graduate',     emoji: '🎓', color: '#60a5fa',
+        tagline: 'Study. Apply. Network. Land the role.',
+        image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=520&h=280&fit=crop&auto=format',
+        metrics: ['Study', 'Apply', 'Network', 'Skill'] },
+      { key: 'recovery',     label: 'Recovery',     emoji: '🌿', color: '#34d399',
+        tagline: 'One day at a time. Every streak matters.',
+        image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=520&h=280&fit=crop&auto=format',
+        metrics: ['Sober', 'Meeting', 'Connect', 'Reflect'] },
+      { key: 'veteran',      label: 'Veteran',      emoji: '🎖️', color: '#f59e0b',
+        tagline: 'Mission complete. New mission begins.',
+        image: 'https://images.unsplash.com/photo-1551445523-324a0fdab051?w=520&h=280&fit=crop&auto=format',
+        metrics: ['Purpose', 'Wellness', 'Serve', 'Advance'] },
+      { key: 'caregiver',    label: 'Caregiver',    emoji: '🤝', color: '#f472b6',
+        tagline: 'Care for others. Track yourself too.',
+        image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=520&h=280&fit=crop&auto=format',
+        metrics: ['Care', 'Self', 'Prepare', 'Connect'] },
+      { key: 'entrepreneur', label: 'Entrepreneur', emoji: '🚀', color: '#a78bfa',
+        tagline: 'Build. Sell. Learn. Raise capital.',
+        image: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=520&h=280&fit=crop&auto=format',
+        metrics: ['Build', 'Sell', 'Learn', 'Capital'] },
+      { key: 'writer',       label: 'Writer',       emoji: '✍️', color: '#22d3ee',
+        tagline: 'Draft. Edit. Publish. Read.',
+        image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=520&h=280&fit=crop&auto=format',
+        metrics: ['Draft', 'Edit', 'Publish', 'Read'] },
+      { key: 'musician',     label: 'Musician',     emoji: '🎵', color: '#fb923c',
+        tagline: 'Practice solo. Rehearse together. Promote. Book.',
+        image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=520&h=280&fit=crop&auto=format',
+        metrics: ['Solo', 'Rehearse', 'Promote', 'Booking'] },
+    ];
+
+    const track = document.getElementById('comm-track');
+    if (track) {
+      track.innerHTML = COMM_CATEGORIES.map(cat => `
+        <a class="comm-card" href="/communities#${cat.key}">
+          <img class="comm-card-img"
+            src="${cat.image}"
+            alt="${cat.label}"
+            loading="lazy"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+          />
+          <div class="comm-card-placeholder" style="display:none;">${cat.emoji}</div>
+          <div class="comm-card-body">
+            <div class="comm-card-header">
+              <span class="comm-card-emoji">${cat.emoji}</span>
+              <span class="comm-card-label" style="color:${cat.color}">${cat.label}</span>
+            </div>
+            <p class="comm-card-tagline">${cat.tagline}</p>
+            <ul class="comm-card-metrics">
+              ${cat.metrics.map(m => `
+                <li>
+                  <span class="comm-dot" style="background:${cat.color};"></span>
+                  <span class="comm-metric-name">${m}</span>
+                </li>`).join('')}
+            </ul>
+            <span class="comm-card-action">View Community →</span>
+          </div>
+        </a>
+      `).join('');
+    }
+
+    // Drag-to-scroll
+    const wrap = document.getElementById('comm-track-wrap');
+    if (wrap) {
+      let isDown = false, startX = 0, scrollLeft = 0;
+      wrap.addEventListener('mousedown', e => {
+        isDown = true; wrap.classList.add('dragging');
+        startX = e.pageX - wrap.offsetLeft;
+        scrollLeft = wrap.scrollLeft;
+      });
+      wrap.addEventListener('mouseleave', () => { isDown = false; wrap.classList.remove('dragging'); });
+      wrap.addEventListener('mouseup', () => { isDown = false; wrap.classList.remove('dragging'); });
+      wrap.addEventListener('mousemove', e => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - wrap.offsetLeft;
+        wrap.scrollLeft = scrollLeft - (x - startX) * 1.4;
+      });
+    }
   </script>
 </body>
 </html>
