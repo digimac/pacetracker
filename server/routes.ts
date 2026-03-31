@@ -1021,7 +1021,67 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // ── Email Templates (admin only) ──────────────────────────────────────────
-  app.get("/api/admin/email-templates/:key", requireAdmin, async (req, res) => {
+  // Goal List
+  app.get("/api/goals", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const goals = await storage.getGoalItems(userId);
+      res.json(goals);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post("/api/goals", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const { text, timeframe, targetDate } = z.object({
+        text: z.string().min(1).max(500),
+        timeframe: z.enum(["this_week", "this_month", "this_year"]).default("this_month"),
+        targetDate: z.string().nullable().optional(),
+      }).parse(req.body);
+      const existing = await storage.getGoalItems(userId);
+      const sortOrder = existing.length;
+      const goal = await storage.createGoalItem({ userId, text, timeframe, targetDate: targetDate || null, sortOrder, completed: false });
+      res.json(goal);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.patch("/api/goals/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const id = parseInt(req.params.id);
+      const updates = z.object({
+        text: z.string().min(1).max(500).optional(),
+        timeframe: z.enum(["this_week", "this_month", "this_year"]).optional(),
+        targetDate: z.string().nullable().optional(),
+        sortOrder: z.number().int().optional(),
+        completed: z.boolean().optional(),
+      }).parse(req.body);
+      const goal = await storage.updateGoalItem(id, userId, updates);
+      if (!goal) return res.status(404).json({ error: "Goal not found" });
+      res.json(goal);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.delete("/api/goals/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const id = parseInt(req.params.id);
+      await storage.deleteGoalItem(id, userId);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.put("/api/goals/reorder", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const { order } = z.object({ order: z.array(z.number()) }).parse(req.body);
+      await Promise.all(order.map((id, idx) => storage.updateGoalItem(id, userId, { sortOrder: idx })));
+      const goals = await storage.getGoalItems(userId);
+      res.json(goals);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+    app.get("/api/admin/email-templates/:key", requireAdmin, async (req, res) => {
     try {
       const { key } = req.params;
       const template = await storage.getEmailTemplate(key);

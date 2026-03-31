@@ -660,8 +660,301 @@ export default function SettingsPage() {
       </Card>
 
       {/* ── Connections ─────────────────────────────────────────────────────── */}
+      {/* Goal List */}
+      <GoalListCard />
+
+      {/* Connections */}
       <ConnectionsCard />
     </div>
+  );
+}
+
+// ─── Goal List Card ───────────────────────────────────────────────────────────────────
+
+type GoalTimeframe = "this_week" | "this_month" | "this_year";
+const TIMEFRAME_LABELS: Record<GoalTimeframe, string> = {
+  this_week:  "This Week",
+  this_month: "This Month",
+  this_year:  "This Year",
+};
+const TIMEFRAME_COLORS: Record<GoalTimeframe, string> = {
+  this_week:  "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  this_month: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  this_year:  "bg-violet-500/15 text-violet-400 border-violet-500/30",
+};
+
+function SortableGoalItem({ goal, onToggle, onDelete, onUpdate }: {
+  goal: any;
+  onToggle: (id: number, completed: boolean) => void;
+  onDelete: (id: number) => void;
+  onUpdate: (id: number, updates: any) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: goal.id });
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(goal.text);
+  const [editTimeframe, setEditTimeframe] = useState<GoalTimeframe>(goal.timeframe);
+  const [editDate, setEditDate] = useState(goal.targetDate || "");
+
+  function saveEdit() {
+    if (editText.trim()) {
+      onUpdate(goal.id, { text: editText.trim(), timeframe: editTimeframe, targetDate: editDate || null });
+    }
+    setEditing(false);
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      className={`flex items-start gap-2 rounded-lg border p-3 bg-background transition-colors ${goal.completed ? "opacity-50 border-border" : "border-border hover:border-border/80"}`}
+      data-testid={`goal-item-${goal.id}`}
+    >
+      {/* Drag handle */}
+      <button {...attributes} {...listeners} className="mt-0.5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing p-0.5 flex-shrink-0">
+        <GripVertical className="w-3.5 h-3.5" />
+      </button>
+
+      {/* Checkbox */}
+      <button
+        onClick={() => onToggle(goal.id, !goal.completed)}
+        className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${goal.completed ? "bg-green-500 border-green-500" : "border-muted-foreground/40 hover:border-primary"}`}
+        data-testid={`goal-check-${goal.id}`}
+      >
+        {goal.completed && <CheckCircle className="w-3 h-3 text-white" />}
+      </button>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        {editing ? (
+          <div className="space-y-2">
+            <Input
+              value={editText}
+              onChange={e => setEditText(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditing(false); }}
+              className="text-sm h-7 px-2"
+              autoFocus
+              data-testid={`goal-edit-input-${goal.id}`}
+            />
+            <div className="flex gap-2 items-center flex-wrap">
+              <select
+                value={editTimeframe}
+                onChange={e => setEditTimeframe(e.target.value as GoalTimeframe)}
+                className="text-xs border border-border rounded px-2 py-1 bg-background text-foreground"
+              >
+                <option value="this_week">This Week</option>
+                <option value="this_month">This Month</option>
+                <option value="this_year">This Year</option>
+              </select>
+              <input
+                type="date"
+                value={editDate}
+                onChange={e => setEditDate(e.target.value)}
+                className="text-xs border border-border rounded px-2 py-1 bg-background text-foreground"
+              />
+              <Button size="sm" className="h-6 text-xs px-2" onClick={saveEdit}>Save</Button>
+              <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setEditing(false)}>Cancel</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <p
+              className={`text-sm leading-snug cursor-pointer hover:text-primary transition-colors ${goal.completed ? "line-through text-muted-foreground" : "text-foreground"}`}
+              onClick={() => { setEditText(goal.text); setEditTimeframe(goal.timeframe); setEditDate(goal.targetDate || ""); setEditing(true); }}
+              data-testid={`goal-text-${goal.id}`}
+            >
+              {goal.text}
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${TIMEFRAME_COLORS[goal.timeframe as GoalTimeframe] ?? TIMEFRAME_COLORS.this_month}`}>
+                {TIMEFRAME_LABELS[goal.timeframe as GoalTimeframe] ?? goal.timeframe}
+              </span>
+              {goal.targetDate && (
+                <span className="text-[10px] text-muted-foreground">
+                  📅 {new Date(goal.targetDate + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Delete */}
+      <button
+        onClick={() => onDelete(goal.id)}
+        className="flex-shrink-0 text-muted-foreground/40 hover:text-destructive transition-colors p-0.5 mt-0.5"
+        data-testid={`goal-delete-${goal.id}`}
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function GoalListCard() {
+  const { toast } = useToast();
+  const [newText, setNewText] = useState("");
+  const [newTimeframe, setNewTimeframe] = useState<GoalTimeframe>("this_month");
+  const [newDate, setNewDate] = useState("");
+  const [filter, setFilter] = useState<GoalTimeframe | "all">("all");
+
+  const { data: goals = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/goals"],
+    queryFn: () => apiRequest("GET", "/api/goals").then(r => r.json()),
+    staleTime: 30_000,
+  });
+
+  const addGoal = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/goals", { text: newText.trim(), timeframe: newTimeframe, targetDate: newDate || null }).then(r => r.json()),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/goals"] }); setNewText(""); setNewDate(""); },
+    onError: () => toast({ title: "Could not add goal", variant: "destructive" }),
+  });
+
+  const updateGoal = useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: any }) => apiRequest("PATCH", `/api/goals/${id}`, updates).then(r => r.json()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/goals"] }),
+  });
+
+  const deleteGoal = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/goals/${id}`).then(r => r.json()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/goals"] }),
+  });
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  function handleDragEnd(event: any) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = goals.findIndex((g: any) => g.id === active.id);
+    const newIndex = goals.findIndex((g: any) => g.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(goals, oldIndex, newIndex);
+    const order = reordered.map((g: any) => g.id);
+    apiRequest("PUT", "/api/goals/reorder", { order }).then(() =>
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] })
+    );
+  }
+
+  const filtered = filter === "all" ? goals : goals.filter((g: any) => g.timeframe === filter);
+  const activeGoals = filtered.filter((g: any) => !g.completed);
+  const completedGoals = filtered.filter((g: any) => g.completed);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <CardTitle className="text-sm font-bold uppercase tracking-wider">Goal List</CardTitle>
+            <CardDescription className="text-xs mt-0.5">Personal goals with priority and timeframe. Click any goal to edit.</CardDescription>
+          </div>
+          <span className="text-xs text-muted-foreground">{activeGoals.length} active</span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+
+        {/* Add new goal */}
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add a goal..."
+              value={newText}
+              onChange={e => setNewText(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && newText.trim()) addGoal.mutate(); }}
+              className="text-sm flex-1"
+              data-testid="goal-new-text"
+            />
+            <Button
+              size="sm"
+              disabled={!newText.trim() || addGoal.isPending}
+              onClick={() => addGoal.mutate()}
+              data-testid="goal-add-btn"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <div className="flex gap-2 items-center">
+            <select
+              value={newTimeframe}
+              onChange={e => setNewTimeframe(e.target.value as GoalTimeframe)}
+              className="text-xs border border-border rounded px-2 py-1 bg-background text-foreground flex-1"
+              data-testid="goal-new-timeframe"
+            >
+              <option value="this_week">This Week</option>
+              <option value="this_month">This Month</option>
+              <option value="this_year">This Year</option>
+            </select>
+            <input
+              type="date"
+              value={newDate}
+              onChange={e => setNewDate(e.target.value)}
+              className="text-xs border border-border rounded px-2 py-1 bg-background text-foreground flex-1"
+              data-testid="goal-new-date"
+            />
+          </div>
+        </div>
+
+        {/* Filter tabs */}
+        {goals.length > 0 && (
+          <div className="flex gap-1.5 flex-wrap">
+            {(["all", "this_week", "this_month", "this_year"] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors ${filter === f ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-muted-foreground/50"}`}
+              >
+                {f === "all" ? "All" : TIMEFRAME_LABELS[f]}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Loading */}
+        {isLoading && <p className="text-xs text-muted-foreground text-center py-4">Loading goals...</p>}
+
+        {/* Active goals — drag sortable */}
+        {activeGoals.length > 0 && (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={activeGoals.map((g: any) => g.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {activeGoals.map((goal: any) => (
+                  <SortableGoalItem
+                    key={goal.id}
+                    goal={goal}
+                    onToggle={(id, completed) => updateGoal.mutate({ id, updates: { completed } })}
+                    onDelete={(id) => deleteGoal.mutate(id)}
+                    onUpdate={(id, updates) => updateGoal.mutate({ id, updates })}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && activeGoals.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-4">
+            {filter !== "all" ? `No active goals for ${TIMEFRAME_LABELS[filter as GoalTimeframe]}.` : "No goals yet. Add one above."}
+          </p>
+        )}
+
+        {/* Completed goals */}
+        {completedGoals.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-2">Completed ({completedGoals.length})</p>
+            <div className="space-y-2">
+              {completedGoals.map((goal: any) => (
+                <SortableGoalItem
+                  key={goal.id}
+                  goal={goal}
+                  onToggle={(id, completed) => updateGoal.mutate({ id, updates: { completed } })}
+                  onDelete={(id) => deleteGoal.mutate(id)}
+                  onUpdate={(id, updates) => updateGoal.mutate({ id, updates })}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

@@ -141,6 +141,17 @@ app.use((req, res, next) => {
         "zoom_link" text,
         "created_at" timestamp DEFAULT now() NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS "goal_items" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "user_id" integer NOT NULL,
+        "text" text NOT NULL,
+        "timeframe" text NOT NULL DEFAULT 'this_month',
+        "target_date" date,
+        "sort_order" integer DEFAULT 0,
+        "completed" boolean NOT NULL DEFAULT false,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
     `);
     console.log("[startup] All tables ensured ✓");
   } catch (err: any) {

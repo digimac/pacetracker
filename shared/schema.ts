@@ -214,3 +214,19 @@ export const coachingRequests = pgTable("coaching_requests", {
 });
 
 export type CoachingRequest = typeof coachingRequests.$inferSelect;
+
+// Goal list items — personal goals with timeframe and optional target date
+export const goalItems = pgTable("goal_items", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  text: text("text").notNull(),
+  timeframe: text("timeframe").notNull().default("this_month"), // "this_week" | "this_month" | "this_year"
+  targetDate: date("target_date"),               // optional specific date
+  sortOrder: integer("sort_order").default(0),
+  completed: boolean("completed").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertGoalItemSchema = createInsertSchema(goalItems).omit({ id: true, createdAt: true });
+export type InsertGoalItem = z.infer<typeof insertGoalItemSchema>;
+export type GoalItem = typeof goalItems.$inferSelect;

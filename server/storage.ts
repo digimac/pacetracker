@@ -12,6 +12,7 @@ import {
   Connection,
   EmailTemplate,
   CoachingRequest, coachingRequests,
+  GoalItem, InsertGoalItem, goalItems,
   users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections, emailTemplates,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
@@ -86,6 +87,11 @@ export interface IStorage {
   // Email templates
   getEmailTemplate(key: string): Promise<EmailTemplate | undefined>;
   upsertEmailTemplate(key: string, subject: string, bodyHtml: string, bodyText: string): Promise<EmailTemplate>;
+  // Goal list
+  getGoalItems(userId: number): Promise<GoalItem[]>;
+  createGoalItem(data: InsertGoalItem): Promise<GoalItem>;
+  updateGoalItem(id: number, userId: number, updates: Partial<Pick<GoalItem, 'text' | 'timeframe' | 'targetDate' | 'sortOrder' | 'completed'>>): Promise<GoalItem | undefined>;
+  deleteGoalItem(id: number, userId: number): Promise<void>;
 }
 
 // ─── Drizzle (PostgreSQL) implementation ────────────────────────────────────
@@ -480,6 +486,30 @@ export class DrizzleStorage implements IStorage {
     const [row] = await this.db.insert(emailTemplates).values({ key, subject, bodyHtml, bodyText }).returning();
     return row;
   }
+
+  // ── Goal List ──────────────────────────────────────────────────────────────
+  async getGoalItems(userId: number): Promise<GoalItem[]> {
+    return this.db.select().from(goalItems)
+      .where(eq(goalItems.userId, userId))
+      .orderBy(asc(goalItems.sortOrder), asc(goalItems.createdAt));
+  }
+
+  async createGoalItem(data: InsertGoalItem): Promise<GoalItem> {
+    const [row] = await this.db.insert(goalItems).values(data).returning();
+    return row;
+  }
+
+  async updateGoalItem(id: number, userId: number, updates: Partial<Pick<GoalItem, 'text' | 'timeframe' | 'targetDate' | 'sortOrder' | 'completed'>>): Promise<GoalItem | undefined> {
+    const [row] = await this.db.update(goalItems)
+      .set(updates)
+      .where(and(eq(goalItems.id, id), eq(goalItems.userId, userId)))
+      .returning();
+    return row;
+  }
+
+  async deleteGoalItem(id: number, userId: number): Promise<void> {
+    await this.db.delete(goalItems).where(and(eq(goalItems.id, id), eq(goalItems.userId, userId)));
+  }
 }
 
 // ─── In-memory fallback (used in local dev without DATABASE_URL) ─────────────
@@ -823,6 +853,28 @@ export class MemStorage implements IStorage {
     const t: EmailTemplate = { id: this.emailTemplatesMap.size + 1, key, subject, bodyHtml, bodyText, updatedAt: new Date() };
     this.emailTemplatesMap.set(key, t);
     return t;
+  }
+  // Goal list stubs (MemStorage — data lives only in memory)
+  private goalItemsMap: Map<number, GoalItem> = new Map();
+  private goalItemIdCounter = 1;
+  async getGoalItems(userId: number): Promise<GoalItem[]> {
+    return Array.from(this.goalItemsMap.values()).filter(g => g.userId === userId).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  }
+  async createGoalItem(data: InsertGoalItem): Promise<GoalItem> {
+    const g: GoalItem = { ...data, id: this.goalItemIdCounter++, text: data.text, timeframe: data.timeframe ?? 'this_month', targetDate: data.targetDate ?? null, sortOrder: data.sortOrder ?? 0, completed: data.completed ?? false, createdAt: new Date() };
+    this.goalItemsMap.set(g.id, g);
+    return g;
+  }
+  async updateGoalItem(id: number, userId: number, updates: Partial<Pick<GoalItem, 'text' | 'timeframe' | 'targetDate' | 'sortOrder' | 'completed'>>): Promise<GoalItem | undefined> {
+    const g = this.goalItemsMap.get(id);
+    if (!g || g.userId !== userId) return undefined;
+    const updated = { ...g, ...updates };
+    this.goalItemsMap.set(id, updated);
+    return updated;
+  }
+  async deleteGoalItem(id: number, userId: number): Promise<void> {
+    const g = this.goalItemsMap.get(id);
+    if (g?.userId === userId) this.goalItemsMap.delete(id);
   }
 }
 
