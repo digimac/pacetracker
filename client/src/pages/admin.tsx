@@ -853,6 +853,28 @@ Click the link below to reset your password:
 This link expires in 1 hour.`,
   },
   {
+    key: "reminder",
+    label: "Inactivity Reminder",
+    description: "Sent to members who haven't logged a daily score in 3+ days. Available variables: {{displayName}}, {{sinceLabel}} (e.g. \"It's been 5 days since your last score\").",
+    defaultSubject: "Hey {{displayName}} \u2014 your momentum is waiting",
+    defaultBodyHtml: `<body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+  <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+    <div style="background:#FF6E00;padding:32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;">Sweet Momentum</h1>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Daily Performance Tracking</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey {{displayName}},</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 16px;">{{sinceLabel}}. Your streak is waiting \u2014 and today is the perfect day to get back on track.</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">It only takes a minute to score your day across the 6 core metrics.</p>
+      <div style="text-align:center;margin:32px 0;"><a href="https://sweetmo.io/#/today" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;">Score Today \u2192</a></div>
+      <p style="color:#666;font-size:12px;text-align:center;margin:0;">Reply to this email to unsubscribe from reminders.</p>
+    </div>
+  </div>
+</body>`,
+    defaultBodyText: `Hey {{displayName}},\n\n{{sinceLabel}}. Your streak is waiting \u2014 today is the perfect day to get back on track.\n\nScore today: https://sweetmo.io/#/today\n\nReply to unsubscribe from reminders.`,
+  },
+  {
     key: "weekly_digest",
     label: "Weekly Summary Digest",
     description: "Sent each Monday to all members with a recap of their previous week's scores. Available variables: {{displayName}}, {{weekRange}}, {{daysScored}}, {{avgScore}}, {{bestDay}}, {{dayRows}}.",
@@ -1109,6 +1131,9 @@ function EmailTemplatesTab() {
   const { toast } = useToast();
   const [sendingDigest, setSendingDigest] = useState(false);
   const [digestTestId, setDigestTestId] = useState("");
+  const [sendingReminder, setSendingReminder] = useState(false);
+  const [reminderTestId, setReminderTestId] = useState("");
+  const [reminderDays, setReminderDays] = useState("3");
 
   async function sendDigest(all: boolean) {
     setSendingDigest(true);
@@ -1162,6 +1187,71 @@ function EmailTemplatesTab() {
             data-testid="digest-send-all-btn"
           >
             {sendingDigest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send to All Members"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Inactivity Reminder send controls */}
+      <div className="border border-border rounded-lg p-4 space-y-3">
+        <div>
+          <p className="text-sm font-semibold">Send Inactivity Reminders</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Emails members who haven't logged a score in the specified number of days. Skips the admin account automatically.</p>
+        </div>
+        <div className="flex gap-2 items-center flex-wrap">
+          <Input
+            value={reminderTestId}
+            onChange={e => setReminderTestId(e.target.value)}
+            placeholder="User ID (optional — for test send)"
+            className="text-sm w-52"
+            data-testid="reminder-test-user-id"
+          />
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Inactive for</span>
+            <Input
+              value={reminderDays}
+              onChange={e => setReminderDays(e.target.value)}
+              placeholder="3"
+              className="text-sm w-16 text-center"
+              type="number" min="1" max="365"
+              data-testid="reminder-days-input"
+            />
+            <span className="text-xs text-muted-foreground">days+</span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={sendingReminder || !reminderTestId}
+            onClick={async () => {
+              setSendingReminder(true);
+              try {
+                const res = await apiRequest("POST", "/api/admin/send-reminder-emails", { userId: reminderTestId, thresholdDays: Number(reminderDays) || 3 });
+                const data = await res.json();
+                toast({ title: "Test reminder sent", description: `Sent: ${data.sent}, Skipped: ${data.skipped}` });
+              } catch (e: any) {
+                toast({ title: "Send failed", description: e.message, variant: "destructive" });
+              } finally { setSendingReminder(false); }
+            }}
+            data-testid="reminder-test-btn"
+          >
+            {sendingReminder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send Test"}
+          </Button>
+          <Button
+            size="sm"
+            variant="default"
+            disabled={sendingReminder}
+            onClick={async () => {
+              setSendingReminder(true);
+              try {
+                const res = await apiRequest("POST", "/api/admin/send-reminder-emails", { thresholdDays: Number(reminderDays) || 3 });
+                const data = await res.json();
+                toast({ title: `Reminders sent to ${data.sent} member(s)`, description: `Skipped: ${data.skipped} (recently active)${data.errors ? ` · ${data.errors} error(s)` : ""}` });
+              } catch (e: any) {
+                toast({ title: "Send failed", description: e.message, variant: "destructive" });
+              } finally { setSendingReminder(false); }
+            }}
+            data-testid="reminder-send-all-btn"
+          >
+            {sendingReminder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send to Inactive Members"}
           </Button>
         </div>
       </div>

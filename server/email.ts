@@ -677,3 +677,90 @@ export async function sendWeeklyDigestEmail(opts: {
     console.error(`[email] SMTP error sending weekly digest to ${toEmail}:`, smtpErr?.message || smtpErr);
   }
 }
+
+// ── Send inactivity reminder email ────────────────────────────────────────────
+export async function sendReminderEmail(opts: {
+  toEmail: string;
+  displayName: string;
+  daysSinceLastScore: number | null; // null = never scored
+}): Promise<void> {
+  const { toEmail, displayName, daysSinceLastScore } = opts;
+
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.log(`[email] SMTP not configured. Reminder email for ${toEmail} skipped.`);
+    return;
+  }
+
+  const fromAddress = SMTP_FROM_EMAIL
+    ? `"${SMTP_FROM_NAME}" <${SMTP_FROM_EMAIL}>`
+    : `"${SMTP_FROM_NAME}" <${SMTP_USER}>`;
+
+  const sinceLabel = daysSinceLastScore === null
+    ? "You haven't logged a score yet"
+    : daysSinceLastScore === 1
+    ? "It's been 1 day since your last score"
+    : `It's been ${daysSinceLastScore} days since your last score`;
+
+  const defaultSubject = `Hey {{displayName}} — your momentum is waiting`;
+  const defaultHtml = `
+    <body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+      <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+        <div style="background:#FF6E00;padding:32px;text-align:center;">
+          <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;letter-spacing:1px;">Sweet Momentum</h1>
+          <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Daily Performance Tracking</p>
+        </div>
+        <div style="padding:32px;">
+          <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey {{displayName}},</p>
+          <p style="color:#e0e0e0;font-size:15px;margin:0 0 16px;">
+            {{sinceLabel}}. Your streak is waiting — and today is the perfect day to get back on track.
+          </p>
+          <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">
+            It only takes a minute to score your day across the 6 core metrics. Every day you log is a data point building toward your momentum.
+          </p>
+          <div style="text-align:center;margin:32px 0;">
+            <a href="${APP_URL}/#/today" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;letter-spacing:0.5px;">
+              Score Today →
+            </a>
+          </div>
+          <p style="color:#666;font-size:12px;text-align:center;margin:0;">
+            You're receiving this because you have a Sweet Momentum account.<br>
+            Reply to this email to unsubscribe from reminders.
+          </p>
+        </div>
+      </div>
+    </body>
+  `;
+  const defaultText = `Hey {{displayName}},\n\n{{sinceLabel}}. Your streak is waiting — today is the perfect day to get back on track.\n\nScore today: ${APP_URL}/#/today\n\nReply to unsubscribe from reminders.`;
+
+  // ── Try DB template, fall back to default ──
+  let subject = defaultSubject;
+  let html    = defaultHtml;
+  let text    = defaultText;
+
+  try {
+    const tpl = await storage.getEmailTemplate("reminder");
+    if (tpl) {
+      subject = tpl.subject;
+      html    = tpl.bodyHtml;
+      text    = tpl.bodyText;
+    }
+  } catch (dbErr) {
+    console.warn("[email] Could not load reminder template from DB, using default:", dbErr);
+  }
+
+  const interpolate = (s: string) => s
+    .replace(/\{\{displayName\}\}/g, displayName)
+    .replace(/\{\{sinceLabel\}\}/g, sinceLabel);
+
+  subject = interpolate(subject);
+  html    = interpolate(html);
+  text    = interpolate(text);
+
+  try {
+    await transporter.sendMail({ from: fromAddress, to: toEmail, subject, html, text });
+    console.log(`[email] Reminder sent to ${toEmail} (${sinceLabel})`);
+  } catch (smtpErr: any) {
+    console.error(`[email] SMTP error sending reminder to ${toEmail}:`, smtpErr?.message || smtpErr);
+  }
+}

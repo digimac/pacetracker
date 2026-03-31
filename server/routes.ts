@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
-import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail } from "./email";
+import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail } from "./email";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
@@ -1116,6 +1116,58 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       res.json({ ok: true, sent, errors, weekStart, weekEnd });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Admin: send inactivity reminder to users who haven't scored in 3+ days
+  app.post("/api/admin/send-reminder-emails", requireAdmin, async (req, res) => {
+    try {
+      const { userId: targetUserId, thresholdDays: rawThreshold } = req.body;
+      const thresholdDays = Number(rawThreshold) || 3;
+
+      const now = new Date();
+      const toISO = (d: Date) => d.toISOString().slice(0, 10);
+
+      const allUsers = targetUserId
+        ? [await storage.getUserById(Number(targetUserId))].filter(Boolean)
+        : await storage.getAllUsers();
+
+      let sent = 0, skipped = 0, errors = 0;
+
+      for (const u of allUsers as any[]) {
+        try {
+          // Skip admin account
+          if (u.email === "track@sweetmo.io") { skipped++; continue; }
+
+          const latest = await storage.getLatestDailyEntry(u.id);
+
+          let daysSince: number | null = null;
+          if (!latest) {
+            // Never scored — check if account is at least 3 days old
+            const accountAge = Math.floor((now.getTime() - new Date(u.createdAt).getTime()) / 86400000);
+            if (accountAge < thresholdDays) { skipped++; continue; }
+            daysSince = null; // will show "never scored" copy
+          } else {
+            const lastDate = new Date(latest.entryDate + "T12:00:00Z");
+            daysSince = Math.floor((now.getTime() - lastDate.getTime()) / 86400000);
+            if (daysSince < thresholdDays) { skipped++; continue; }
+          }
+
+          await sendReminderEmail({
+            toEmail: u.email,
+            displayName: u.displayName || u.email,
+            daysSinceLastScore: daysSince,
+          });
+          sent++;
+        } catch (userErr: any) {
+          console.error(`[reminder] Error for user ${u.email}:`, userErr?.message);
+          errors++;
+        }
+      }
+
+      res.json({ ok: true, sent, skipped, errors, thresholdDays });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
