@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { MetricContent } from "@shared/schema";
 import { CloudinaryUpload } from "@/components/cloudinary-upload";
+import { RichBodyEditor } from "@/components/rich-body-editor";
 
 type SitePage = {
   id: number;
@@ -191,13 +192,14 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           {/* Body */}
           {pageKey !== "timeline" && (
           <div>
-            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">{pageKey === "login" ? "Body Text" : ["terms","privacy","eula"].includes(pageKey) ? "Document Body" : pageKey === "start" ? "Features Section Headline" : "Intro Body"}</label>
-            <Textarea
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">
+              {pageKey === "login" ? "Body Text" : ["terms","privacy","eula"].includes(pageKey) ? "Document Body" : pageKey === "start" ? "Features Section Headline" : "Intro Body"}
+            </label>
+            <RichBodyEditor
               value={body}
-              onChange={e => setBody(e.target.value)}
+              onChange={setBody}
               placeholder="Introductory text shown at the top of the page..."
-              rows={4}
-              className="resize-none text-sm"
+              minHeight={["terms","privacy","eula"].includes(pageKey) ? 400 : 180}
             />
           </div>
           )}
@@ -230,12 +232,11 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
                     className="text-sm"
                     maxLength={100}
                   />
-                  <Textarea
+                  <RichBodyEditor
                     value={sec.text}
-                    onChange={e => updateSection(i, "text", e.target.value)}
+                    onChange={val => updateSection(i, "text", val)}
                     placeholder="Section body text..."
-                    rows={3}
-                    className="resize-none text-sm"
+                    minHeight={100}
                   />
                   <CloudinaryUpload
                     value={sec.imageUrl || ""}
