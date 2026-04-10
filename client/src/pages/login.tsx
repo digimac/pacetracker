@@ -94,9 +94,13 @@ export default function LoginPage() {
 
         {/* Admin-configured body text */}
         {bodyText && (
-          <p className="text-sm text-center mb-6 leading-relaxed text-white/80 drop-shadow w-full">
-            {bodyText}
-          </p>
+          bodyText.trim().startsWith("<") ? (
+            <div className="rich-page-body text-sm text-center mb-6 leading-relaxed text-white/80 drop-shadow w-full" dangerouslySetInnerHTML={{ __html: bodyText }} />
+          ) : (
+            <p className="text-sm text-center mb-6 leading-relaxed text-white/80 drop-shadow w-full">
+              {bodyText}
+            </p>
+          )
         )}
 
         <Card className={bgImage ? "bg-card/90 backdrop-blur-sm border-white/10 w-full" : "w-full"}>

@@ -196,19 +196,22 @@ function LegalPage({ pageKey }: { pageKey: "terms" | "privacy" | "eula" }) {
           </div>
         ) : (
           <div className="prose prose-sm prose-invert max-w-none">
-            {body.split("\n\n").map((block, i) => {
-              // Detect section headings (ALL CAPS lines or short lines ending with nothing special)
-              const isHeading = block.trim() === block.trim().toUpperCase() && block.trim().length < 80 && !block.trim().includes(".");
-              return isHeading ? (
-                <h2 key={i} className="text-sm font-black tracking-widest uppercase mt-8 mb-2 text-foreground">
-                  {block.trim()}
-                </h2>
-              ) : (
-                <p key={i} className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line mb-4">
-                  {block.trim()}
-                </p>
-              );
-            })}
+            {body.trim().startsWith("<") ? (
+              <div className="rich-page-body text-sm text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: body }} />
+            ) : (
+              body.split("\n\n").map((block, i) => {
+                const isHeading = block.trim() === block.trim().toUpperCase() && block.trim().length < 80 && !block.trim().includes(".");
+                return isHeading ? (
+                  <h2 key={i} className="text-sm font-black tracking-widest uppercase mt-8 mb-2 text-foreground">
+                    {block.trim()}
+                  </h2>
+                ) : (
+                  <p key={i} className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line mb-4">
+                    {block.trim()}
+                  </p>
+                );
+              })
+            )}
           </div>
         )}
 

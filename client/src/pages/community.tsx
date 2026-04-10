@@ -127,7 +127,12 @@ export default function CategoryPage({ categoryKey }: { categoryKey: string }) {
       <div className="px-6 md:px-10 py-10 max-w-3xl space-y-10">
         {/* Intro body */}
         {body && (
-          <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-line">{body}</p>
+          <div
+            className={body.trim().startsWith("<") ? "rich-page-body text-base text-muted-foreground leading-relaxed" : "text-base text-muted-foreground leading-relaxed whitespace-pre-line"}
+            {...(body.trim().startsWith("<") ? { dangerouslySetInnerHTML: { __html: body } } : {})}
+          >
+            {!body.trim().startsWith("<") && body}
+          </div>
         )}
 
         {isLoading ? (
@@ -154,7 +159,12 @@ export default function CategoryPage({ categoryKey }: { categoryKey: string }) {
                 </div>
                 <div>
                   <h2 className="text-base font-black tracking-tight uppercase mb-2">{section.heading}</h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{section.text}</p>
+                  <div
+                    className={section.text.trim().startsWith("<") ? "rich-page-body text-sm text-muted-foreground leading-relaxed" : "text-sm text-muted-foreground leading-relaxed whitespace-pre-line"}
+                    {...(section.text.trim().startsWith("<") ? { dangerouslySetInnerHTML: { __html: section.text } } : {})}
+                  >
+                    {!section.text.trim().startsWith("<") && section.text}
+                  </div>
                 </div>
               </div>
             </div>
