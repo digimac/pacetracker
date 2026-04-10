@@ -678,8 +678,8 @@ export default function HistoryPage() {
 
 function GoalList() {
   const { data: goals = [], isLoading } = useQuery<GoalEntry[]>({
-    queryKey: ["/api/goals"],
-    queryFn: () => apiRequest("GET", "/api/goals").then(r => r.json()),
+    queryKey: ["/api/goal-history"],
+    queryFn: () => apiRequest("GET", "/api/goal-history").then(r => r.json()),
     staleTime: 60_000,
   });
 

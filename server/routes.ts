@@ -328,8 +328,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // Goal list — all days with a goal recorded, newest first
-  app.get("/api/goals", requireAuth, async (req, res) => {
+  // Goal history — all daily entries with a goalText, newest first
+  app.get("/api/goal-history", requireAuth, async (req, res) => {
     try {
       const userId = req.session!.userId!;
       const sched = await storage.getUserSchedule(userId);

@@ -292,7 +292,7 @@ export default function TodayPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/entries", today] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goal-history"] });
       toast({ title: "Saved", description: "Today's metrics have been recorded." });
     },
     onError: () => toast({ title: "Error", description: "Could not save.", variant: "destructive" }),
