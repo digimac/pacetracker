@@ -230,3 +230,17 @@ export const goalItems = pgTable("goal_items", {
 export const insertGoalItemSchema = createInsertSchema(goalItems).omit({ id: true, createdAt: true });
 export type InsertGoalItem = z.infer<typeof insertGoalItemSchema>;
 export type GoalItem = typeof goalItems.$inferSelect;
+
+// Days Since / Days Until counters — up to 3 per user
+export const dayCounters = pgTable("day_counters", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull().default("since"), // "since" | "until"
+  label: text("label").notNull(),
+  counterDate: date("counter_date").notNull(),   // the reference date
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDayCounterSchema = createInsertSchema(dayCounters).omit({ id: true, createdAt: true });
+export type InsertDayCounter = z.infer<typeof insertDayCounterSchema>;
+export type DayCounter = typeof dayCounters.$inferSelect;

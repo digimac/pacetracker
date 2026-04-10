@@ -1021,6 +1021,52 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // ── Email Templates (admin only) ──────────────────────────────────────────
+  // Day Counters
+  app.get("/api/day-counters", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      res.json(await storage.getDayCounters(userId));
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post("/api/day-counters", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const existing = await storage.getDayCounters(userId);
+      if (existing.length >= 3) return res.status(400).json({ error: "Maximum of 3 counters allowed" });
+      const { type, label, counterDate } = z.object({
+        type: z.enum(["since", "until"]),
+        label: z.string().min(1).max(100),
+        counterDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      }).parse(req.body);
+      const counter = await storage.createDayCounter({ userId, type, label, counterDate });
+      res.json(counter);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.patch("/api/day-counters/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const id = parseInt(req.params.id);
+      const updates = z.object({
+        type: z.enum(["since", "until"]).optional(),
+        label: z.string().min(1).max(100).optional(),
+        counterDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      }).parse(req.body);
+      const counter = await storage.updateDayCounter(id, userId, updates);
+      if (!counter) return res.status(404).json({ error: "Counter not found" });
+      res.json(counter);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.delete("/api/day-counters/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      await storage.deleteDayCounter(parseInt(req.params.id), userId);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
   // Goal List
   app.get("/api/goals", requireAuth, async (req, res) => {
     try {

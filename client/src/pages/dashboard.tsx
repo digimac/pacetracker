@@ -14,6 +14,7 @@ import { useLocation } from "wouter";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
 import { useUserTimezone, getTodayInTimezone } from "@/hooks/use-user-timezone";
 import { DaySparkline, TimelineEvent, CORE_METRIC_COLORS, getMetricColor } from "@/components/day-sparkline";
+import { DayCountersStrip } from "@/components/day-counters-strip";
 
 
 type DayResult = {
@@ -245,6 +246,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Day Counters */}
+      <DayCountersStrip />
 
       {/* Time filter */}
       <Tabs value={tab} onValueChange={setTab} className="mb-6">

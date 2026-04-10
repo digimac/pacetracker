@@ -13,6 +13,7 @@ import {
   EmailTemplate,
   CoachingRequest, coachingRequests,
   GoalItem, InsertGoalItem, goalItems,
+  DayCounter, InsertDayCounter, dayCounters,
   users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections, emailTemplates,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
@@ -87,6 +88,11 @@ export interface IStorage {
   // Email templates
   getEmailTemplate(key: string): Promise<EmailTemplate | undefined>;
   upsertEmailTemplate(key: string, subject: string, bodyHtml: string, bodyText: string): Promise<EmailTemplate>;
+  // Day counters
+  getDayCounters(userId: number): Promise<DayCounter[]>;
+  createDayCounter(data: InsertDayCounter): Promise<DayCounter>;
+  updateDayCounter(id: number, userId: number, updates: Partial<Pick<DayCounter, 'type' | 'label' | 'counterDate'>>): Promise<DayCounter | undefined>;
+  deleteDayCounter(id: number, userId: number): Promise<void>;
   // Goal list
   getGoalItems(userId: number): Promise<GoalItem[]>;
   createGoalItem(data: InsertGoalItem): Promise<GoalItem>;
@@ -487,6 +493,27 @@ export class DrizzleStorage implements IStorage {
     return row;
   }
 
+  // ── Day Counters ──────────────────────────────────────────────────────────
+  async getDayCounters(userId: number): Promise<DayCounter[]> {
+    return this.db.select().from(dayCounters)
+      .where(eq(dayCounters.userId, userId))
+      .orderBy(asc(dayCounters.createdAt));
+  }
+  async createDayCounter(data: InsertDayCounter): Promise<DayCounter> {
+    const [row] = await this.db.insert(dayCounters).values(data).returning();
+    return row;
+  }
+  async updateDayCounter(id: number, userId: number, updates: Partial<Pick<DayCounter, 'type' | 'label' | 'counterDate'>>): Promise<DayCounter | undefined> {
+    const [row] = await this.db.update(dayCounters)
+      .set(updates)
+      .where(and(eq(dayCounters.id, id), eq(dayCounters.userId, userId)))
+      .returning();
+    return row;
+  }
+  async deleteDayCounter(id: number, userId: number): Promise<void> {
+    await this.db.delete(dayCounters).where(and(eq(dayCounters.id, id), eq(dayCounters.userId, userId)));
+  }
+
   // ── Goal List ──────────────────────────────────────────────────────────────
   async getGoalItems(userId: number): Promise<GoalItem[]> {
     return this.db.select().from(goalItems)
@@ -853,6 +880,28 @@ export class MemStorage implements IStorage {
     const t: EmailTemplate = { id: this.emailTemplatesMap.size + 1, key, subject, bodyHtml, bodyText, updatedAt: new Date() };
     this.emailTemplatesMap.set(key, t);
     return t;
+  }
+  // Day counter stubs (MemStorage)
+  private dayCountersMap: Map<number, DayCounter> = new Map();
+  private dayCounterIdCtr = 1;
+  async getDayCounters(userId: number): Promise<DayCounter[]> {
+    return Array.from(this.dayCountersMap.values()).filter(c => c.userId === userId);
+  }
+  async createDayCounter(data: InsertDayCounter): Promise<DayCounter> {
+    const c: DayCounter = { ...data, id: this.dayCounterIdCtr++, type: data.type ?? 'since', createdAt: new Date() };
+    this.dayCountersMap.set(c.id, c);
+    return c;
+  }
+  async updateDayCounter(id: number, userId: number, updates: any): Promise<DayCounter | undefined> {
+    const c = this.dayCountersMap.get(id);
+    if (!c || c.userId !== userId) return undefined;
+    const u = { ...c, ...updates };
+    this.dayCountersMap.set(id, u);
+    return u;
+  }
+  async deleteDayCounter(id: number, userId: number): Promise<void> {
+    const c = this.dayCountersMap.get(id);
+    if (c?.userId === userId) this.dayCountersMap.delete(id);
   }
   // Goal list stubs (MemStorage — data lives only in memory)
   private goalItemsMap: Map<number, GoalItem> = new Map();

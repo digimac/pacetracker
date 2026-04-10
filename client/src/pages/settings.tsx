@@ -660,12 +660,165 @@ export default function SettingsPage() {
       </Card>
 
       {/* ── Connections ─────────────────────────────────────────────────────── */}
+      {/* Day Counters */}
+      <DayCountersCard />
+
       {/* Goal List */}
       <GoalListCard />
 
       {/* Connections */}
       <ConnectionsCard />
     </div>
+  );
+}
+
+// ─── Day Counters Card ──────────────────────────────────────────────────────────────────
+
+function DayCountersCard() {
+  const { toast } = useToast();
+  const [newLabel, setNewLabel] = useState("");
+  const [newType, setNewType] = useState<"since" | "until">("since");
+  const [newDate, setNewDate] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editType, setEditType] = useState<"since" | "until">("since");
+  const [editDate, setEditDate] = useState("");
+
+  const { data: counters = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/day-counters"],
+    queryFn: () => apiRequest("GET", "/api/day-counters").then(r => r.json()),
+    staleTime: 30_000,
+  });
+
+  const addCounter = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/day-counters", { type: newType, label: newLabel.trim(), counterDate: newDate }).then(r => r.json()),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/day-counters"] }); setNewLabel(""); setNewDate(""); },
+    onError: (e: any) => toast({ title: e?.message || "Could not add counter", variant: "destructive" }),
+  });
+
+  const updateCounter = useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: any }) => apiRequest("PATCH", `/api/day-counters/${id}`, updates).then(r => r.json()),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/day-counters"] }); setEditingId(null); },
+  });
+
+  const deleteCounter = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/day-counters/${id}`).then(r => r.json()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/day-counters"] }),
+  });
+
+  function calcDays(type: "since" | "until", dateStr: string): number {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const ref = new Date(dateStr + "T00:00:00"); ref.setHours(0,0,0,0);
+    const diff = Math.round((today.getTime() - ref.getTime()) / 86_400_000);
+    return type === "since" ? diff : -diff;
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-sm font-bold uppercase tracking-wider">Day Counters</CardTitle>
+            <CardDescription className="text-xs mt-0.5">Track days since an event or days until a date. Up to 3 counters. Shown on Dashboard and Today.</CardDescription>
+          </div>
+          <span className="text-xs text-muted-foreground">{counters.length}/3</span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+
+        {/* Existing counters */}
+        {isLoading && <p className="text-xs text-muted-foreground">Loading...</p>}
+        {counters.map(c => {
+          const days = Math.abs(calcDays(c.type, c.counterDate));
+          const isEditing = editingId === c.id;
+          return (
+            <div key={c.id} className="flex items-center gap-3 rounded-lg border border-border p-3 bg-muted/10">
+              {/* Big number */}
+              {!isEditing && (
+                <div className="flex-shrink-0 w-12 text-center">
+                  <p className={`text-2xl font-black leading-none tabular-nums ${c.type === "since" ? "text-[#85FF00]" : "text-[#FF6E00]"}`}>{days}</p>
+                  <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide mt-0.5">{c.type === "since" ? "Since" : "Until"}</p>
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <select value={editType} onChange={e => setEditType(e.target.value as any)}
+                        className="text-xs border border-border rounded px-2 py-1 bg-background text-foreground">
+                        <option value="since">Days Since</option>
+                        <option value="until">Days Until</option>
+                      </select>
+                      <Input value={editLabel} onChange={e => setEditLabel(e.target.value)}
+                        className="text-sm h-7 flex-1" placeholder="Label" />
+                    </div>
+                    <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
+                      className="text-xs border border-border rounded px-2 py-1 bg-background text-foreground w-full" />
+                    <div className="flex gap-2">
+                      <Button size="sm" className="h-6 text-xs px-2" onClick={() => updateCounter.mutate({ id: c.id, updates: { type: editType, label: editLabel, counterDate: editDate } })}>Save</Button>
+                      <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setEditingId(null)}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm font-semibold truncate cursor-pointer hover:text-primary"
+                      onClick={() => { setEditingId(c.id); setEditLabel(c.label); setEditType(c.type); setEditDate(c.counterDate); }}>
+                      {c.label}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(c.counterDate + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Delete */}
+              {!isEditing && (
+                <button onClick={() => deleteCounter.mutate(c.id)}
+                  className="flex-shrink-0 text-muted-foreground/40 hover:text-destructive transition-colors p-0.5">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Add form — only if under limit */}
+        {counters.length < 3 && (
+          <div className="space-y-2 pt-1 border-t border-border">
+            <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Add Counter</p>
+            <div className="flex gap-2">
+              <select value={newType} onChange={e => setNewType(e.target.value as any)}
+                className="text-xs border border-border rounded px-2 py-1.5 bg-background text-foreground">
+                <option value="since">Days Since</option>
+                <option value="until">Days Until</option>
+              </select>
+              <Input
+                placeholder="Label (e.g. Quit smoking)"
+                value={newLabel}
+                onChange={e => setNewLabel(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && newLabel.trim() && newDate) addCounter.mutate(); }}
+                className="text-sm flex-1"
+              />
+            </div>
+            <div className="flex gap-2 items-center">
+              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+                className="text-xs border border-border rounded px-2 py-1.5 bg-background text-foreground flex-1" />
+              <Button size="sm" disabled={!newLabel.trim() || !newDate || addCounter.isPending}
+                onClick={() => addCounter.mutate()}>
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {counters.length >= 3 && (
+          <p className="text-xs text-muted-foreground text-center">Maximum of 3 counters reached. Delete one to add another.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

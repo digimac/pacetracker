@@ -142,6 +142,15 @@ app.use((req, res, next) => {
         "created_at" timestamp DEFAULT now() NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS "day_counters" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "user_id" integer NOT NULL,
+        "type" text NOT NULL DEFAULT 'since',
+        "label" text NOT NULL,
+        "counter_date" date NOT NULL,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS "goal_items" (
         "id" serial PRIMARY KEY NOT NULL,
         "user_id" integer NOT NULL,

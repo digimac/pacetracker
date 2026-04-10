@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import type { MetricScore, CustomMetric, MetricContent } from "@shared/schema";
 import MetricInfoModal from "@/components/metric-info-modal";
+import { DayCountersStrip } from "@/components/day-counters-strip";
 import { useUserTimezone } from "@/hooks/use-user-timezone";
 
 const CORE_METRICS = [
@@ -383,6 +384,9 @@ export default function TodayPage() {
           </button>
         </div>
       )}
+
+      {/* Day Counters */}
+      <DayCountersStrip />
 
       {/* Momentum Partners */}
       {partners.length > 0 && (
