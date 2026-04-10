@@ -37,6 +37,7 @@ function MetricCard({
   onInfo,
   showInfo,
   isCustom,
+  streak,
 }: {
   metricKey: string;
   label: string;
@@ -46,6 +47,7 @@ function MetricCard({
   onInfo?: () => void;
   showInfo?: boolean;
   isCustom?: boolean;
+  streak?: number;
 }) {
   const isSuccess = rating === "success";
   const isSetback = rating === "setback";
@@ -114,6 +116,20 @@ function MetricCard({
               </Badge>
             )}
             {isSetback && <Badge className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30">SETBACK -1</Badge>}
+            {/* Streak badge */}
+            {streak && streak >= 2 && (
+              <span
+                className="ml-auto flex-shrink-0 flex items-center gap-0.5 text-[10px] font-black px-1.5 py-0.5 rounded-full border"
+                style={{
+                  background: isCustom ? "rgba(255,110,0,0.12)" : "rgba(133,255,0,0.10)",
+                  borderColor: isCustom ? "rgba(255,110,0,0.3)" : "rgba(133,255,0,0.25)",
+                  color: isCustom ? "#FF6E00" : "#85FF00",
+                }}
+                title={`${streak}-day streak`}
+              >
+                🔥 {streak}
+              </span>
+            )}
             {/* Info icon — only for core metrics */}
             {showInfo && onInfo && (
               <button
@@ -218,6 +234,13 @@ export default function TodayPage() {
     queryKey: ["/api/connections"],
     queryFn: () => apiRequest("GET", "/api/connections").then(r => r.json()),
     staleTime: 60_000,
+  });
+
+  // Metric streaks
+  const { data: streaks = {} } = useQuery<Record<string, number>>({
+    queryKey: ["/api/metrics/streaks"],
+    queryFn: () => apiRequest("GET", "/api/metrics/streaks").then(r => r.json()),
+    staleTime: 5 * 60_000,
   });
 
   // Initialize from existing entry
@@ -333,6 +356,7 @@ export default function TodayPage() {
                 onRate={handleRate}
                 showInfo={true}
                 onInfo={() => setActiveModal({ key: m.key, label: m.label })}
+                streak={streaks[m.key]}
               />
               {m.key === "GOAL" && (
                 <div className="mt-1.5 ml-1">
@@ -370,6 +394,7 @@ export default function TodayPage() {
                 onRate={handleRate}
                 showInfo={false}
                 isCustom={true}
+                streak={streaks[`custom_${m.id}`]}
               />
             ))}
           </div>

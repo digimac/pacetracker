@@ -1021,6 +1021,57 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // ── Email Templates (admin only) ──────────────────────────────────────────
+  // Metric streaks — consecutive days a metric has been "success"
+  app.get("/api/metrics/streaks", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+
+      // Pull last 90 days of entries + their scores
+      const today = new Date();
+      const toISO = (d: Date) => d.toISOString().slice(0, 10);
+      const ninetyDaysAgo = new Date(today);
+      ninetyDaysAgo.setDate(today.getDate() - 90);
+      const startDate = toISO(ninetyDaysAgo);
+      const endDate   = toISO(today);
+
+      const entries = await storage.getDailyEntriesByRange(userId, startDate, endDate);
+
+      // Build a map: entryDate -> { metricKey -> rating }
+      const dateRatingMap: Record<string, Record<string, string>> = {};
+      for (const entry of entries) {
+        const scores = await storage.getMetricScoresByEntry(entry.id);
+        const map: Record<string, string> = {};
+        for (const s of scores) map[s.metricKey] = s.rating;
+        dateRatingMap[entry.entryDate] = map;
+      }
+
+      // Build list of all metric keys present across all entries
+      const allKeys = new Set<string>();
+      for (const map of Object.values(dateRatingMap)) {
+        for (const k of Object.keys(map)) allKeys.add(k);
+      }
+
+      // For each metric key, walk backwards from today counting consecutive successes
+      const streaks: Record<string, number> = {};
+      for (const key of allKeys) {
+        let streak = 0;
+        let day = new Date(today);
+        day.setHours(12, 0, 0, 0);
+        // Walk back up to 90 days
+        for (let i = 0; i < 90; i++) {
+          const dateStr = toISO(day);
+          const dayRatings = dateRatingMap[dateStr];
+          if (!dayRatings || dayRatings[key] !== "success") break;
+          streak++;
+          day.setDate(day.getDate() - 1);
+        }
+        if (streak > 0) streaks[key] = streak;
+      }
+
+      res.json(streaks);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   // Day Counters
   app.get("/api/day-counters", requireAuth, async (req, res) => {
     try {

@@ -119,6 +119,12 @@ export default function DashboardPage() {
   });
   const timelineBgUrl = timelineBg?.heroImageUrl?.trim() || null;
 
+  const { data: streaks = {} } = useQuery<Record<string, number>>({
+    queryKey: ["/api/metrics/streaks"],
+    queryFn: () => apiRequest("GET", "/api/metrics/streaks").then(r => r.json()),
+    staleTime: 5 * 60_000,
+  });
+
   // Stats
   const totalDays = results.length;
   const totalScore = results.reduce((s, r) => s + r.total, 0);
@@ -250,6 +256,7 @@ export default function DashboardPage() {
       {/* Day Counters */}
       <DayCountersStrip />
 
+
       {/* Time filter */}
       <Tabs value={tab} onValueChange={setTab} className="mb-6">
         <TabsList className="grid grid-cols-4 w-full max-w-xs">
@@ -331,7 +338,22 @@ export default function DashboardPage() {
                 {metricList.map(m => (
                   <div key={m.key} data-testid={`metric-row-${m.key.toLowerCase()}`}>
                     <div className="flex items-center justify-between mb-1 gap-2">
-                      <span className="text-xs font-black tracking-widest uppercase">{m.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black tracking-widest uppercase">{m.label}</span>
+                        {streaks[m.key] && streaks[m.key] >= 2 && (
+                          <span
+                            className="text-[9px] font-black px-1.5 py-0.5 rounded-full border"
+                            style={{
+                              background: m.key.startsWith("custom_") ? "rgba(255,110,0,0.12)" : "rgba(133,255,0,0.10)",
+                              borderColor: m.key.startsWith("custom_") ? "rgba(255,110,0,0.3)" : "rgba(133,255,0,0.25)",
+                              color: m.key.startsWith("custom_") ? "#FF6E00" : "#85FF00",
+                            }}
+                            title={`${streaks[m.key]}-day streak`}
+                          >
+                            🔥 {streaks[m.key]}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{m.wins}W / {m.losses}L</span>
                         <span className={`text-xs font-bold ${m.winRate >= 70 ? "text-green-400" : m.winRate >= 50 ? "text-primary" : "text-red-400"}`}>
