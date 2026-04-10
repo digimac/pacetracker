@@ -274,7 +274,7 @@ export default function GlobePage() {
           </div>
 
           {/* Map */}
-          <div className="flex-1 relative bg-[hsl(220_20%_6%)] min-h-0">
+          <div className="relative bg-[hsl(220_20%_6%)]" style={{ height: "420px" }}>
             {isLoading ? (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3 text-muted-foreground">
@@ -333,6 +333,68 @@ export default function GlobePage() {
               </div>
             )}
           </div>
+
+          {/* Member score list */}
+          {points.length > 0 && (
+            <div className="border-t border-border flex-shrink-0">
+              <div className="px-4 md:px-6 py-2.5 flex items-center justify-between">
+                <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                  Today's Scores
+                </p>
+                <span className="text-[10px] text-muted-foreground">{points.length} member{points.length !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="overflow-y-auto" style={{ maxHeight: "220px" }}>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 px-4 md:px-6 pb-4">
+                  {[...points]
+                    .sort((a, b) => b.score - a.score)
+                    .map(point => {
+                      const initials = getInitials(point);
+                      const location = [point.city, point.region, point.country]
+                        .filter(Boolean).join(", ") || "Unknown location";
+                      const scoreColor =
+                        point.score >= 7 ? "text-[#FF6E00]" :
+                        point.score > 0 ? "text-green-400" :
+                        point.score < 0 ? "text-red-400" : "text-muted-foreground";
+                      const isHov = hoveredId === point.userId;
+                      return (
+                        <div
+                          key={point.userId}
+                          className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 cursor-default transition-colors ${
+                            isHov ? "border-primary/50 bg-primary/5" : "border-border bg-muted/10 hover:border-border/60"
+                          }`}
+                          onMouseEnter={() => setHoveredId(point.userId)}
+                          onMouseLeave={() => setHoveredId(null)}
+                          data-testid={`member-row-${point.userId}`}
+                        >
+                          {/* Initials avatar */}
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-black border"
+                            style={{
+                              background: point.score >= 7 ? "rgba(255,110,0,0.15)" : point.score > 0 ? "rgba(133,255,0,0.12)" : point.score < 0 ? "rgba(255,60,60,0.12)" : "rgba(255,255,255,0.05)",
+                              borderColor: point.score >= 7 ? "rgba(255,110,0,0.4)" : point.score > 0 ? "rgba(133,255,0,0.3)" : point.score < 0 ? "rgba(255,60,60,0.3)" : "rgba(255,255,255,0.12)",
+                              color: point.score >= 7 ? "#FF6E00" : point.score > 0 ? "#85FF00" : point.score < 0 ? "#ff6060" : "#888",
+                            }}
+                          >
+                            {initials}
+                          </div>
+
+                          {/* Location */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] text-muted-foreground truncate leading-tight">{location}</p>
+                          </div>
+
+                          {/* Score */}
+                          <span className={`text-sm font-black tabular-nums flex-shrink-0 ${scoreColor}`}>
+                            {point.score > 0 ? `+${point.score}` : point.score}
+                          </span>
+                        </div>
+                      );
+                    })
+                  }
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
