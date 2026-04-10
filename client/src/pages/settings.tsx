@@ -719,9 +719,9 @@ function DayCountersCard() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-sm font-bold uppercase tracking-wider">Day Counters</CardTitle>
-            <CardDescription className="text-xs mt-0.5">Track days since an event or days until a date. Up to 3 counters. Shown on Dashboard and Today.</CardDescription>
+            <CardDescription className="text-xs mt-0.5">Track days since an event or days until a date. Up to 4 counters. Shown on Dashboard and Today.</CardDescription>
           </div>
-          <span className="text-xs text-muted-foreground">{counters.length}/3</span>
+          <span className="text-xs text-muted-foreground">{counters.length}/4</span>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -786,7 +786,7 @@ function DayCountersCard() {
         })}
 
         {/* Add form — only if under limit */}
-        {counters.length < 3 && (
+        {counters.length < 4 && (
           <div className="space-y-2 pt-1 border-t border-border">
             <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Add Counter</p>
             <div className="flex gap-2">
@@ -814,8 +814,8 @@ function DayCountersCard() {
           </div>
         )}
 
-        {counters.length >= 3 && (
-          <p className="text-xs text-muted-foreground text-center">Maximum of 3 counters reached. Delete one to add another.</p>
+        {counters.length >= 4 && (
+          <p className="text-xs text-muted-foreground text-center">Maximum of 4 counters reached. Delete one to add another.</p>
         )}
       </CardContent>
     </Card>

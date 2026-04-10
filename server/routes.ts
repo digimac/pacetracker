@@ -1033,7 +1033,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const userId = req.session!.userId!;
       const existing = await storage.getDayCounters(userId);
-      if (existing.length >= 3) return res.status(400).json({ error: "Maximum of 3 counters allowed" });
+      if (existing.length >= 4) return res.status(400).json({ error: "Maximum of 4 counters allowed" });
       const { type, label, counterDate } = z.object({
         type: z.enum(["since", "until"]),
         label: z.string().min(1).max(100),
