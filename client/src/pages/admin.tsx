@@ -46,7 +46,8 @@ const PAGE_DEFS = [
   { key: "privacy",  label: "Privacy Policy",      icon: ShieldCheck, accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
   { key: "eula",     label: "EULA",                icon: FileText,    accent: "text-slate-400",  border: "border-slate-500/30",  color: "from-slate-500/10 to-slate-600/5" },
   { key: "timeline",         label: "Timeline Background", icon: ImageIcon,   accent: "text-cyan-400",   border: "border-cyan-500/30",   color: "from-cyan-500/10 to-cyan-600/5" },
-  { key: "start", label: "Start Page", icon: Globe, accent: "text-green-400", border: "border-green-500/30", color: "from-green-500/10 to-green-600/5" },
+  { key: "start",   label: "Start Page",      icon: Globe,  accent: "text-green-400",  border: "border-green-500/30",  color: "from-green-500/10 to-green-600/5" },
+  { key: "reasons", label: "More Reasons Page", icon: Quote,  accent: "text-pink-400",   border: "border-pink-500/30",   color: "from-pink-500/10 to-pink-600/5" },
   // Community category pages
   { key: "cat_athlete",      label: "Athlete",       icon: Users, accent: "text-green-400",  border: "border-green-500/30",  color: "from-green-500/10 to-green-600/5" },
   { key: "cat_graduate",     label: "Graduate",      icon: Users, accent: "text-blue-400",   border: "border-blue-500/30",   color: "from-blue-500/10 to-blue-600/5" },
@@ -193,7 +194,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           {pageKey !== "timeline" && (
           <div>
             <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">
-              {pageKey === "login" ? "Body Text" : ["terms","privacy","eula"].includes(pageKey) ? "Document Body" : pageKey === "start" ? "Features Section Headline" : "Intro Body"}
+              {pageKey === "login" ? "Body Text" : ["terms","privacy","eula"].includes(pageKey) ? "Document Body" : pageKey === "start" ? "Features Section Headline" : pageKey === "reasons" ? "Hero Sub-copy" : "Intro Body"}
             </label>
             <RichBodyEditor
               value={body}
@@ -208,7 +209,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
           {!["login", "terms", "privacy", "eula"].includes(pageKey) && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Content Sections</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">{pageKey === "reasons" ? "Collage Phrases (each heading = one phrase in the collage)" : "Content Sections"}</label>
               <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={addSection}>
                 <Plus className="w-3 h-3" /> Add Section
               </Button>
