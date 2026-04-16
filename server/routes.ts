@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
-import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail } from "./email";
+import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, createTransporter } from "./email";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
@@ -1062,7 +1062,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       // For each metric key, walk backwards from today counting consecutive successes
       const streaks: Record<string, number> = {};
-      for (const key of allKeys) {
+      for (const key of Array.from(allKeys)) {
         let streak = 0;
         let day = new Date(today);
         day.setHours(12, 0, 0, 0);
@@ -1192,7 +1192,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const APP_URL = process.env.APP_URL || 'https://sweetmo.io';
       const discountNote = group.discountCode ? `\n\nAs a new Sweet Momentum member joining through ${group.name}, you qualify for a discount. Use code <strong>${group.discountCode}</strong> at checkout.` : '';
       try {
-        const transporter = (await import('./email')).createTransporter?.();
+        const transporter = createTransporter();
         if (transporter) {
           await transporter.sendMail({
             from: process.env.SMTP_FROM_EMAIL ? `"Sweet Momentum" <${process.env.SMTP_FROM_EMAIL}>` : `"Sweet Momentum" <${process.env.SMTP_USER}>`,
@@ -1235,7 +1235,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const user = await storage.getUserById(userId);
       const APP_URL = process.env.APP_URL || 'https://sweetmo.io';
       try {
-        const transporter = (await import('./email')).createTransporter?.();
+        const transporter = createTransporter();
         if (transporter) {
           await transporter.sendMail({
             from: process.env.SMTP_FROM_EMAIL ? `"Sweet Momentum" <${process.env.SMTP_FROM_EMAIL}>` : `"Sweet Momentum" <${process.env.SMTP_USER}>`,

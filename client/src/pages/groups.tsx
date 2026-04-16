@@ -161,7 +161,7 @@ function GroupListPage() {
               {g.description && <p className="text-[11px] text-muted-foreground truncate">{g.description}</p>}
             </div>
             {g.moderatorId === user.id && (
-              <Crown className="w-3.5 h-3.5 text-[#FF6E00] flex-shrink-0" title="You are the moderator" />
+              <Crown className="w-3.5 h-3.5 text-[#FF6E00] flex-shrink-0" aria-label="You are the moderator" />
             )}
             <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           </button>
@@ -241,7 +241,7 @@ function GroupDetailPage({ groupId }: { groupId: number }) {
           <span className="text-muted-foreground/30">/</span>
           <h1 className="text-base font-black tracking-tight flex items-center gap-2">
             {group.name}
-            {isModerator && <Crown className="w-4 h-4 text-[#FF6E00]" title="You are the moderator" />}
+            {isModerator && <Crown className="w-4 h-4 text-[#FF6E00]" aria-label="Moderator" />}
           </h1>
         </div>
         {isModerator && !editing && (

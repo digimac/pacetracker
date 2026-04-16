@@ -17,7 +17,7 @@ const SMTP_FROM_EMAIL = process.env.SMTP_FROM_EMAIL || "";
 const SMTP_FROM_NAME  = process.env.SMTP_FROM_NAME  || "Sweet Momentum";
 const APP_URL        = process.env.APP_URL         || "http://localhost:5000";
 
-function createTransporter() {
+export function createTransporter() {
   if (!SMTP_USER || !SMTP_PASS) return null;
   return nodemailer.createTransport({
     host: SMTP_HOST,
