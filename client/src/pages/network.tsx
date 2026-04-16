@@ -1,8 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/App";
 import { useLocation } from "wouter";
-import { Users } from "lucide-react";
+import { useState } from "react";
+import { Users, UserPlus, Send, X, Clock, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 type Connection = {
   connectionId: number;
@@ -272,6 +278,141 @@ function Legend() {
   );
 }
 
+// ── Types ──────────────────────────────────────────────────────────────────
+type Invite = {
+  id: number;
+  inviteeEmail: string;
+  status: string;
+  createdAt: string;
+};
+
+// ── Invite Panel ────────────────────────────────────────────────────────────
+function InvitePanel() {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+
+  const { data: invites = [], refetch: refetchInvites } = useQuery<Invite[]>({
+    queryKey: ["/api/invites"],
+    queryFn: () => apiRequest("GET", "/api/invites").then(r => r.json()),
+    staleTime: 30_000,
+  });
+
+  const pendingInvites = invites.filter(i => i.status === "pending");
+
+  const sendInvite = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/invites", {
+      inviteeEmail: email.trim(),
+      message: message.trim() || undefined,
+    }),
+    onSuccess: () => {
+      toast({ title: "Invite sent", description: `Momentum partner invite sent to ${email.trim()}` });
+      setEmail("");
+      setMessage("");
+      setOpen(false);
+      refetchInvites();
+      queryClient.invalidateQueries({ queryKey: ["/api/connections"] });
+    },
+    onError: (e: any) => {
+      toast({
+        title: "Could not send invite",
+        description: e.message?.replace(/^\d+: /, "") || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <div className="rounded-xl border border-border bg-muted/10 overflow-hidden">
+      {/* Header row */}
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors"
+        onClick={() => setOpen(v => !v)}
+        data-testid="invite-panel-toggle"
+      >
+        <div className="flex items-center gap-2">
+          <UserPlus className="w-4 h-4 text-primary" />
+          <span className="text-sm font-bold">Invite a Momentum Partner</span>
+          {pendingInvites.length > 0 && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              {pendingInvites.length} pending
+            </Badge>
+          )}
+        </div>
+        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
+
+      {/* Collapsible body */}
+      {open && (
+        <div className="border-t border-border px-4 pb-4 pt-3 space-y-4">
+
+          {/* Invite form */}
+          <div className="space-y-2">
+            <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">Send Invite</p>
+            <div className="flex gap-2">
+              <Input
+                id="network-invite-email"
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && email.trim()) sendInvite.mutate(); }}
+                className="text-sm flex-1"
+                data-testid="network-invite-email"
+              />
+              <Button
+                size="sm"
+                disabled={!email.trim() || sendInvite.isPending}
+                onClick={() => sendInvite.mutate()}
+                className="gap-1.5 flex-shrink-0"
+                data-testid="network-invite-send-btn"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {sendInvite.isPending ? "Sending…" : "Send"}
+              </Button>
+            </div>
+            <Textarea
+              placeholder="Add a personal note (optional)"
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              rows={2}
+              maxLength={300}
+              className="resize-none text-sm"
+              data-testid="network-invite-message"
+            />
+            <p className="text-[10px] text-muted-foreground/50 text-right">{message.length}/300</p>
+          </div>
+
+          {/* Pending invites list */}
+          {pendingInvites.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">Pending Invites</p>
+              {pendingInvites.map(inv => (
+                <div
+                  key={inv.id}
+                  className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2"
+                >
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
+                  <span className="flex-1 text-sm text-muted-foreground truncate">{inv.inviteeEmail}</span>
+                  <span className="text-[10px] text-muted-foreground/40">
+                    {new Date(inv.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {pendingInvites.length === 0 && (
+            <p className="text-xs text-muted-foreground/50 text-center py-1">No pending invites.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page ────────────────────────────────────────────────────────────────────
 export default function NetworkPage() {
   const { user } = useAuth();
@@ -374,20 +515,10 @@ export default function NetworkPage() {
         </div>
       )}
 
-      {/* CTA if no partners */}
-      {partners.length === 0 && !isLoading && (
-        <div className="mt-4 rounded-lg border border-border bg-muted/10 p-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            You don't have any confirmed momentum partners yet.
-          </p>
-          <button
-            className="mt-3 text-xs font-bold text-primary underline underline-offset-2"
-            onClick={() => navigate("/settings")}
-          >
-            Invite a momentum partner →
-          </button>
-        </div>
-      )}
+      {/* Invite panel — always visible for Pro users */}
+      <div className="mt-4">
+        <InvitePanel />
+      </div>
     </div>
   );
 }
