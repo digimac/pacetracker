@@ -18,7 +18,7 @@ import BillingPage from "@/pages/billing";
 import AdminPage from "@/pages/admin";
 import GlobePage from "@/pages/globe";
 import NetworkPage from "@/pages/network";
-import GroupsRouter from "@/pages/groups";
+import { GroupListPage, GroupDetailPage } from "@/pages/groups";
 import StoryPage from "@/pages/story";
 import TrackingGuidePage from "@/pages/tracking-guide";
 import ConnectPage from "@/pages/connect";
@@ -121,7 +121,8 @@ function Router() {
         <Route path="/settings" component={SettingsPage} />
         <Route path="/globe" component={GlobePage} />
         <Route path="/network" component={NetworkPage} />
-        <GroupsRouter />
+        <Route path="/groups" component={GroupListPage} />
+        <Route path="/groups/:id">{(params: any) => <GroupDetailPage groupId={parseInt(params.id)} />}</Route>
         <Route path="/story" component={StoryPage} />
         <Route path="/tracking" component={TrackingGuidePage} />
         <Route path="/connect" component={ConnectPage} />

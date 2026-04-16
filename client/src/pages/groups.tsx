@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/App";
-import { Route, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -383,14 +383,5 @@ function GroupDetailPage({ groupId }: { groupId: number }) {
   );
 }
 
-// ── Router wrapper ───────────────────────────────────────────────────────────
-export default function GroupsRouter() {
-  return (
-    <>
-      <Route path="/groups" component={GroupListPage} />
-      <Route path="/groups/:id">
-        {(params) => <GroupDetailPage groupId={parseInt(params.id)} />}
-      </Route>
-    </>
-  );
-}
+// Named exports for use in App.tsx Switch
+export { GroupListPage, GroupDetailPage };
