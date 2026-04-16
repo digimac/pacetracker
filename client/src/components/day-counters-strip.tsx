@@ -27,7 +27,10 @@ export function DayCountersStrip() {
   if (counters.length === 0) return null;
 
   return (
-    <div className="flex gap-3 flex-wrap mb-4">
+    <div
+      className="grid mb-4 gap-2"
+      style={{ gridTemplateColumns: `repeat(${counters.length}, 1fr)` }}
+    >
       {counters.map(c => {
         const days = calcDays(c.type, c.counterDate);
         const isSince = c.type === "since";
@@ -48,7 +51,7 @@ export function DayCountersStrip() {
         return (
           <div
             key={c.id}
-            className="flex-1 min-w-[120px] max-w-[180px] rounded-xl border border-border bg-muted/20 px-4 py-3 flex flex-col items-center text-center gap-1"
+            className="rounded-xl border border-border bg-muted/20 px-3 py-3 flex flex-col items-center text-center gap-1 min-w-0"
             data-testid={`day-counter-${c.id}`}
           >
             {/* Badge */}
