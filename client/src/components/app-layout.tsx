@@ -18,7 +18,8 @@ import {
   Globe,
   BookOpen,
   Monitor,
-  MessageSquare
+  MessageSquare,
+  Network,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -160,6 +161,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             >
               <Globe className="w-4 h-4 flex-shrink-0" />
               Score Map
+            </button>
+          )}
+
+          {/* Network — Pro only */}
+          {isPro && (
+            <button
+              type="button"
+              data-testid="nav-network"
+              className={`
+                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                ${location === "/network"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                }
+              `}
+              onClick={() => { setMobileOpen(false); navigate("/network"); }}
+            >
+              <Network className="w-4 h-4 flex-shrink-0" />
+              My Network
             </button>
           )}
 
