@@ -234,6 +234,42 @@
       nav { padding: 12px 16px; }
     }
 
+    /* ── Promo ribbon ── */
+    .category-card { position: relative; }
+    .promo-ribbon {
+      position: absolute;
+      top: 16px; right: -28px;
+      background: #85FF00;
+      color: #0a0a0a;
+      font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 5px 36px;
+      transform: rotate(35deg);
+      z-index: 10;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .promo-banner {
+      display: flex; align-items: center; gap: 8px;
+      background: linear-gradient(90deg, rgba(133,255,0,0.12) 0%, rgba(133,255,0,0.06) 100%);
+      border: 1px solid rgba(133,255,0,0.3);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 12px; line-height: 1.4;
+    }
+    .promo-banner-icon { font-size: 1rem; flex-shrink: 0; }
+    .promo-banner-text { color: #85FF00; font-weight: 700; }
+    .promo-banner-code {
+      display: inline-block;
+      background: rgba(133,255,0,0.15);
+      border: 1px solid rgba(133,255,0,0.4);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: monospace; font-size: 11px; font-weight: 900;
+      color: #85FF00; letter-spacing: 0.05em;
+    }
+
     /* ── Animations ── */
     .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
     .fade-in.visible { opacity: 1; transform: translateY(0); }
@@ -360,6 +396,7 @@
         tagline: 'For students and new grads navigating the high-stakes transition to career.',
         color: '#60a5fa',
         image: 'https://res.cloudinary.com/dlqmcinfq/image/upload/v1776353890/sweet-momentum/dqdt4dic8hyyz0ajlm00.jpg',
+        promo: { ribbon: '3 Months Free', text: '3 Months Free for 2026 Graduates', code: 'GRAD26' },
         metrics: [
           { name: 'Study',   desc: 'Focused study or coursework session' },
           { name: 'Apply',   desc: 'Job or opportunity application sent' },
@@ -517,8 +554,18 @@
           </li>
         `).join('');
 
+        const promoRibbonHtml = cat.promo
+          ? `<div class="promo-ribbon">${cat.promo.ribbon}</div>` : '';
+
+        const promoBannerHtml = cat.promo
+          ? `<div class="promo-banner">
+              <span class="promo-banner-icon">🎉</span>
+              <span class="promo-banner-text">${cat.promo.text} — use code <span class="promo-banner-code">${cat.promo.code}</span> at checkout</span>
+            </div>` : '';
+
         return `
-          <div class="category-card fade-in" data-key="${cat.key}">
+          <div class="category-card fade-in" data-key="${cat.key}" style="overflow:hidden;">
+            ${promoRibbonHtml}
             <img
               class="category-image"
               src="${cat.image}"
@@ -533,6 +580,7 @@
                 <span class="category-title" style="color:${cat.color}">${cat.label}</span>
               </div>
               <p class="category-tagline">${cat.tagline}</p>
+              ${promoBannerHtml}
               <p class="metrics-label">Custom Metrics</p>
               <ul class="metrics-list">${metricsHtml}</ul>
               <div class="category-cta">${ctaHtml}</div>
