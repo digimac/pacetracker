@@ -142,6 +142,26 @@ app.use((req, res, next) => {
         "created_at" timestamp DEFAULT now() NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS "momentum_groups" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "name" text NOT NULL,
+        "description" text,
+        "moderator_id" integer NOT NULL,
+        "max_seats" integer NOT NULL DEFAULT 10,
+        "discount_code" text,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS "group_members" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "group_id" integer NOT NULL,
+        "user_id" integer,
+        "invite_email" text,
+        "status" text NOT NULL DEFAULT 'invited',
+        "invited_at" timestamp DEFAULT now() NOT NULL,
+        "joined_at" timestamp
+      );
+
       CREATE TABLE IF NOT EXISTS "day_counters" (
         "id" serial PRIMARY KEY NOT NULL,
         "user_id" integer NOT NULL,

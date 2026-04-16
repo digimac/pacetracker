@@ -244,3 +244,32 @@ export const dayCounters = pgTable("day_counters", {
 export const insertDayCounterSchema = createInsertSchema(dayCounters).omit({ id: true, createdAt: true });
 export type InsertDayCounter = z.infer<typeof insertDayCounterSchema>;
 export type DayCounter = typeof dayCounters.$inferSelect;
+
+// Momentum Groups — Pro-only, moderated collections of up to 10 members
+export const momentumGroups = pgTable("momentum_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  moderatorId: integer("moderator_id").notNull(),  // Pro user who owns/manages the group
+  maxSeats: integer("max_seats").notNull().default(10),
+  discountCode: text("discount_code"),             // Stripe coupon / promo code for new members
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const groupMembers = pgTable("group_members", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  userId: integer("user_id"),                       // null if invite not yet accepted
+  inviteEmail: text("invite_email"),                // email sent to non-member
+  status: text("status").notNull().default("invited"), // "invited" | "active" | "removed"
+  invitedAt: timestamp("invited_at").defaultNow().notNull(),
+  joinedAt: timestamp("joined_at"),
+});
+
+export const insertMomentumGroupSchema = createInsertSchema(momentumGroups).omit({ id: true, createdAt: true });
+export type InsertMomentumGroup = z.infer<typeof insertMomentumGroupSchema>;
+export type MomentumGroup = typeof momentumGroups.$inferSelect;
+
+export const insertGroupMemberSchema = createInsertSchema(groupMembers).omit({ id: true, invitedAt: true });
+export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
+export type GroupMember = typeof groupMembers.$inferSelect;

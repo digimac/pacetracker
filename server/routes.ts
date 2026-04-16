@@ -1081,6 +1081,175 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  // ── Momentum Groups ───────────────────────────────────────────────────────────
+
+  // Get all groups the user is part of (moderator or active member)
+  app.get("/api/groups", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const [moderated, member] = await Promise.all([
+        storage.getGroupsByModerator(userId),
+        storage.getGroupsByMember(userId),
+      ]);
+      // Deduplicate
+      const seen = new Set<number>();
+      const all = [...moderated, ...member].filter(g => { if (seen.has(g.id)) return false; seen.add(g.id); return true; });
+      res.json(all);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Create a group (Pro only)
+  app.post("/api/groups", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const sub = await storage.getSubscription(userId);
+      const isPro = sub?.status === 'active';
+      if (!isPro) return res.status(403).json({ error: 'Pro subscription required to create a Momentum Group' });
+      const { name, description, discountCode } = z.object({
+        name: z.string().min(1).max(100),
+        description: z.string().max(500).optional(),
+        discountCode: z.string().max(50).optional(),
+      }).parse(req.body);
+      const group = await storage.createGroup({ name, description: description ?? null, moderatorId: userId, maxSeats: 10, discountCode: discountCode ?? null });
+      // Auto-add moderator as active member
+      const user = await storage.getUserById(userId);
+      await storage.addGroupMember({ groupId: group.id, userId, inviteEmail: user?.email ?? null, status: 'active', joinedAt: new Date() });
+      res.json(group);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // Get single group (must be member or moderator)
+  app.get("/api/groups/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const group = await storage.getGroupById(parseInt(req.params.id));
+      if (!group) return res.status(404).json({ error: 'Group not found' });
+      const isMod = group.moderatorId === userId;
+      const membership = await storage.getGroupMemberByUserId(group.id, userId);
+      if (!isMod && (!membership || membership.status !== 'active')) return res.status(403).json({ error: 'Not a member of this group' });
+      const members = await storage.getGroupMembers(group.id);
+      // Enrich with user display info + today score
+      const today = new Date().toISOString().slice(0, 10);
+      const enriched = await Promise.all(members.filter(m => m.status !== 'removed').map(async m => {
+        if (!m.userId) return { ...m, displayName: null, todayScore: null };
+        const u = await storage.getUserById(m.userId);
+        const displayName = u ? (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.displayName || u.email) : null;
+        const todayScore = await storage.getPartnerDailyScore(m.userId, today);
+        return { ...m, displayName, todayScore: todayScore ?? null };
+      }));
+      res.json({ group, members: enriched, isModerator: isMod });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Update group (moderator only)
+  app.patch("/api/groups/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const updates = z.object({
+        name: z.string().min(1).max(100).optional(),
+        description: z.string().max(500).optional(),
+        discountCode: z.string().max(50).nullable().optional(),
+      }).parse(req.body);
+      const group = await storage.updateGroup(parseInt(req.params.id), userId, updates);
+      if (!group) return res.status(404).json({ error: 'Group not found or not authorized' });
+      res.json(group);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // Delete group (moderator only)
+  app.delete("/api/groups/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      await storage.deleteGroup(parseInt(req.params.id), userId);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // Invite a member to a group (moderator only)
+  app.post("/api/groups/:id/invite", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const groupId = parseInt(req.params.id);
+      const group = await storage.getGroupById(groupId);
+      if (!group) return res.status(404).json({ error: 'Group not found' });
+      if (group.moderatorId !== userId) return res.status(403).json({ error: 'Only the moderator can invite members' });
+      // Check seat capacity
+      const members = await storage.getGroupMembers(groupId);
+      const activeCount = members.filter(m => m.status !== 'removed').length;
+      if (activeCount >= group.maxSeats) return res.status(400).json({ error: `Group is at capacity (${group.maxSeats} seats). Request more seats to add members.` });
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      // Check not already member
+      const existing = await storage.getGroupMemberByEmail(groupId, email);
+      if (existing && existing.status !== 'removed') return res.status(400).json({ error: 'This person is already in the group or has a pending invite' });
+      // Check if user already exists in the system
+      const invitedUser = await storage.getUserByEmail(email);
+      const member = await storage.addGroupMember({
+        groupId, userId: invitedUser?.id ?? null, inviteEmail: email, status: invitedUser ? 'active' : 'invited', joinedAt: invitedUser ? new Date() : null,
+      });
+      // Send invite email
+      const moderator = await storage.getUserById(userId);
+      const modName = moderator?.displayName || moderator?.email || 'Someone';
+      const APP_URL = process.env.APP_URL || 'https://sweetmo.io';
+      const discountNote = group.discountCode ? `\n\nAs a new Sweet Momentum member joining through ${group.name}, you qualify for a discount. Use code <strong>${group.discountCode}</strong> at checkout.` : '';
+      try {
+        const transporter = (await import('./email')).createTransporter?.();
+        if (transporter) {
+          await transporter.sendMail({
+            from: process.env.SMTP_FROM_EMAIL ? `"Sweet Momentum" <${process.env.SMTP_FROM_EMAIL}>` : `"Sweet Momentum" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: `${modName} invited you to join the ${group.name} Momentum Group`,
+            html: `<body style="font-family:sans-serif;background:#0f0f0f;padding:40px;"><div style="max-width:540px;margin:0 auto;background:#1a1a1a;border-radius:12px;overflow:hidden;"><div style="background:#FF6E00;padding:28px;text-align:center;"><h1 style="color:#fff;margin:0;font-size:22px;">Sweet Momentum</h1></div><div style="padding:28px;"><p style="color:#e0e0e0;font-size:15px;">${modName} has invited you to join the <strong style="color:#FF6E00;">${group.name}</strong> Momentum Group on Sweet Momentum.</p>${discountNote ? `<p style="color:#e0e0e0;font-size:14px;margin-top:16px;">${discountNote}</p>` : ''}<div style="text-align:center;margin:28px 0;"><a href="${APP_URL}/#/register" style="background:#FF6E00;color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;display:inline-block;">Join Sweet Momentum</a></div><p style="color:#666;font-size:12px;text-align:center;">Already have an account? Sign in and your group membership will activate automatically.</p></div></div></body>`,
+            text: `${modName} invited you to join the ${group.name} Momentum Group on Sweet Momentum.${group.discountCode ? ` Use code ${group.discountCode} for a discount.` : ''} Sign up at ${APP_URL}`,
+          });
+        }
+      } catch (emailErr) { console.warn('[groups] Invite email error:', emailErr); }
+      res.json(member);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // Remove a member (moderator only)
+  app.delete("/api/groups/:id/members/:memberId", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const groupId = parseInt(req.params.id);
+      const group = await storage.getGroupById(groupId);
+      if (!group) return res.status(404).json({ error: 'Group not found' });
+      if (group.moderatorId !== userId) return res.status(403).json({ error: 'Only the moderator can remove members' });
+      await storage.removeGroupMember(parseInt(req.params.memberId), groupId);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // Request more seats — sends email to admin
+  app.post("/api/groups/:id/request-seats", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const groupId = parseInt(req.params.id);
+      const group = await storage.getGroupById(groupId);
+      if (!group) return res.status(404).json({ error: 'Group not found' });
+      if (group.moderatorId !== userId) return res.status(403).json({ error: 'Only the moderator can request more seats' });
+      const { seatsRequested, reason } = z.object({
+        seatsRequested: z.number().int().min(1).max(50),
+        reason: z.string().max(500).optional(),
+      }).parse(req.body);
+      const user = await storage.getUserById(userId);
+      const APP_URL = process.env.APP_URL || 'https://sweetmo.io';
+      try {
+        const transporter = (await import('./email')).createTransporter?.();
+        if (transporter) {
+          await transporter.sendMail({
+            from: process.env.SMTP_FROM_EMAIL ? `"Sweet Momentum" <${process.env.SMTP_FROM_EMAIL}>` : `"Sweet Momentum" <${process.env.SMTP_USER}>`,
+            to: 'track@sweetmo.io',
+            subject: `Seat Request: ${group.name} (Group #${groupId})`,
+            html: `<p><strong>Group:</strong> ${group.name} (ID: ${groupId})</p><p><strong>Moderator:</strong> ${user?.email}</p><p><strong>Current seats:</strong> ${group.maxSeats}</p><p><strong>Seats requested:</strong> ${seatsRequested}</p><p><strong>Reason:</strong> ${reason || 'None provided'}</p>`,
+            text: `Seat request for group "${group.name}" (ID: ${groupId})\nModerator: ${user?.email}\nCurrent seats: ${group.maxSeats}\nRequested: ${seatsRequested}\nReason: ${reason || 'None'}`,
+          });
+        }
+      } catch (emailErr) { console.warn('[groups] Seat request email error:', emailErr); }
+      res.json({ ok: true, message: 'Seat request sent to the Sweet Momentum team. We\'ll be in touch within 1-2 business days.' });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
   // Day Counters
   app.get("/api/day-counters", requireAuth, async (req, res) => {
     try {

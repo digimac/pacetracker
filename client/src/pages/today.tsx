@@ -12,6 +12,7 @@ import { useLocation } from "wouter";
 import type { MetricScore, CustomMetric, MetricContent } from "@shared/schema";
 import MetricInfoModal from "@/components/metric-info-modal";
 import { DayCountersStrip } from "@/components/day-counters-strip";
+import { GroupCard } from "@/components/group-card";
 import { useUserTimezone } from "@/hooks/use-user-timezone";
 
 const CORE_METRICS = [
@@ -459,6 +460,9 @@ export default function TodayPage() {
           </div>
         </section>
       )}
+
+      {/* Momentum Groups */}
+      {user && <GroupCard userId={user.id} />}
 
       {/* Notes */}
       <section className="mb-6">

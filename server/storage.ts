@@ -14,6 +14,8 @@ import {
   CoachingRequest, coachingRequests,
   GoalItem, InsertGoalItem, goalItems,
   DayCounter, InsertDayCounter, dayCounters,
+  MomentumGroup, InsertMomentumGroup, momentumGroups,
+  GroupMember, InsertGroupMember, groupMembers,
   users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections, emailTemplates,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
@@ -88,6 +90,19 @@ export interface IStorage {
   // Email templates
   getEmailTemplate(key: string): Promise<EmailTemplate | undefined>;
   upsertEmailTemplate(key: string, subject: string, bodyHtml: string, bodyText: string): Promise<EmailTemplate>;
+  // Momentum Groups
+  createGroup(data: InsertMomentumGroup): Promise<MomentumGroup>;
+  getGroupsByModerator(moderatorId: number): Promise<MomentumGroup[]>;
+  getGroupsByMember(userId: number): Promise<MomentumGroup[]>;
+  getGroupById(id: number): Promise<MomentumGroup | undefined>;
+  updateGroup(id: number, moderatorId: number, updates: Partial<Pick<MomentumGroup,'name'|'description'|'discountCode'>>): Promise<MomentumGroup | undefined>;
+  deleteGroup(id: number, moderatorId: number): Promise<void>;
+  getGroupMembers(groupId: number): Promise<GroupMember[]>;
+  addGroupMember(data: InsertGroupMember): Promise<GroupMember>;
+  updateGroupMember(id: number, updates: Partial<Pick<GroupMember,'status'|'userId'|'joinedAt'>>): Promise<GroupMember | undefined>;
+  removeGroupMember(id: number, groupId: number): Promise<void>;
+  getGroupMemberByEmail(groupId: number, email: string): Promise<GroupMember | undefined>;
+  getGroupMemberByUserId(groupId: number, userId: number): Promise<GroupMember | undefined>;
   // Day counters
   getDayCounters(userId: number): Promise<DayCounter[]>;
   createDayCounter(data: InsertDayCounter): Promise<DayCounter>;
@@ -493,6 +508,62 @@ export class DrizzleStorage implements IStorage {
     return row;
   }
 
+  // ── Momentum Groups ───────────────────────────────────────────────────
+  async createGroup(data: InsertMomentumGroup): Promise<MomentumGroup> {
+    const [row] = await this.db.insert(momentumGroups).values(data).returning();
+    return row;
+  }
+  async getGroupsByModerator(moderatorId: number): Promise<MomentumGroup[]> {
+    return this.db.select().from(momentumGroups).where(eq(momentumGroups.moderatorId, moderatorId)).orderBy(desc(momentumGroups.createdAt));
+  }
+  async getGroupsByMember(userId: number): Promise<MomentumGroup[]> {
+    const memberRows = await this.db.select().from(groupMembers)
+      .where(and(eq(groupMembers.userId, userId), eq(groupMembers.status, 'active')));
+    if (memberRows.length === 0) return [];
+    const groupIds = memberRows.map(m => m.groupId);
+    const groups: MomentumGroup[] = [];
+    for (const gid of groupIds) {
+      const g = await this.getGroupById(gid);
+      if (g) groups.push(g);
+    }
+    return groups;
+  }
+  async getGroupById(id: number): Promise<MomentumGroup | undefined> {
+    return this.db.select().from(momentumGroups).where(eq(momentumGroups.id, id)).then(r => r[0]);
+  }
+  async updateGroup(id: number, moderatorId: number, updates: Partial<Pick<MomentumGroup,'name'|'description'|'discountCode'>>): Promise<MomentumGroup | undefined> {
+    const [row] = await this.db.update(momentumGroups).set(updates)
+      .where(and(eq(momentumGroups.id, id), eq(momentumGroups.moderatorId, moderatorId))).returning();
+    return row;
+  }
+  async deleteGroup(id: number, moderatorId: number): Promise<void> {
+    await this.db.delete(groupMembers).where(eq(groupMembers.groupId, id));
+    await this.db.delete(momentumGroups).where(and(eq(momentumGroups.id, id), eq(momentumGroups.moderatorId, moderatorId)));
+  }
+  async getGroupMembers(groupId: number): Promise<GroupMember[]> {
+    return this.db.select().from(groupMembers).where(eq(groupMembers.groupId, groupId)).orderBy(asc(groupMembers.invitedAt));
+  }
+  async addGroupMember(data: InsertGroupMember): Promise<GroupMember> {
+    const [row] = await this.db.insert(groupMembers).values(data).returning();
+    return row;
+  }
+  async updateGroupMember(id: number, updates: Partial<Pick<GroupMember,'status'|'userId'|'joinedAt'>>): Promise<GroupMember | undefined> {
+    const [row] = await this.db.update(groupMembers).set(updates).where(eq(groupMembers.id, id)).returning();
+    return row;
+  }
+  async removeGroupMember(id: number, groupId: number): Promise<void> {
+    await this.db.update(groupMembers).set({ status: 'removed' })
+      .where(and(eq(groupMembers.id, id), eq(groupMembers.groupId, groupId)));
+  }
+  async getGroupMemberByEmail(groupId: number, email: string): Promise<GroupMember | undefined> {
+    return this.db.select().from(groupMembers)
+      .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.inviteEmail, email))).then(r => r[0]);
+  }
+  async getGroupMemberByUserId(groupId: number, userId: number): Promise<GroupMember | undefined> {
+    return this.db.select().from(groupMembers)
+      .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId))).then(r => r[0]);
+  }
+
   // ── Day Counters ──────────────────────────────────────────────────────────
   async getDayCounters(userId: number): Promise<DayCounter[]> {
     return this.db.select().from(dayCounters)
@@ -881,6 +952,22 @@ export class MemStorage implements IStorage {
     this.emailTemplatesMap.set(key, t);
     return t;
   }
+  // Momentum Groups stubs (MemStorage)
+  private groupsMap: Map<number, MomentumGroup> = new Map();
+  private groupMembersMap: Map<number, GroupMember> = new Map();
+  private groupIdCtr = 1; private gmIdCtr = 1;
+  async createGroup(data: InsertMomentumGroup): Promise<MomentumGroup> { const g = { ...data, id: this.groupIdCtr++, description: data.description ?? null, discountCode: data.discountCode ?? null, maxSeats: data.maxSeats ?? 10, createdAt: new Date() } as MomentumGroup; this.groupsMap.set(g.id, g); return g; }
+  async getGroupsByModerator(moderatorId: number): Promise<MomentumGroup[]> { return Array.from(this.groupsMap.values()).filter(g => g.moderatorId === moderatorId); }
+  async getGroupsByMember(userId: number): Promise<MomentumGroup[]> { const gids = Array.from(this.groupMembersMap.values()).filter(m => m.userId === userId && m.status === 'active').map(m => m.groupId); return gids.map(id => this.groupsMap.get(id)).filter(Boolean) as MomentumGroup[]; }
+  async getGroupById(id: number): Promise<MomentumGroup | undefined> { return this.groupsMap.get(id); }
+  async updateGroup(id: number, moderatorId: number, updates: any): Promise<MomentumGroup | undefined> { const g = this.groupsMap.get(id); if (!g || g.moderatorId !== moderatorId) return undefined; const u = { ...g, ...updates }; this.groupsMap.set(id, u); return u; }
+  async deleteGroup(id: number, moderatorId: number): Promise<void> { this.groupsMap.delete(id); }
+  async getGroupMembers(groupId: number): Promise<GroupMember[]> { return Array.from(this.groupMembersMap.values()).filter(m => m.groupId === groupId); }
+  async addGroupMember(data: InsertGroupMember): Promise<GroupMember> { const m = { ...data, id: this.gmIdCtr++, userId: data.userId ?? null, inviteEmail: data.inviteEmail ?? null, status: data.status ?? 'invited', invitedAt: new Date(), joinedAt: data.joinedAt ?? null } as GroupMember; this.groupMembersMap.set(m.id, m); return m; }
+  async updateGroupMember(id: number, updates: any): Promise<GroupMember | undefined> { const m = this.groupMembersMap.get(id); if (!m) return undefined; const u = { ...m, ...updates }; this.groupMembersMap.set(id, u); return u; }
+  async removeGroupMember(id: number, groupId: number): Promise<void> { const m = this.groupMembersMap.get(id); if (m?.groupId === groupId) { this.groupMembersMap.set(id, { ...m, status: 'removed' }); } }
+  async getGroupMemberByEmail(groupId: number, email: string): Promise<GroupMember | undefined> { return Array.from(this.groupMembersMap.values()).find(m => m.groupId === groupId && m.inviteEmail === email); }
+  async getGroupMemberByUserId(groupId: number, userId: number): Promise<GroupMember | undefined> { return Array.from(this.groupMembersMap.values()).find(m => m.groupId === groupId && m.userId === userId); }
   // Day counter stubs (MemStorage)
   private dayCountersMap: Map<number, DayCounter> = new Map();
   private dayCounterIdCtr = 1;

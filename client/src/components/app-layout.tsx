@@ -183,6 +183,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
           )}
 
+          {/* Groups — Pro only */}
+          {isPro && (
+            <button
+              type="button"
+              data-testid="nav-groups"
+              className={`
+                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                ${location.startsWith("/groups")
+                  ? "bg-primary text-primary-foreground"
+                  : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                }
+              `}
+              onClick={() => { setMobileOpen(false); navigate("/groups"); }}
+            >
+              <Users className="w-4 h-4 flex-shrink-0" />
+              Groups
+            </button>
+          )}
+
           {/* Admin link — only visible to admin user */}
           {isAdmin && (
             <div className="pt-2 mt-2 border-t border-[hsl(var(--sidebar-border))]">
