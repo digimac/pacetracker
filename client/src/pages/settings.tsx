@@ -1135,6 +1135,7 @@ function ConnectionsCard() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const [confirmingUnlink, setConfirmingUnlink] = useState<number | null>(null); // partnerId being confirmed
 
   const { data: connections = [], refetch: refetchConnections, isFetching: fetchingConns } = useQuery<Connection[]>({
     queryKey: ["/api/connections"],
@@ -1184,12 +1185,13 @@ function ConnectionsCard() {
 
   const removeConnection = useMutation({
     mutationFn: (partnerId: number) => apiRequest("DELETE", `/api/connections/${partnerId}`),
-    onSuccess: () => {
-      toast({ title: "Connection removed" });
+    onSuccess: (_, partnerId) => {
+      toast({ title: "Momentum partner unlinked", description: "You've been disconnected from this partner." });
+      setConfirmingUnlink(null);
       refetchConnections();
-      refetchInvites(); // re-check invite statuses too
+      refetchInvites();
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); setConfirmingUnlink(null); },
   });
 
   const scoreColor = (score: number | null) => {
@@ -1305,22 +1307,53 @@ function ConnectionsCard() {
                       <p className="text-xs text-muted-foreground">@{c.partnerUsername}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
+                  <div className="flex items-center gap-2">
+                    {/* Today's score */}
+                    <div className="text-right mr-1">
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Today</p>
                       <p className={`text-base font-black ${scoreColor(c.todayScore)}`}>
                         {c.todayScore !== null ? c.todayScore : "—"}
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
-                      onClick={() => removeConnection.mutate(c.partnerId)}
-                      data-testid={`btn-remove-connection-${c.partnerId}`}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </Button>
+
+                    {/* Two-step unlink */}
+                    {confirmingUnlink === c.partnerId ? (
+                      // Step 2 — confirm
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-red-400 font-semibold whitespace-nowrap">Unlink?</span>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-6 text-[10px] px-2 py-0"
+                          disabled={removeConnection.isPending}
+                          onClick={() => removeConnection.mutate(c.partnerId)}
+                          data-testid={`btn-confirm-unlink-${c.partnerId}`}
+                        >
+                          {removeConnection.isPending ? "…" : "Yes, unlink"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 text-[10px] px-2 py-0"
+                          onClick={() => setConfirmingUnlink(null)}
+                          data-testid={`btn-cancel-unlink-${c.partnerId}`}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      // Step 1 — initial unlink button
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-muted-foreground/40 hover:text-red-400 transition-colors"
+                        onClick={() => setConfirmingUnlink(c.partnerId)}
+                        data-testid={`btn-unlink-${c.partnerId}`}
+                        title="Unlink this partner"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
