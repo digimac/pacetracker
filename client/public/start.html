@@ -228,6 +228,88 @@
     }
 
     /* ══════════════════════════════════════════════════
+       LAYOUT 2a — PRICING: 3-column tier cards
+       ═══════════════════════════════════════════════ */
+    #layout-pricing {
+      padding: 100px 24px;
+      border-top: 1px solid var(--border);
+    }
+    .pricing-intro { text-align: center; max-width: 600px; margin: 0 auto 60px; }
+    .pricing-intro h2 { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 900; letter-spacing: -0.03em; margin-bottom: 14px; }
+    .pricing-intro p { font-size: 16px; color: var(--muted); line-height: 1.7; }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .pricing-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .pricing-card:hover { border-color: rgba(255,255,255,0.18); transform: translateY(-3px); }
+    .pricing-card.featured {
+      border-color: var(--accent);
+      background: linear-gradient(160deg, rgba(255,110,0,0.06) 0%, var(--surface) 60%);
+    }
+    .pricing-card.group {
+      border-color: rgba(133,255,0,0.3);
+      background: linear-gradient(160deg, rgba(133,255,0,0.05) 0%, var(--surface) 60%);
+    }
+    .pricing-badge {
+      display: inline-block;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 100px;
+      margin-bottom: 20px;
+    }
+    .pricing-badge.free  { background: rgba(255,255,255,0.08); color: var(--muted); }
+    .pricing-badge.pro   { background: rgba(255,110,0,0.15);   color: var(--accent); }
+    .pricing-badge.group { background: rgba(133,255,0,0.12);   color: var(--green); }
+    .pricing-name { font-size: 1.5rem; font-weight: 900; margin-bottom: 6px; }
+    .pricing-price {
+      font-size: 3rem; font-weight: 900; letter-spacing: -0.04em;
+      line-height: 1; margin-bottom: 4px;
+    }
+    .pricing-price sup { font-size: 1.2rem; vertical-align: super; font-weight: 700; }
+    .pricing-price span { font-size: 1rem; font-weight: 500; color: var(--muted); }
+    .pricing-sub  { font-size: 12px; color: var(--muted); margin-bottom: 28px; }
+    .pricing-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+    .pricing-features { list-style: none; space-y: 8px; margin-bottom: 28px; flex: 1; }
+    .pricing-features li {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: 13px; color: var(--muted); padding: 5px 0;
+    }
+    .pricing-features li .check { color: var(--green); flex-shrink: 0; font-size: 12px; }
+    .pricing-features li .lock  { color: rgba(255,255,255,0.2); flex-shrink: 0; font-size: 12px; }
+    .pricing-cta {
+      display: block; text-align: center;
+      font-size: 14px; font-weight: 800;
+      text-decoration: none; border-radius: 10px; padding: 13px 24px;
+      transition: all 0.15s;
+    }
+    .pricing-cta.solid  { background: var(--accent); color: #fff; }
+    .pricing-cta.solid:hover { background: #e55e00; }
+    .pricing-cta.group-cta { background: var(--green); color: #0a0a0a; }
+    .pricing-cta.group-cta:hover { background: #6ecc00; }
+    .pricing-cta.ghost  { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .pricing-cta.ghost:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+    .pricing-annual-note {
+      text-align: center; font-size: 11px; color: var(--muted); margin-top: 20px;
+    }
+    .pricing-annual-note a { color: var(--accent); text-decoration: underline; }
+    @media (max-width: 900px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 420px; }
+    }
+
+    /* ══════════════════════════════════════════════════
        LAYOUT 2b — ABOUT: Two-column editorial sections
        ═══════════════════════════════════════════════ */
     #layout-about {
@@ -568,6 +650,80 @@
         <div class="metric-tile view"><div class="metric-name">VIEW</div><div class="metric-desc">Vision and perspective</div></div>
         <div class="metric-tile pace"><div class="metric-name">PACE</div><div class="metric-desc">Rhythm and momentum</div></div>
       </div>
+    </div>
+  </section>
+
+  <!-- ══ LAYOUT 2a — PRICING ══ -->
+  <section id="layout-pricing">
+    <div class="pricing-intro fade-in">
+      <h2>Simple, Transparent Pricing</h2>
+      <p>Start free. Upgrade when you're ready. Every plan includes the 6 core metrics and your complete score history.</p>
+    </div>
+
+    <div class="pricing-grid">
+
+      <!-- Free -->
+      <div class="pricing-card fade-in">
+        <span class="pricing-badge free">Free Forever</span>
+        <div class="pricing-name">Free</div>
+        <div class="pricing-price"><sup>$</sup>0<span>/mo</span></div>
+        <p class="pricing-sub">No credit card required</p>
+        <hr class="pricing-divider" />
+        <ul class="pricing-features">
+          <li><span class="check">✔</span> 6 core metrics</li>
+          <li><span class="check">✔</span> Daily score history</li>
+          <li><span class="check">✔</span> Activity timeline</li>
+          <li><span class="check">✔</span> Score history &amp; trends</li>
+          <li><span class="check">✔</span> Goal list</li>
+          <li><span class="lock">✓</span> Custom metrics (Pro)</li>
+          <li><span class="lock">✓</span> Momentum partners (Pro)</li>
+          <li><span class="lock">✓</span> Score Map &amp; Network (Pro)</li>
+        </ul>
+        <a href="/#/register" class="pricing-cta ghost">Get Started Free</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card featured fade-in">
+        <span class="pricing-badge pro">Most Popular</span>
+        <div class="pricing-name">Pro</div>
+        <div class="pricing-price"><sup>$</sup>9.99<span>/mo</span></div>
+        <p class="pricing-sub">or $99/yr &mdash; save 17%</p>
+        <hr class="pricing-divider" />
+        <ul class="pricing-features">
+          <li><span class="check">✔</span> Everything in Free</li>
+          <li><span class="check">✔</span> Up to 4 custom metrics</li>
+          <li><span class="check">✔</span> Momentum partners</li>
+          <li><span class="check">✔</span> Score Map &amp; Network diagram</li>
+          <li><span class="check">✔</span> Community category pages</li>
+          <li><span class="check">✔</span> Coaching session requests</li>
+          <li><span class="check">✔</span> Momentum Groups access</li>
+          <li><span class="check">✔</span> SMS notifications (opt-in)</li>
+        </ul>
+        <a href="/#/register" class="pricing-cta solid">Start Pro Free Trial</a>
+        <p class="pricing-annual-note">Annual plan available &mdash; <a href="/#/billing">see pricing</a></p>
+      </div>
+
+      <!-- Group -->
+      <div class="pricing-card group fade-in">
+        <span class="pricing-badge group">Teams &amp; Groups</span>
+        <div class="pricing-name">Group</div>
+        <div class="pricing-price"><sup>$</sup>95<span>/mo</span></div>
+        <p class="pricing-sub">or $899/yr (~$74.92/mo) &mdash; save 21% &middot; up to 10 seats</p>
+        <hr class="pricing-divider" />
+        <ul class="pricing-features">
+          <li><span class="check">✔</span> 10 member seats</li>
+          <li><span class="check">✔</span> All Pro features per seat</li>
+          <li><span class="check">✔</span> Group moderator dashboard</li>
+          <li><span class="check">✔</span> Invite members by email</li>
+          <li><span class="check">✔</span> Discount code for new members</li>
+          <li><span class="check">✔</span> Seat expansion on request</li>
+          <li><span class="check">✔</span> Group momentum network view</li>
+          <li><span class="check">✔</span> Priority support</li>
+        </ul>
+        <a href="/#/register" class="pricing-cta group-cta">Start with a Group</a>
+        <p class="pricing-annual-note">Annual plan saves $241 &mdash; <a href="/#/billing">subscribe now</a></p>
+      </div>
+
     </div>
   </section>
 

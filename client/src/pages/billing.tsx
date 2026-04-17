@@ -67,9 +67,13 @@ export default function BillingPage() {
     onError: (e: any) => toast({ title: "Portal error", description: e.message || "Could not open subscription portal", variant: "destructive" }),
   });
 
-  const monthlyPrice = billing?.prices.monthlyAmount ? `$${(billing.prices.monthlyAmount / 100).toFixed(2)}` : "$9.99";
-  const annualPrice = billing?.prices.annualAmount ? `$${(billing.prices.annualAmount / 100).toFixed(2)}` : "$99.00";
-  const annualMonthly = billing?.prices.annualAmount ? `$${((billing.prices.annualAmount / 100) / 12).toFixed(2)}` : "$8.25";
+  const monthlyPrice    = billing?.prices.monthlyAmount     ? `$${(billing.prices.monthlyAmount / 100).toFixed(2)}`          : "$9.99";
+  const annualPrice     = billing?.prices.annualAmount      ? `$${(billing.prices.annualAmount / 100).toFixed(2)}`           : "$99.00";
+  const annualMonthly   = billing?.prices.annualAmount      ? `$${((billing.prices.annualAmount / 100) / 12).toFixed(2)}`   : "$8.25";
+  const grpMonthlyPrice = billing?.prices.groupMonthlyAmount ? `$${(billing.prices.groupMonthlyAmount / 100).toFixed(2)}`   : "$95.00";
+  const grpAnnualPrice  = billing?.prices.groupAnnualAmount  ? `$${(billing.prices.groupAnnualAmount / 100).toFixed(2)}`    : "$899.00";
+  const grpAnnualMonthly = billing?.prices.groupAnnualAmount ? `$${((billing.prices.groupAnnualAmount / 100) / 12).toFixed(2)}` : "$74.92";
+  const isGroup = billing?.plan === "group_monthly" || billing?.plan === "group_annual";
 
   if (isLoading) {
     return (
@@ -231,6 +235,80 @@ export default function BillingPage() {
                   checkoutMutation.isPending ? "Opening..." : "Subscribe Annually"}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Group Monthly */}
+        <Card className={`relative col-span-full md:col-span-1 ${isGroup && billing?.plan === "group_monthly" ? "border-primary/40 ring-1 ring-primary/20" : "border-border"}`}>
+          {isGroup && billing?.plan === "group_monthly" && (
+            <Badge className="absolute -top-2.5 left-4 bg-primary text-primary-foreground text-[10px]">Active Plan</Badge>
+          )}
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between mb-1">
+              <CardTitle className="text-base">Group</CardTitle>
+              <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">Monthly</Badge>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-black">{grpMonthlyPrice}</span>
+              <span className="text-sm text-muted-foreground">/mo</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Up to 10 seats · ~$9.50/seat/mo</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <ul className="space-y-1.5 text-sm">
+              {["10 member seats", "All Pro features per seat", "Group moderator dashboard", "Member invite emails", "Discount code for new members", "Seat expansion on request"].map(f => (
+              <li key={f} className="flex items-center gap-2"><span className="text-green-400 text-xs">✔</span>{f}</li>
+              ))}
+            </ul>
+            <Button
+              className="w-full"
+              onClick={() => checkoutMutation.mutate(billing?.prices.groupMonthly || "")}
+              disabled={checkoutMutation.isPending || (isGroup && billing?.plan === "group_monthly") || !billing?.prices.groupMonthly}
+              variant={isGroup && billing?.plan === "group_monthly" ? "outline" : "default"}
+              data-testid="button-group-monthly"
+            >
+              {isGroup && billing?.plan === "group_monthly" ? "Active Plan" :
+                !billing?.prices.groupMonthly ? "Coming Soon" :
+                checkoutMutation.isPending ? "Opening..." : "Subscribe Monthly"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Group Annual */}
+        <Card className={`relative col-span-full md:col-span-1 ${isGroup && billing?.plan === "group_annual" ? "border-primary/40 ring-1 ring-primary/20" : "border-green-500/20 bg-green-500/[0.02]"}`}>
+          <Badge className={`absolute -top-2.5 left-4 text-[10px] ${
+            isGroup && billing?.plan === "group_annual" ? "bg-primary text-primary-foreground" : "bg-green-600 text-white"
+          }`}>
+            {isGroup && billing?.plan === "group_annual" ? "Active Plan" : "Best Group Value"}
+          </Badge>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between mb-1">
+              <CardTitle className="text-base">Group</CardTitle>
+              <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-400">Annual</Badge>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-black">{grpAnnualPrice}</span>
+              <span className="text-sm text-muted-foreground">/yr</span>
+            </div>
+            <p className="text-xs text-muted-foreground">{grpAnnualMonthly}/mo · save vs monthly · ~$7.49/seat/mo</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <ul className="space-y-1.5 text-sm">
+              {["10 member seats", "All Pro features per seat", "Group moderator dashboard", "Member invite emails", "Discount code for new members", "Seat expansion on request", "Priority support"].map(f => (
+              <li key={f} className="flex items-center gap-2"><span className="text-green-400 text-xs">✔</span>{f}</li>
+              ))}
+            </ul>
+            <Button
+              className="w-full"
+              onClick={() => checkoutMutation.mutate(billing?.prices.groupAnnual || "")}
+              disabled={checkoutMutation.isPending || (isGroup && billing?.plan === "group_annual") || !billing?.prices.groupAnnual}
+              variant={isGroup && billing?.plan === "group_annual" ? "outline" : "default"}
+              data-testid="button-group-annual"
+            >
+              {isGroup && billing?.plan === "group_annual" ? "Active Plan" :
+                !billing?.prices.groupAnnual ? "Coming Soon" :
+                checkoutMutation.isPending ? "Opening..." : "Subscribe Annually"}
+            </Button>
           </CardContent>
         </Card>
       </div>

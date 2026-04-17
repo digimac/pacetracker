@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
+import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL, PRICE_GROUP_MONTHLY, PRICE_GROUP_ANNUAL } from "./billing";
 import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, createTransporter } from "./email";
 import { sendSms, sendDailyReminderSms } from "./sms";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
@@ -466,6 +466,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         annual: PRICE_ANNUAL,
         monthlyAmount: 999,
         annualAmount: 9900,
+        groupMonthly: PRICE_GROUP_MONTHLY,
+        groupAnnual: PRICE_GROUP_ANNUAL,
+        groupMonthlyAmount: 9500,
+        groupAnnualAmount: 89900,
       },
     });
   });

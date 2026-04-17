@@ -4,8 +4,10 @@ import { storage } from "./storage";
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 
-export const PRICE_MONTHLY = process.env.STRIPE_PRICE_MONTHLY || "";
-export const PRICE_ANNUAL = process.env.STRIPE_PRICE_ANNUAL || "";
+export const PRICE_MONTHLY       = process.env.STRIPE_PRICE_MONTHLY        || "";
+export const PRICE_ANNUAL        = process.env.STRIPE_PRICE_ANNUAL         || "";
+export const PRICE_GROUP_MONTHLY = process.env.STRIPE_PRICE_GROUP_MONTHLY  || "";
+export const PRICE_GROUP_ANNUAL  = process.env.STRIPE_PRICE_GROUP_ANNUAL   || "";
 export const APP_URL = process.env.APP_URL || "http://localhost:5000";
 
 export const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET) : null;
@@ -70,7 +72,7 @@ export async function handleWebhook(payload: Buffer, sig: string): Promise<void>
 
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
         const priceId = subscription.items.data[0]?.price.id;
-        const plan = priceId === PRICE_ANNUAL ? "pro_annual" : "pro_monthly";
+        const plan = priceId === PRICE_ANNUAL ? "pro_annual" : priceId === PRICE_GROUP_MONTHLY ? "group_monthly" : priceId === PRICE_GROUP_ANNUAL ? "group_annual" : "pro_monthly";
 
         await storage.upsertSubscription({
           userId,
@@ -93,7 +95,7 @@ export async function handleWebhook(payload: Buffer, sig: string): Promise<void>
 
       const priceId = subscription.items.data[0]?.price.id;
       const plan = subscription.status === "canceled" ? "free"
-        : priceId === PRICE_ANNUAL ? "pro_annual" : "pro_monthly";
+        : priceId === PRICE_ANNUAL ? "pro_annual" : priceId === PRICE_GROUP_MONTHLY ? "group_monthly" : priceId === PRICE_GROUP_ANNUAL ? "group_annual" : "pro_monthly";
 
       await storage.upsertSubscription({
         userId: existing.userId,
