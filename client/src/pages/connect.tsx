@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
-import { Mail, MessageSquare, Twitter, Instagram, Linkedin, Globe, ArrowRight, Lightbulb, Star, Send, X, CheckCircle2, Loader2, Video, Lock } from "lucide-react";
+import { Mail, MessageSquare, Twitter, Instagram, Linkedin, Globe, ArrowRight, Lightbulb, Star, Send, X, CheckCircle2, Loader2, Video, Lock, Phone, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -465,6 +465,29 @@ export default function ConnectPage() {
             ))}
           </div>
         )}
+
+        {/* App Support */}
+        <div className="rounded-xl border border-border bg-muted/10 p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+              <Phone className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold mb-0.5">App Support</p>
+              <a
+                href="tel:5028900321"
+                className="text-lg font-black text-primary tracking-wide hover:underline"
+                data-testid="link-support-phone"
+              >
+                (502) 890-0321
+              </a>
+              <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>Mon – Sat, 8:00 AM – 5:00 PM ET</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Social channels */}
         {!isLoading && socialLinks.length > 0 && (
