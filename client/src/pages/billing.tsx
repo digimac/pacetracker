@@ -124,194 +124,134 @@ export default function BillingPage() {
         </Card>
       )}
 
-      {/* Pricing grid */}
-      <div className="grid md:grid-cols-3 gap-4">
-        {/* Free */}
-        <Card className={`relative ${!billing?.isPro ? "border-primary/40 ring-1 ring-primary/20" : ""}`}>
-          {!billing?.isPro && (
-            <div className="absolute -top-3 left-4">
-              <Badge className="bg-primary text-primary-foreground text-[10px]">Current Plan</Badge>
-            </div>
-          )}
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-black uppercase tracking-wide">Free</CardTitle>
-            <CardDescription className="text-xs">Core metrics, always free</CardDescription>
-            <div className="mt-2">
-              <span className="text-3xl font-black">$0</span>
-              <span className="text-muted-foreground text-sm ml-1">/ forever</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {FREE_FEATURES.map(f => (
-              <div key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
-                <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" />
-                {f}
-              </div>
-            ))}
-            <div className="pt-3">
-              <Button variant="outline" className="w-full" disabled size="sm">
-                {!billing?.isPro ? "Current Plan" : "Downgrade"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── All plan cards — current plan full-width, others in 2-col grid ── */}
+      {(() => {
+        const plan = billing?.plan || "free";
 
-        {/* Pro Monthly */}
-        <Card className={`relative ${billing?.isPro && billing.plan === "pro_monthly" ? "border-primary/40 ring-1 ring-primary/20" : ""}`}>
-          {billing?.isPro && billing.plan === "pro_monthly" && (
-            <div className="absolute -top-3 left-4">
-              <Badge className="bg-primary text-primary-foreground text-[10px]">Active</Badge>
-            </div>
-          )}
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2 mb-1">
-              <CardTitle className="text-base font-black uppercase tracking-wide">Pro</CardTitle>
-              <Zap className="w-4 h-4 text-primary" />
-            </div>
-            <CardDescription className="text-xs">Full access, billed monthly</CardDescription>
-            <div className="mt-2">
-              <span className="text-3xl font-black">{monthlyPrice}</span>
-              <span className="text-muted-foreground text-sm ml-1">/ month</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {PRO_FEATURES.map(f => (
-              <div key={f} className="flex items-start gap-2 text-xs">
-                <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" />
-                {f}
-              </div>
-            ))}
-            <div className="pt-3">
-              <Button
-                className="w-full"
-                size="sm"
-                onClick={() => checkoutMutation.mutate(billing?.prices.monthly || "")}
-                disabled={checkoutMutation.isPending || (billing?.isPro && billing.plan === "pro_monthly")}
-                data-testid="button-subscribe-monthly"
-              >
-                {billing?.isPro && billing.plan === "pro_monthly" ? "Active Plan" :
-                  checkoutMutation.isPending ? "Opening..." : "Subscribe Monthly"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        // ── Card definitions ──────────────────────────────────────────────────
+        const freeCard = (
+          <Card key="free" className={`relative ${plan === "free" ? "border-primary/40 ring-1 ring-primary/20" : ""}`}>
+            {plan === "free" && <Badge className="absolute -top-3 left-4 bg-primary text-primary-foreground text-[10px]">Current Plan</Badge>}
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-black uppercase tracking-wide">Free</CardTitle>
+              <CardDescription className="text-xs">Core metrics, always free</CardDescription>
+              <div className="mt-2"><span className="text-3xl font-black">$0</span><span className="text-muted-foreground text-sm ml-1">/ forever</span></div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {FREE_FEATURES.map(f => (<div key={f} className="flex items-start gap-2 text-xs text-muted-foreground"><Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" />{f}</div>))}
+              <div className="pt-3"><Button variant="outline" className="w-full" disabled size="sm">Current Plan</Button></div>
+            </CardContent>
+          </Card>
+        );
 
-        {/* Pro Annual */}
-        <Card className={`relative ${billing?.isPro && billing.plan === "pro_annual" ? "border-primary/40 ring-1 ring-primary/20" : "border-primary/20 bg-primary/[0.02]"}`}>
-          <div className="absolute -top-3 left-4">
-            {billing?.isPro && billing.plan === "pro_annual"
-              ? <Badge className="bg-primary text-primary-foreground text-[10px]">Active</Badge>
-              : <Badge className="bg-green-600 text-white text-[10px]">Best Value</Badge>
-            }
+        const proMonthlyCard = (
+          <Card key="pro_monthly" className={`relative ${plan === "pro_monthly" ? "border-primary/40 ring-1 ring-primary/20" : ""}`}>
+            {plan === "pro_monthly" && <Badge className="absolute -top-3 left-4 bg-primary text-primary-foreground text-[10px]">Current Plan</Badge>}
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2 mb-1"><CardTitle className="text-base font-black uppercase tracking-wide">Pro</CardTitle><Zap className="w-4 h-4 text-primary" /></div>
+              <CardDescription className="text-xs">Full access, billed monthly</CardDescription>
+              <div className="mt-2"><span className="text-3xl font-black">{monthlyPrice}</span><span className="text-muted-foreground text-sm ml-1">/ month</span></div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {PRO_FEATURES.map(f => (<div key={f} className="flex items-start gap-2 text-xs"><Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" />{f}</div>))}
+              <div className="pt-3">
+                <Button className="w-full" size="sm" onClick={() => checkoutMutation.mutate(billing?.prices.monthly || "")} disabled={checkoutMutation.isPending || plan === "pro_monthly"} data-testid="button-subscribe-monthly">
+                  {plan === "pro_monthly" ? "Current Plan" : checkoutMutation.isPending ? "Opening..." : "Subscribe Monthly"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+        const proAnnualCard = (
+          <Card key="pro_annual" className={`relative ${plan === "pro_annual" ? "border-primary/40 ring-1 ring-primary/20" : "border-primary/20 bg-primary/[0.02]"}`}>
+            <div className="absolute -top-3 left-4">
+              {plan === "pro_annual" ? <Badge className="bg-primary text-primary-foreground text-[10px]">Current Plan</Badge> : <Badge className="bg-green-600 text-white text-[10px]">Best Value</Badge>}
+            </div>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2 mb-1"><CardTitle className="text-base font-black uppercase tracking-wide">Pro Annual</CardTitle><Star className="w-4 h-4 text-yellow-400" /></div>
+              <CardDescription className="text-xs">Full access, billed yearly — save ~17%</CardDescription>
+              <div className="mt-2"><span className="text-3xl font-black">{annualMonthly}</span><span className="text-muted-foreground text-sm ml-1">/ month</span><p className="text-xs text-muted-foreground mt-0.5">{annualPrice} billed annually</p></div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {PRO_FEATURES.map(f => (<div key={f} className="flex items-start gap-2 text-xs"><Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" />{f}</div>))}
+              <div className="pt-3">
+                <Button className="w-full" size="sm" onClick={() => checkoutMutation.mutate(billing?.prices.annual || "")} disabled={checkoutMutation.isPending || plan === "pro_annual"} data-testid="button-subscribe-annual">
+                  {plan === "pro_annual" ? "Current Plan" : checkoutMutation.isPending ? "Opening..." : "Subscribe Annually"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+        const grpMonthlyCard = (
+          <Card key="group_monthly" className={`relative ${plan === "group_monthly" ? "border-primary/40 ring-1 ring-primary/20" : "border-border"}`}>
+            {plan === "group_monthly" && <Badge className="absolute -top-3 left-4 bg-primary text-primary-foreground text-[10px]">Current Plan</Badge>}
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between mb-1"><CardTitle className="text-base">Group</CardTitle><Badge variant="outline" className="text-[10px] border-primary/30 text-primary">Monthly</Badge></div>
+              <div className="flex items-baseline gap-1"><span className="text-3xl font-black">{grpMonthlyPrice}</span><span className="text-sm text-muted-foreground">/mo</span></div>
+              <p className="text-xs text-muted-foreground">Up to 10 seats · ~$9.50/seat/mo</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <ul className="space-y-1.5 text-sm">{["10 member seats","All Pro features per seat","Group moderator dashboard","Member invite emails","Discount code for new members","Seat expansion on request"].map(f => <li key={f} className="flex items-center gap-2"><span className="text-green-400 text-xs">✔</span>{f}</li>)}</ul>
+              <Button className="w-full" onClick={() => checkoutMutation.mutate(billing?.prices.groupMonthly || "")} disabled={checkoutMutation.isPending || plan === "group_monthly" || !billing?.prices.groupMonthly} variant={plan === "group_monthly" ? "outline" : "default"} data-testid="button-group-monthly">
+                {plan === "group_monthly" ? "Current Plan" : !billing?.prices.groupMonthly ? "Coming Soon" : checkoutMutation.isPending ? "Opening..." : "Subscribe Monthly"}
+              </Button>
+            </CardContent>
+          </Card>
+        );
+
+        const grpAnnualCard = (
+          <Card key="group_annual" className={`relative ${plan === "group_annual" ? "border-primary/40 ring-1 ring-primary/20" : "border-green-500/20 bg-green-500/[0.02]"}`}>
+            <div className="absolute -top-3 left-4">
+              {plan === "group_annual" ? <Badge className="bg-primary text-primary-foreground text-[10px]">Current Plan</Badge> : <Badge className="bg-green-600 text-white text-[10px]">Best Group Value</Badge>}
+            </div>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between mb-1"><CardTitle className="text-base">Group Annual</CardTitle><Badge variant="outline" className="text-[10px] border-green-500/30 text-green-400">Annual</Badge></div>
+              <div className="flex items-baseline gap-1"><span className="text-3xl font-black">{grpAnnualPrice}</span><span className="text-sm text-muted-foreground">/yr</span></div>
+              <p className="text-xs text-muted-foreground">{grpAnnualMonthly}/mo · ~$7.49/seat/mo</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <ul className="space-y-1.5 text-sm">{["10 member seats","All Pro features per seat","Group moderator dashboard","Member invite emails","Discount code for new members","Seat expansion on request","Priority support"].map(f => <li key={f} className="flex items-center gap-2"><span className="text-green-400 text-xs">✔</span>{f}</li>)}</ul>
+              <Button className="w-full" onClick={() => checkoutMutation.mutate(billing?.prices.groupAnnual || "")} disabled={checkoutMutation.isPending || plan === "group_annual" || !billing?.prices.groupAnnual} variant={plan === "group_annual" ? "outline" : "default"} data-testid="button-group-annual">
+                {plan === "group_annual" ? "Current Plan" : !billing?.prices.groupAnnual ? "Coming Soon" : checkoutMutation.isPending ? "Opening..." : "Subscribe Annually"}
+              </Button>
+            </CardContent>
+          </Card>
+        );
+
+        // All cards in order
+        const allCards: { id: string; node: React.ReactNode }[] = [
+          { id: "free",          node: freeCard },
+          { id: "pro_monthly",   node: proMonthlyCard },
+          { id: "pro_annual",    node: proAnnualCard },
+          { id: "group_monthly", node: grpMonthlyCard },
+          { id: "group_annual",  node: grpAnnualCard },
+        ];
+
+        const currentCard = allCards.find(c => c.id === plan);
+        const otherCards  = allCards.filter(c => c.id !== plan);
+
+        return (
+          <div className="space-y-4">
+            {/* Current plan — full width */}
+            {currentCard && (
+              <div className="pt-3">
+                <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase mb-3">Your Current Plan</p>
+                {currentCard.node}
+              </div>
+            )}
+
+            {/* Other options — 2-col grid */}
+            <div>
+              <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase mb-3">Other Options</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {otherCards.map(c => c.node)}
+              </div>
+            </div>
           </div>
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2 mb-1">
-              <CardTitle className="text-base font-black uppercase tracking-wide">Pro Annual</CardTitle>
-              <Star className="w-4 h-4 text-yellow-400" />
-            </div>
-            <CardDescription className="text-xs">Full access, billed yearly — save ~17%</CardDescription>
-            <div className="mt-2">
-              <span className="text-3xl font-black">{annualMonthly}</span>
-              <span className="text-muted-foreground text-sm ml-1">/ month</span>
-              <p className="text-xs text-muted-foreground mt-0.5">{annualPrice} billed annually</p>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {PRO_FEATURES.map(f => (
-              <div key={f} className="flex items-start gap-2 text-xs">
-                <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" />
-                {f}
-              </div>
-            ))}
-            <div className="pt-3">
-              <Button
-                className="w-full"
-                size="sm"
-                onClick={() => checkoutMutation.mutate(billing?.prices.annual || "")}
-                disabled={checkoutMutation.isPending || (billing?.isPro && billing.plan === "pro_annual")}
-                data-testid="button-subscribe-annual"
-              >
-                {billing?.isPro && billing.plan === "pro_annual" ? "Active Plan" :
-                  checkoutMutation.isPending ? "Opening..." : "Subscribe Annually"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Group Monthly */}
-        <Card className={`relative col-span-full md:col-span-1 ${isGroup && billing?.plan === "group_monthly" ? "border-primary/40 ring-1 ring-primary/20" : "border-border"}`}>
-          {isGroup && billing?.plan === "group_monthly" && (
-            <Badge className="absolute -top-2.5 left-4 bg-primary text-primary-foreground text-[10px]">Active Plan</Badge>
-          )}
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between mb-1">
-              <CardTitle className="text-base">Group</CardTitle>
-              <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">Monthly</Badge>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black">{grpMonthlyPrice}</span>
-              <span className="text-sm text-muted-foreground">/mo</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Up to 10 seats · ~$9.50/seat/mo</p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ul className="space-y-1.5 text-sm">
-              {["10 member seats", "All Pro features per seat", "Group moderator dashboard", "Member invite emails", "Discount code for new members", "Seat expansion on request"].map(f => (
-              <li key={f} className="flex items-center gap-2"><span className="text-green-400 text-xs">✔</span>{f}</li>
-              ))}
-            </ul>
-            <Button
-              className="w-full"
-              onClick={() => checkoutMutation.mutate(billing?.prices.groupMonthly || "")}
-              disabled={checkoutMutation.isPending || (isGroup && billing?.plan === "group_monthly") || !billing?.prices.groupMonthly}
-              variant={isGroup && billing?.plan === "group_monthly" ? "outline" : "default"}
-              data-testid="button-group-monthly"
-            >
-              {isGroup && billing?.plan === "group_monthly" ? "Active Plan" :
-                !billing?.prices.groupMonthly ? "Coming Soon" :
-                checkoutMutation.isPending ? "Opening..." : "Subscribe Monthly"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Group Annual */}
-        <Card className={`relative col-span-full md:col-span-1 ${isGroup && billing?.plan === "group_annual" ? "border-primary/40 ring-1 ring-primary/20" : "border-green-500/20 bg-green-500/[0.02]"}`}>
-          <Badge className={`absolute -top-2.5 left-4 text-[10px] ${
-            isGroup && billing?.plan === "group_annual" ? "bg-primary text-primary-foreground" : "bg-green-600 text-white"
-          }`}>
-            {isGroup && billing?.plan === "group_annual" ? "Active Plan" : "Best Group Value"}
-          </Badge>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between mb-1">
-              <CardTitle className="text-base">Group</CardTitle>
-              <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-400">Annual</Badge>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black">{grpAnnualPrice}</span>
-              <span className="text-sm text-muted-foreground">/yr</span>
-            </div>
-            <p className="text-xs text-muted-foreground">{grpAnnualMonthly}/mo · save vs monthly · ~$7.49/seat/mo</p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ul className="space-y-1.5 text-sm">
-              {["10 member seats", "All Pro features per seat", "Group moderator dashboard", "Member invite emails", "Discount code for new members", "Seat expansion on request", "Priority support"].map(f => (
-              <li key={f} className="flex items-center gap-2"><span className="text-green-400 text-xs">✔</span>{f}</li>
-              ))}
-            </ul>
-            <Button
-              className="w-full"
-              onClick={() => checkoutMutation.mutate(billing?.prices.groupAnnual || "")}
-              disabled={checkoutMutation.isPending || (isGroup && billing?.plan === "group_annual") || !billing?.prices.groupAnnual}
-              variant={isGroup && billing?.plan === "group_annual" ? "outline" : "default"}
-              data-testid="button-group-annual"
-            >
-              {isGroup && billing?.plan === "group_annual" ? "Active Plan" :
-                !billing?.prices.groupAnnual ? "Coming Soon" :
-                checkoutMutation.isPending ? "Opening..." : "Subscribe Annually"}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+        );
+      })()}
 
       {/* Manage subscription for Pro users */}
       {billing?.isPro && (
