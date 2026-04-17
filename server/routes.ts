@@ -92,7 +92,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       hubspotSyncNewUser(user, "America/New_York").catch(() => {});
       // Send welcome email (fire-and-forget)
       sendWelcomeEmail({ toEmail: user.email, displayName: user.displayName }).catch(() => {});
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null, phone: user.phone ?? null } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null, phone: user.phone ?? null, smsOptIn: (user as any).smsOptIn ?? false } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Registration failed" });
     }
@@ -108,7 +108,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
       req.session!.userId = user.id;
       await new Promise<void>((resolve, reject) => req.session!.save(err => err ? reject(err) : resolve())).catch(() => {});
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null, phone: user.phone ?? null } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null, phone: user.phone ?? null, smsOptIn: (user as any).smsOptIn ?? false } });
     } catch (e: any) {
       res.status(400).json({ error: e.message || "Login failed" });
     }
@@ -194,7 +194,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!req.session?.userId) return res.status(401).json({ error: "Unauthorized" });
     const user = await storage.getUserById(req.session.userId);
     if (!user) return res.status(401).json({ error: "User not found" });
-    res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null, phone: user.phone ?? null } });
+    res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null, phone: user.phone ?? null, smsOptIn: (user as any).smsOptIn ?? false } });
   });
 
   // Profile update — first name / last name
