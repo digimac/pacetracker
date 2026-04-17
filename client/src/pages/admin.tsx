@@ -694,7 +694,7 @@ function MembersTab() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0">Email</span>
-                  <span className="text-xs font-mono text-foreground/80">{maskEmail(m.email)}</span>
+                  <span className="text-xs font-mono text-foreground/80">{m.email}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0 flex items-center gap-1">
