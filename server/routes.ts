@@ -455,11 +455,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Billing — Subscription status
   app.get("/api/billing/status", requireAuth, async (req, res) => {
     const sub = await storage.getSubscription(req.session!.userId!);
-    const isPro = await storage.isPro(req.session!.userId!);
+    const user = await storage.getUserById(req.session!.userId!);
+    const isAdminUser = user?.email === ADMIN_EMAIL;
+    const isPro = isAdminUser || await storage.isPro(req.session!.userId!);
     res.json({
       isPro,
-      plan: sub?.plan || "free",
-      status: sub?.status || "inactive",
+      plan: isAdminUser && !sub?.plan ? "pro_annual" : (sub?.plan || "free"),
+      status: isAdminUser ? "active" : (sub?.status || "inactive"),
       currentPeriodEnd: sub?.currentPeriodEnd || null,
       prices: {
         monthly: PRICE_MONTHLY,
