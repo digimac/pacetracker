@@ -102,6 +102,7 @@ export default function SettingsPage() {
     country: user?.country || "",
     category: (user as any)?.category || "",
     phone: (user as any)?.phone || "",
+    smsOptIn: (user as any)?.smsOptIn ?? false,
   });
 
   // Keep form in sync if user context loads after mount
@@ -114,8 +115,9 @@ export default function SettingsPage() {
       country: user?.country || "",
       category: (user as any)?.category || "",
       phone: (user as any)?.phone || "",
+      smsOptIn: (user as any)?.smsOptIn ?? false,
     });
-  }, [user?.firstName, user?.lastName, user?.city, user?.region, user?.country, (user as any)?.category, (user as any)?.phone]);
+  }, [user?.firstName, user?.lastName, user?.city, user?.region, user?.country, (user as any)?.category, (user as any)?.phone, (user as any)?.smsOptIn]);
 
   const saveProfile = useMutation({
     mutationFn: () => apiRequest("PATCH", "/api/auth/profile", profileForm).then(r => r.json()),
@@ -344,7 +346,22 @@ export default function SettingsPage() {
               onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))}
               data-testid="input-phone"
             />
-            <p className="text-[11px] text-muted-foreground/60">Optional. Used for SMS notifications when available. Include country code (e.g. +1 for US).</p>
+            <p className="text-[11px] text-muted-foreground/60">Optional. Include country code (e.g. +1 for US).</p>
+            {/* SMS opt-in toggle — only shown when a phone number is set */}
+            {profileForm.phone.trim() && (
+              <label className="flex items-center gap-2.5 cursor-pointer mt-1">
+                <input
+                  type="checkbox"
+                  checked={profileForm.smsOptIn}
+                  onChange={e => setProfileForm(f => ({ ...f, smsOptIn: e.target.checked }))}
+                  className="w-4 h-4 accent-primary rounded"
+                  data-testid="checkbox-sms-opt-in"
+                />
+                <span className="text-xs text-muted-foreground">
+                  Receive SMS reminders and notifications
+                </span>
+              </label>
+            )}
           </div>
 
 

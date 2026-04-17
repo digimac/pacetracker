@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   country: text("country"),
   category: text("category"),   // athlete | graduate | recovery | veteran | caregiver | entrepreneur | writer | musician
   phone: text("phone"),          // mobile phone number for SMS notifications (optional)
+  smsOptIn: boolean("sms_opt_in").default(false).notNull(), // user opted in to SMS notifications
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

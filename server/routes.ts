@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL } from "./billing";
 import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, createTransporter } from "./email";
+import { sendSms, sendDailyReminderSms } from "./sms";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
@@ -200,7 +201,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.patch("/api/auth/profile", requireAuth, async (req, res) => {
     try {
       const userId = req.session!.userId!;
-      const { firstName, lastName, city, region, country, category, phone } = z.object({
+      const { firstName, lastName, city, region, country, category, phone, smsOptIn } = z.object({
         firstName: z.string().max(100).optional().nullable(),
         lastName: z.string().max(100).optional().nullable(),
         city: z.string().max(100).optional().nullable(),
@@ -208,6 +209,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         country: z.string().max(100).optional().nullable(),
         category: z.string().max(50).optional().nullable(),
         phone: z.string().max(30).optional().nullable(),
+        smsOptIn: z.boolean().optional(),
       }).parse(req.body);
       const user = await storage.updateUserProfile(userId, {
         firstName: firstName ?? null,
@@ -217,9 +219,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         country: country ?? null,
         category: category !== undefined ? (category ?? null) : undefined,
         phone: phone !== undefined ? (phone ?? null) : undefined,
+        smsOptIn: smsOptIn !== undefined ? smsOptIn : undefined,
       });
       if (!user) return res.status(404).json({ error: "User not found" });
-      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null, phone: user.phone ?? null } });
+      res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null, phone: user.phone ?? null, smsOptIn: (user as any).smsOptIn ?? false } });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }
@@ -1506,6 +1509,54 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
+  });
+
+  // Admin: send test SMS to a specific phone number
+  app.post("/api/admin/send-test-sms", requireAdmin, async (req, res) => {
+    try {
+      const { phone, message } = z.object({
+        phone: z.string().min(10),
+        message: z.string().min(1).max(320),
+      }).parse(req.body);
+      const ok = await sendSms(phone, message);
+      res.json({ ok, phone });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // Admin: send inactivity SMS reminders (mirrors the email reminder logic)
+  app.post("/api/admin/send-reminder-sms", requireAdmin, async (req, res) => {
+    try {
+      const { userId: targetUserId, thresholdDays: rawThreshold } = req.body;
+      const thresholdDays = Number(rawThreshold) || 3;
+      const now = new Date();
+      const allUsers = targetUserId
+        ? [await storage.getUserById(Number(targetUserId))].filter(Boolean)
+        : await storage.getAllUsers();
+
+      let sent = 0, skipped = 0, errors = 0;
+      for (const u of allUsers as any[]) {
+        try {
+          if (u.email === 'track@sweetmo.io') { skipped++; continue; }
+          if (!u.phone || !u.smsOptIn) { skipped++; continue; }
+          const latest = await storage.getLatestDailyEntry(u.id);
+          let daysSince: number | null = null;
+          if (!latest) {
+            const age = Math.floor((now.getTime() - new Date(u.createdAt).getTime()) / 86400000);
+            if (age < thresholdDays) { skipped++; continue; }
+          } else {
+            daysSince = Math.floor((now.getTime() - new Date(latest.entryDate + 'T12:00:00Z').getTime()) / 86400000);
+            if (daysSince < thresholdDays) { skipped++; continue; }
+          }
+          const ok = await sendDailyReminderSms({
+            to: u.phone,
+            displayName: u.displayName || u.email,
+            daysSinceLastScore: daysSince,
+          });
+          if (ok) sent++; else errors++;
+        } catch (err: any) { console.error(`[sms-reminder] ${u.email}:`, err?.message); errors++; }
+      }
+      res.json({ ok: true, sent, skipped, errors, thresholdDays });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   // Coaching session request (Pro only)

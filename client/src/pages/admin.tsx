@@ -1136,6 +1136,11 @@ function EmailTemplatesTab() {
   const [sendingReminder, setSendingReminder] = useState(false);
   const [reminderTestId, setReminderTestId] = useState("");
   const [reminderDays, setReminderDays] = useState("3");
+  const [smsTestPhone, setSmsTestPhone] = useState("");
+  const [smsTestMsg, setSmsTestMsg] = useState("Test message from Sweet Momentum admin.");
+  const [sendingSmsTest, setSendingSmsTest] = useState(false);
+  const [sendingSmsReminders, setSendingSmsReminders] = useState(false);
+  const [smsReminderDays, setSmsReminderDays] = useState("3");
 
   async function sendDigest(all: boolean) {
     setSendingDigest(true);
@@ -1255,6 +1260,60 @@ function EmailTemplatesTab() {
           >
             {sendingReminder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send to Inactive Members"}
           </Button>
+        </div>
+      </div>
+
+      {/* SMS — separator */}
+      <div className="border-t border-border pt-3">
+        <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase mb-3">SMS (Twilio)</p>
+
+        {/* Test SMS */}
+        <div className="border border-border rounded-lg p-4 space-y-3 mb-3">
+          <div>
+            <p className="text-sm font-semibold">Send Test SMS</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Send a one-off SMS to any phone number to verify Twilio is configured.</p>
+          </div>
+          <div className="space-y-2">
+            <Input value={smsTestPhone} onChange={e => setSmsTestPhone(e.target.value)} placeholder="+15025551234" className="text-sm font-mono" data-testid="sms-test-phone" />
+            <Input value={smsTestMsg} onChange={e => setSmsTestMsg(e.target.value)} placeholder="Message body" className="text-sm" data-testid="sms-test-msg" />
+          </div>
+          <Button size="sm" variant="outline" disabled={sendingSmsTest || !smsTestPhone.trim()} onClick={async () => {
+            setSendingSmsTest(true);
+            try {
+              const res = await apiRequest("POST", "/api/admin/send-test-sms", { phone: smsTestPhone.trim(), message: smsTestMsg.trim() });
+              const d = await res.json();
+              toast({ title: d.ok ? `SMS sent to ${d.phone}` : "SMS failed", description: d.ok ? "Check the phone for delivery." : d.error, variant: d.ok ? "default" : "destructive" });
+            } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+            finally { setSendingSmsTest(false); }
+          }} data-testid="sms-test-send-btn">
+            {sendingSmsTest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send Test SMS"}
+          </Button>
+        </div>
+
+        {/* SMS reminders */}
+        <div className="border border-border rounded-lg p-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold">Send Inactivity SMS Reminders</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Sends to opted-in members who haven't scored in N+ days. Only users with a phone number and SMS opt-in enabled will receive.</p>
+          </div>
+          <div className="flex gap-2 items-center flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">Inactive for</span>
+              <Input value={smsReminderDays} onChange={e => setSmsReminderDays(e.target.value)} type="number" min="1" max="365" className="text-sm w-16 text-center" />
+              <span className="text-xs text-muted-foreground">days+</span>
+            </div>
+            <Button size="sm" variant="default" disabled={sendingSmsReminders} onClick={async () => {
+              setSendingSmsReminders(true);
+              try {
+                const res = await apiRequest("POST", "/api/admin/send-reminder-sms", { thresholdDays: Number(smsReminderDays) || 3 });
+                const d = await res.json();
+                toast({ title: `SMS reminders sent to ${d.sent} member(s)`, description: `Skipped: ${d.skipped} (no phone/no opt-in)${d.errors ? ` · ${d.errors} error(s)` : ""}` });
+              } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+              finally { setSendingSmsReminders(false); }
+            }} data-testid="sms-reminder-send-btn">
+              {sendingSmsReminders ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send SMS Reminders"}
+            </Button>
+          </div>
         </div>
       </div>
 

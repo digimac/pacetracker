@@ -122,6 +122,9 @@ app.use((req, res, next) => {
       -- Add phone column to users if it doesn't exist yet
       ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "phone" text;
 
+      -- Add SMS opt-in column to users if it doesn't exist yet
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "sms_opt_in" boolean NOT NULL DEFAULT false;
+
       -- Add rated_at timestamp to metric_scores if it doesn't exist yet
       ALTER TABLE "metric_scores" ADD COLUMN IF NOT EXISTS "rated_at" timestamp DEFAULT now() NOT NULL;
 
