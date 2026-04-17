@@ -137,12 +137,15 @@ function GroupListPage() {
       {isLoading && <p className="text-sm text-muted-foreground text-center py-8">Loading groups…</p>}
 
       {!isLoading && groups.length === 0 && !creating && (
-        <div className="rounded-xl border border-border bg-muted/10 p-8 text-center">
-          <Users className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">You're not part of any Momentum Groups yet.</p>
-          <button className="mt-3 text-xs font-bold text-primary underline underline-offset-2" onClick={() => setCreating(true)}>
-            Create your first group →
-          </button>
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-6 text-center mb-4">
+          <div className="text-3xl mb-3">👥</div>
+          <h2 className="text-base font-black mb-1">Your Group subscription is active!</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Create your first Momentum Group to start inviting members. You can invite up to 10 people, set a discount code for new members, and manage everyone from this dashboard.
+          </p>
+          <Button onClick={() => setCreating(true)} className="gap-1.5">
+            <Plus className="w-4 h-4" /> Create Your Group
+          </Button>
         </div>
       )}
 

@@ -29,16 +29,40 @@ import AppLayout from "@/components/app-layout";
 
 function BillingSuccessPage() {
   const [, setLocation] = useLocation();
+  const [plan, setPlan] = useState<string | null>(null);
+
   useEffect(() => {
+    // Invalidate and then read the new plan to decide where to redirect
     queryClient.invalidateQueries({ queryKey: ["/api/billing/status"] });
-    setTimeout(() => setLocation("/billing"), 3000);
+    fetch("/api/billing/status", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        setPlan(d.plan || null);
+        const isGroup = d.plan === "group_monthly" || d.plan === "group_annual";
+        setTimeout(() => setLocation(isGroup ? "/groups" : "/dashboard"), 3000);
+      })
+      .catch(() => setTimeout(() => setLocation("/dashboard"), 3000));
   }, []);
+
+  const isGroup = plan === "group_monthly" || plan === "group_annual";
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="text-center">
-        <div className="text-5xl mb-4">🎉</div>
-        <h2 className="text-xl font-black mb-2">Welcome to Pro!</h2>
-        <p className="text-muted-foreground text-sm">Your subscription is now active. Redirecting you back...</p>
+      <div className="text-center max-w-sm">
+        <div className="text-5xl mb-4">{isGroup ? "👥" : "🎉"}</div>
+        <h2 className="text-xl font-black mb-2">
+          {isGroup ? "Welcome to Group!" : "Welcome to Pro!"}
+        </h2>
+        <p className="text-muted-foreground text-sm mb-2">
+          {isGroup
+            ? "Your Group subscription is active. Taking you to Groups where you can create your group and start inviting members..."
+            : "Your subscription is now active. Taking you to your dashboard..."}
+        </p>
+        {isGroup && (
+          <p className="text-xs text-muted-foreground/60">
+            You can manage your group, invite up to 10 members, and set a discount code for new members.
+          </p>
+        )}
       </div>
     </div>
   );
