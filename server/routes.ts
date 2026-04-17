@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL, PRICE_GROUP_MONTHLY, PRICE_GROUP_ANNUAL } from "./billing";
 import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, createTransporter } from "./email";
-import { sendSms, sendDailyReminderSms } from "./sms";
+import { sendSms, sendDailyReminderSms, sendWelcomeSms } from "./sms";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
@@ -211,6 +211,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         phone: z.string().max(30).optional().nullable(),
         smsOptIn: z.boolean().optional(),
       }).parse(req.body);
+      const prevProfile = await storage.getUserById(userId);
       const user = await storage.updateUserProfile(userId, {
         firstName: firstName ?? null,
         lastName: lastName ?? null,
@@ -222,6 +223,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         smsOptIn: smsOptIn !== undefined ? smsOptIn : undefined,
       });
       if (!user) return res.status(404).json({ error: "User not found" });
+      // If user just opted in to SMS for the first time, send welcome SMS
+      if (smsOptIn === true && !(prevProfile as any)?.smsOptIn && (user as any).phone) {
+        sendWelcomeSms({ to: (user as any).phone, displayName: user.displayName }).catch(() => {});
+      }
       res.json({ user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, city: user.city, region: user.region, country: user.country, category: user.category ?? null, phone: user.phone ?? null, smsOptIn: (user as any).smsOptIn ?? false } });
     } catch (e: any) {
       res.status(400).json({ error: e.message });

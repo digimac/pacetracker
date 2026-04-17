@@ -10,13 +10,13 @@ import { useAuth } from "@/App";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { USER_CATEGORIES } from "@/lib/categories";
-import { MapPin, ArrowRight, SkipForward } from "lucide-react";
+import { MapPin, ArrowRight, SkipForward, MessageSquare, Bell } from "lucide-react";
 
-type Step = "account" | "location" | "category";
+type Step = "account" | "location" | "category" | "sms";
 
 export default function RegisterPage() {
   const [step, setStep] = useState<Step>("account");
-  const [form, setForm] = useState({ displayName: "", email: "", password: "" });
+  const [form, setForm] = useState({ displayName: "", email: "", password: "", phone: "" });
   const [location, setLocationForm] = useState({ city: "", region: "", country: "" });
   const [selectedCategory, setSelectedCategory] = useState("");
   const [categoryLoading, setCategoryLoading] = useState(false);
@@ -39,10 +39,15 @@ export default function RegisterPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await apiRequest("POST", "/api/auth/register", form);
+      const { phone, ...coreForm } = form;
+      const res = await apiRequest("POST", "/api/auth/register", coreForm);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Registration failed");
       setUser(data.user);
+      // Save phone if provided
+      if (phone.trim()) {
+        await apiRequest("PATCH", "/api/auth/profile", { phone: phone.trim() }).catch(() => {});
+      }
       // Move to optional location step
       setStep("location");
     } catch (err: any) {
@@ -76,8 +81,15 @@ export default function RegisterPage() {
     setStep("category");
   }
 
+  const [smsOptInLoading, setSmsOptInLoading] = useState(false);
+
+  function afterCategory() {
+    // If user provided a phone number, show SMS opt-in step
+    if (form.phone.trim()) { setStep("sms"); } else { setLocation("/dashboard"); }
+  }
+
   async function handleSaveCategory() {
-    if (!selectedCategory) { setLocation("/dashboard"); return; }
+    if (!selectedCategory) { afterCategory(); return; }
     setCategoryLoading(true);
     try {
       const res = await apiRequest("PATCH", "/api/auth/profile", { category: selectedCategory });
@@ -85,6 +97,16 @@ export default function RegisterPage() {
       if (data.user) setUser(data.user);
     } catch {}
     finally { setCategoryLoading(false); }
+    afterCategory();
+  }
+
+  async function handleSmsOptIn(optIn: boolean) {
+    setSmsOptInLoading(true);
+    try {
+      await apiRequest("PATCH", "/api/auth/profile", { smsOptIn: optIn }).catch(() => {});
+    } finally {
+      setSmsOptInLoading(false);
+    }
     setLocation("/dashboard");
   }
 
@@ -173,6 +195,28 @@ export default function RegisterPage() {
                     minLength={6}
                     data-testid="input-password"
                   />
+                </div>
+
+                {/* Phone number — optional, collected early for SMS opt-in */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="register-phone" className="flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                    Mobile Number
+                    <span className="text-muted-foreground font-normal text-xs ml-1">(optional)</span>
+                  </Label>
+                  <Input
+                    id="register-phone"
+                    type="tel"
+                    placeholder="+1 (555) 000-0000"
+                    value={form.phone}
+                    onChange={e => update("phone", e.target.value)}
+                    data-testid="input-phone-register"
+                  />
+                  <p className="text-[11px] text-muted-foreground/60 leading-snug">
+                    {form.phone.trim()
+                      ? "🔔 You'll be able to opt in to SMS alerts on the next step — score reminders, partner updates, and app notifications."
+                      : "Add your number to enable optional SMS reminders. You can also do this later in Settings."}
+                  </p>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading} data-testid="button-register">
@@ -326,6 +370,65 @@ export default function RegisterPage() {
                       <ArrowRight className="w-3.5 h-3.5" />
                     </>
                   )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 4: SMS Opt-In (only if phone was provided) */}
+        {step === "sms" && (
+          <Card className={bgImage ? "bg-card/90 backdrop-blur-sm border-white/10" : ""}>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <Bell className="w-4 h-4 text-primary" />
+                </div>
+                <CardTitle className="text-lg">SMS Notifications</CardTitle>
+              </div>
+              <CardDescription className="text-sm leading-relaxed">
+                Would you like to receive optional SMS alerts on <strong className="text-foreground">{form.phone.trim()}</strong>?
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">You may receive:</p>
+                <ul className="space-y-1.5">
+                  {[
+                    "Daily score reminders if you haven't logged yet",
+                    "Alerts when a momentum partner scores their day",
+                    "App updates and important notifications",
+                  ].map(item => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <span className="text-primary mt-0.5">✓</span> {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground/60 leading-snug">
+                Message and data rates may apply. You can turn off SMS notifications at any time from Settings. Reply STOP to any message to unsubscribe.
+              </p>
+
+              <div className="flex flex-col gap-2 pt-1">
+                <Button
+                  className="w-full gap-2"
+                  disabled={smsOptInLoading}
+                  onClick={() => handleSmsOptIn(true)}
+                  data-testid="button-sms-opt-in"
+                >
+                  <Bell className="w-4 h-4" />
+                  {smsOptInLoading ? "Saving..." : "Yes, enable SMS notifications"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full text-muted-foreground"
+                  disabled={smsOptInLoading}
+                  onClick={() => handleSmsOptIn(false)}
+                  data-testid="button-sms-skip"
+                >
+                  <SkipForward className="w-3.5 h-3.5 mr-1.5" />
+                  No thanks, skip for now
                 </Button>
               </div>
             </CardContent>
