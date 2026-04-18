@@ -156,6 +156,8 @@ export default function SettingsPage() {
     workEndTime: "17:00",
     timezone: "America/New_York",
     dailyGoal: "",
+    smsReminderEnabled: false,
+    smsReminderTime: "09:00",
   });
 
   useEffect(() => {
@@ -167,6 +169,8 @@ export default function SettingsPage() {
         workEndTime: schedule.workEndTime || "17:00",
         timezone: schedule.timezone || getBrowserTimezone(),
         dailyGoal: schedule.dailyGoal || "",
+        smsReminderEnabled: (schedule as any).smsReminderEnabled ?? false,
+        smsReminderTime: (schedule as any).smsReminderTime || "09:00",
       });
     } else {
       // Auto-detect browser timezone for new users
@@ -664,6 +668,59 @@ export default function SettingsPage() {
               data-testid="textarea-daily-goal"
             />
           </div>
+          {/* SMS Daily Reminder — only for opted-in users with a phone */}
+          {(user as any)?.phone && (user as any)?.smsOptIn && (
+            <div className="pt-3 border-t border-border space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Daily SMS Reminder</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">Get a text prompt to score your day if you haven't yet.</p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={scheduleForm.smsReminderEnabled}
+                    onChange={e => setScheduleForm(f => ({ ...f, smsReminderEnabled: e.target.checked }))}
+                    className="w-4 h-4 accent-primary rounded"
+                    data-testid="checkbox-sms-reminder"
+                  />
+                  <span className="text-xs font-medium">{scheduleForm.smsReminderEnabled ? "On" : "Off"}</span>
+                </label>
+              </div>
+
+              {scheduleForm.smsReminderEnabled && (
+                <div className="space-y-2">
+                  <Label htmlFor="settings-sms-reminder-time" className="text-xs">Send reminder at</Label>
+                  <input
+                    id="settings-sms-reminder-time"
+                    type="time"
+                    value={scheduleForm.smsReminderTime}
+                    onChange={e => setScheduleForm(f => ({ ...f, smsReminderTime: e.target.value }))}
+                    className="border border-border rounded px-3 py-1.5 bg-background text-foreground text-sm w-full"
+                    data-testid="input-sms-reminder-time"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button" size="sm" variant="outline" className="h-7 text-[10px] px-2"
+                      onClick={() => setScheduleForm(f => ({ ...f, smsReminderTime: f.wakeTime }))}
+                    >
+                      Use wake time ({scheduleForm.wakeTime})
+                    </Button>
+                    <Button
+                      type="button" size="sm" variant="outline" className="h-7 text-[10px] px-2"
+                      onClick={() => setScheduleForm(f => ({ ...f, smsReminderTime: f.workStartTime }))}
+                    >
+                      Use work start ({scheduleForm.workStartTime})
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/50">
+                    Reminder fires in your timezone ({scheduleForm.timezone || "not set"}) only if you haven't scored yet that day.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           <Button
             onClick={() => savSchedule.mutate()}
             disabled={savSchedule.isPending}

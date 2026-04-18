@@ -804,7 +804,11 @@
         }
         // Features section headline
         if (page.body) {
-          document.getElementById('features-headline').textContent = page.body;
+          // Strip any HTML tags (rich editor wraps in <p>) to get plain text for the headline
+          const tmp = document.createElement('div');
+          tmp.innerHTML = page.body;
+          const plainBody = tmp.textContent || tmp.innerText || page.body;
+          document.getElementById('features-headline').textContent = plainBody.trim();
         }
         // Feature cards (sections JSON)
         if (page.sections) {

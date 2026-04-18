@@ -125,6 +125,10 @@ app.use((req, res, next) => {
       -- Add SMS opt-in column to users if it doesn't exist yet
       ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "sms_opt_in" boolean NOT NULL DEFAULT false;
 
+      -- Add SMS reminder columns to user_schedule if they don't exist yet
+      ALTER TABLE "user_schedule" ADD COLUMN IF NOT EXISTS "sms_reminder_enabled" boolean NOT NULL DEFAULT false;
+      ALTER TABLE "user_schedule" ADD COLUMN IF NOT EXISTS "sms_reminder_time" text DEFAULT '09:00';
+
       -- Add rated_at timestamp to metric_scores if it doesn't exist yet
       ALTER TABLE "metric_scores" ADD COLUMN IF NOT EXISTS "rated_at" timestamp DEFAULT now() NOT NULL;
 

@@ -1522,6 +1522,46 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Admin: fire daily score SMS reminders — checks each user's smsReminderTime in their timezone
+  app.post("/api/admin/send-scheduled-sms", requireAdmin, async (req, res) => {
+    try {
+      const now = new Date();
+      const allUsers = await storage.getAllUsers();
+      let sent = 0, skipped = 0, errors = 0;
+
+      for (const u of allUsers as any[]) {
+        try {
+          if (!u.phone || !u.smsOptIn) { skipped++; continue; }
+          if (u.email === ADMIN_EMAIL) { skipped++; continue; }
+          const sched = await storage.getUserSchedule(u.id);
+          if (!sched?.smsReminderEnabled || !sched.smsReminderTime) { skipped++; continue; }
+
+          const tz = sched.timezone || 'America/New_York';
+          // Get current time in user's timezone
+          const userNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+          const userHH = userNow.getHours().toString().padStart(2, '0');
+          const userMM = userNow.getMinutes().toString().padStart(2, '0');
+          const userTime = `${userHH}:${userMM}`;
+          // Match within a 5-minute window of their chosen time
+          const [rH, rM] = sched.smsReminderTime.split(':').map(Number);
+          const reminderMinutes = rH * 60 + rM;
+          const nowMinutes = userNow.getHours() * 60 + userNow.getMinutes();
+          if (Math.abs(nowMinutes - reminderMinutes) > 5) { skipped++; continue; }
+
+          // Check if they already scored today in their timezone
+          const todayStr = `${userNow.getFullYear()}-${String(userNow.getMonth()+1).padStart(2,'0')}-${String(userNow.getDate()).padStart(2,'0')}`;
+          const todayEntry = await storage.getDailyEntry(u.id, todayStr);
+          if (todayEntry) { skipped++; continue; } // Already scored
+
+          const displayName = u.displayName || u.email;
+          const ok = await sendDailyReminderSms({ to: u.phone, displayName, daysSinceLastScore: null });
+          if (ok) sent++; else errors++;
+        } catch (err: any) { console.error(`[scheduled-sms] ${u.email}:`, err?.message); errors++; }
+      }
+      res.json({ ok: true, sent, skipped, errors, checkedAt: now.toISOString() });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   // Admin: send test SMS to a specific phone number
   app.post("/api/admin/send-test-sms", requireAdmin, async (req, res) => {
     try {

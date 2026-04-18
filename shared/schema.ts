@@ -97,6 +97,8 @@ export const userSchedule = pgTable("user_schedule", {
   workEndTime: text("work_end_time").default("17:00"),
   timezone: text("timezone").default("America/New_York"),
   dailyGoal: text("daily_goal"),
+  smsReminderEnabled: boolean("sms_reminder_enabled").default(false).notNull(),
+  smsReminderTime: text("sms_reminder_time").default("09:00"), // HH:MM local time
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
