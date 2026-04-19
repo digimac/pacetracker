@@ -230,3 +230,11 @@
 .dark {
   --color-accent-green: #85FF00; /* original bright lime on dark */
 }
+
+/* ── Force time inputs to respect container width on mobile ─────────────────── */
+input[type="time"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
