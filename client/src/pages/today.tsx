@@ -76,7 +76,7 @@ function MetricCard({
     ? undefined
     : undefined;
   const labelClass = `text-lg font-black tracking-widest ${
-    isSuccess && !isCustom ? "text-green-400" : isSetback ? "text-red-400" : "text-muted-foreground"
+    isSuccess && !isCustom ? "text-green-400" : isSetback ? "text-red-400" : "text-foreground"
   }`;
 
   // WIN button
