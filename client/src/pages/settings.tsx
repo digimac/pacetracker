@@ -577,44 +577,48 @@ export default function SettingsPage() {
           <CardDescription className="text-xs">Configure your typical daily structure</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-3 w-full min-w-0">
+            <div className="space-y-1.5 min-w-0">
               <Label htmlFor="settings-wake-time" className="text-xs">Wake Time</Label>
               <Input
                 id="settings-wake-time"
                 type="time"
                 value={scheduleForm.wakeTime}
                 onChange={e => setScheduleForm(f => ({ ...f, wakeTime: e.target.value }))}
+                className="w-full min-w-0"
                 data-testid="input-wake-time"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <Label htmlFor="settings-sleep-time" className="text-xs">Sleep Time</Label>
               <Input
                 id="settings-sleep-time"
                 type="time"
                 value={scheduleForm.sleepTime}
                 onChange={e => setScheduleForm(f => ({ ...f, sleepTime: e.target.value }))}
+                className="w-full min-w-0"
                 data-testid="input-sleep-time"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <Label htmlFor="settings-work-start" className="text-xs">Work Start</Label>
               <Input
                 id="settings-work-start"
                 type="time"
                 value={scheduleForm.workStartTime}
                 onChange={e => setScheduleForm(f => ({ ...f, workStartTime: e.target.value }))}
+                className="w-full min-w-0"
                 data-testid="input-work-start"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <Label htmlFor="settings-work-end" className="text-xs">Work End</Label>
               <Input
                 id="settings-work-end"
                 type="time"
                 value={scheduleForm.workEndTime}
                 onChange={e => setScheduleForm(f => ({ ...f, workEndTime: e.target.value }))}
+                className="w-full min-w-0"
                 data-testid="input-work-end"
               />
             </div>
