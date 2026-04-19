@@ -577,7 +577,7 @@ export default function SettingsPage() {
           <CardDescription className="text-xs">Configure your typical daily structure</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 overflow-hidden">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ maxWidth: 'calc(100% - 1.5rem)' }}>
             <div className="space-y-1.5 min-w-0">
               <Label htmlFor="settings-wake-time" className="text-xs">Wake Time</Label>
               <Input
