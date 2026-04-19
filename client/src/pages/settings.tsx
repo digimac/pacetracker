@@ -258,7 +258,7 @@ export default function SettingsPage() {
   const canAddMore = customMetrics.length < 4;
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6 overflow-x-hidden">
       <div>
         <h1 className="text-xl font-black tracking-tight uppercase">Settings</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Configure your daily performance system</p>
@@ -577,7 +577,7 @@ export default function SettingsPage() {
           <CardDescription className="text-xs">Configure your typical daily structure</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3 w-full min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
             <div className="space-y-1.5 min-w-0">
               <Label htmlFor="settings-wake-time" className="text-xs">Wake Time</Label>
               <Input
@@ -585,7 +585,7 @@ export default function SettingsPage() {
                 type="time"
                 value={scheduleForm.wakeTime}
                 onChange={e => setScheduleForm(f => ({ ...f, wakeTime: e.target.value }))}
-                className="w-full min-w-0"
+                className="w-full max-w-full"
                 data-testid="input-wake-time"
               />
             </div>
@@ -596,7 +596,7 @@ export default function SettingsPage() {
                 type="time"
                 value={scheduleForm.sleepTime}
                 onChange={e => setScheduleForm(f => ({ ...f, sleepTime: e.target.value }))}
-                className="w-full min-w-0"
+                className="w-full max-w-full"
                 data-testid="input-sleep-time"
               />
             </div>
@@ -607,7 +607,7 @@ export default function SettingsPage() {
                 type="time"
                 value={scheduleForm.workStartTime}
                 onChange={e => setScheduleForm(f => ({ ...f, workStartTime: e.target.value }))}
-                className="w-full min-w-0"
+                className="w-full max-w-full"
                 data-testid="input-work-start"
               />
             </div>
@@ -618,7 +618,7 @@ export default function SettingsPage() {
                 type="time"
                 value={scheduleForm.workEndTime}
                 onChange={e => setScheduleForm(f => ({ ...f, workEndTime: e.target.value }))}
-                className="w-full min-w-0"
+                className="w-full max-w-full"
                 data-testid="input-work-end"
               />
             </div>
