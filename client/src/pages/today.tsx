@@ -339,6 +339,18 @@ export default function TodayPage() {
         </div>
       </div>
 
+      {/* Save button — top (duplicate of bottom button) */}
+      <Button
+        onClick={() => saveMutation.mutate()}
+        disabled={saveMutation.isPending}
+        className="w-full mb-6"
+        size="lg"
+        data-testid="button-save-top"
+      >
+        <Save className="w-4 h-4 mr-2" />
+        {saveMutation.isPending ? "Saving..." : "Save Today's Score"}
+      </Button>
+
       {/* Core Metrics */}
       <section className="mb-6">
         <div className="flex items-center gap-2 mb-3">
