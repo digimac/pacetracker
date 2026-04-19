@@ -471,12 +471,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       prices: {
         monthly: PRICE_MONTHLY,
         annual: PRICE_ANNUAL,
-        monthlyAmount: 999,
-        annualAmount: 9900,
+        monthlyAmount: 499,
+        annualAmount: 5900,
         groupMonthly: PRICE_GROUP_MONTHLY,
         groupAnnual: PRICE_GROUP_ANNUAL,
-        groupMonthlyAmount: 9500,
-        groupAnnualAmount: 89900,
+        groupMonthlyAmount: 4900,
+        groupAnnualAmount: 54900,
       },
     });
   });
