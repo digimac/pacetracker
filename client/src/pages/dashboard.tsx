@@ -344,9 +344,9 @@ export default function DashboardPage() {
                           <span
                             className="text-[9px] font-black px-1.5 py-0.5 rounded-full border"
                             style={{
-                              background: m.key.startsWith("custom_") ? "rgba(255,110,0,0.12)" : "rgba(133,255,0,0.10)",
-                              borderColor: m.key.startsWith("custom_") ? "rgba(255,110,0,0.3)" : "rgba(133,255,0,0.25)",
-                              color: m.key.startsWith("custom_") ? "#FF6E00" : "#85FF00",
+                              background: m.key.startsWith("custom_") ? "rgba(255,110,0,0.12)" : "rgba(74,146,0,0.10)",
+                              borderColor: m.key.startsWith("custom_") ? "rgba(255,110,0,0.3)" : "rgba(74,146,0,0.3)",
+                              color: m.key.startsWith("custom_") ? "#FF6E00" : "var(--color-accent-green)",
                             }}
                             title={`${streaks[m.key]}-day streak`}
                           >

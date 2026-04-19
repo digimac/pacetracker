@@ -810,7 +810,7 @@ function DayCountersCard() {
               {/* Big number */}
               {!isEditing && (
                 <div className="flex-shrink-0 w-12 text-center">
-                  <p className={`text-2xl font-black leading-none tabular-nums ${c.type === "since" ? "text-[#85FF00]" : "text-[#FF6E00]"}`}>{days}</p>
+                  <p className={`text-2xl font-black leading-none tabular-nums ${c.type === "since" ? "" : "text-[#FF6E00]"}`} style={c.type === "since" ? { color: "var(--color-accent-green)" } : undefined}>{days}</p>
                   <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide mt-0.5">{c.type === "since" ? "Since" : "Until"}</p>
                 </div>
               )}

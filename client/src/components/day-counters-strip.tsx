@@ -35,16 +35,21 @@ export function DayCountersStrip() {
         const days = calcDays(c.type, c.counterDate);
         const isSince = c.type === "since";
 
-        // Colour logic
-        const numColor =
+        // Colour logic — use CSS var for accent green so it adapts to light/dark
+        const G = "var(--color-accent-green)";
+        const numStyle: React.CSSProperties | undefined =
           isSince
-            ? days > 0 ? "text-[#85FF00]" : "text-muted-foreground"
-            : days > 0 ? "text-[#FF6E00]" : days === 0 ? "text-[#85FF00]" : "text-red-400";
+            ? (days > 0 ? { color: G } : undefined)
+            : (days > 0 ? undefined : days === 0 ? { color: G } : undefined);
+        const numClass =
+          isSince
+            ? (days > 0 ? "" : "text-muted-foreground")
+            : (days > 0 ? "text-[#FF6E00]" : days === 0 ? "" : "text-red-400");
 
         const badgeLabel = isSince ? "Days Since" : "Days Until";
-        const badgeColor = isSince
-          ? "text-[#85FF00]/70 border-[#85FF00]/20 bg-[#85FF00]/5"
-          : "text-[#FF6E00]/70 border-[#FF6E00]/20 bg-[#FF6E00]/5";
+        const badgeStyle: React.CSSProperties = isSince
+          ? { color: G, borderColor: "rgba(74,146,0,0.3)", background: "rgba(74,146,0,0.07)" }
+          : { color: "#FF6E00", borderColor: "rgba(255,110,0,0.3)", background: "rgba(255,110,0,0.07)" };
 
         const displayDays = Math.abs(days);
 
@@ -55,12 +60,12 @@ export function DayCountersStrip() {
             data-testid={`day-counter-${c.id}`}
           >
             {/* Badge */}
-            <span className={`text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full border ${badgeColor}`}>
+            <span className="text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full border" style={badgeStyle}>
               {badgeLabel}
             </span>
 
             {/* Big number */}
-            <span className={`text-3xl font-black leading-none tabular-nums ${numColor}`}>
+            <span className={`text-3xl font-black leading-none tabular-nums ${numClass}`} style={numStyle}>
               {displayDays}
             </span>
 

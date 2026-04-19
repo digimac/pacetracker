@@ -222,3 +222,11 @@
 .rich-page-body img { max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0; }
 .rich-page-body strong { font-weight: 700; }
 .rich-page-body em { font-style: italic; }
+
+/* ── Accent green: bright in dark mode, darker for light mode contrast ───────── */
+:root {
+  --color-accent-green: #4a9200; /* readable dark green on white */
+}
+.dark {
+  --color-accent-green: #85FF00; /* original bright lime on dark */
+}

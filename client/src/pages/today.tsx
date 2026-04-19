@@ -122,9 +122,9 @@ function MetricCard({
               <span
                 className="ml-auto flex-shrink-0 flex items-center gap-0.5 text-[10px] font-black px-1.5 py-0.5 rounded-full border"
                 style={{
-                  background: isCustom ? "rgba(255,110,0,0.12)" : "rgba(133,255,0,0.10)",
-                  borderColor: isCustom ? "rgba(255,110,0,0.3)" : "rgba(133,255,0,0.25)",
-                  color: isCustom ? "#FF6E00" : "#85FF00",
+                  background: isCustom ? "rgba(255,110,0,0.12)" : "rgba(74,146,0,0.10)",
+                  borderColor: isCustom ? "rgba(255,110,0,0.3)" : "rgba(74,146,0,0.3)",
+                  color: isCustom ? "#FF6E00" : "var(--color-accent-green)",
                 }}
                 title={`${streak}-day streak`}
               >
