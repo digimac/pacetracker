@@ -177,7 +177,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-xl font-black tracking-tight uppercase">Performance Dashboard</h1>
+          <h1 className="text-xl font-black tracking-tight uppercase">Momentum Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: timezone })}
           </p>
