@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, LineChart, Line, ReferenceLine,
 } from "recharts";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, subDays, subWeeks, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subDays, subWeeks, subMonths } from "date-fns";
 import { TrendingUp, TrendingDown, Minus, Calendar, Target, Zap } from "lucide-react";
 import { useLocation } from "wouter";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
@@ -31,9 +31,9 @@ function getRangeForTab(tab: string, timezone: string): { start: string; end: st
   const today = new Date(todayStr + "T12:00:00"); // noon to avoid DST edge cases
   switch (tab) {
     case "week": return {
-      start: format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"),
-      end: format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"),
-      label: "This Week",
+      start: format(subDays(today, 6), "yyyy-MM-dd"),
+      end: format(today, "yyyy-MM-dd"),
+      label: "Last 7 Days",
     };
     case "month": return {
       start: format(startOfMonth(today), "yyyy-MM-dd"),
