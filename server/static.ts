@@ -27,6 +27,11 @@ export function serveStatic(app: Express) {
     res.sendFile(path.resolve(distPath, "reasons.html"));
   });
 
+  // Book companion marketing page — clean URL
+  app.get("/book", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "book.html"));
+  });
+
   // Legal pages — clean URLs
   app.get("/terms",   (_req, res) => res.sendFile(path.resolve(distPath, "index.html")));
   app.get("/privacy", (_req, res) => res.sendFile(path.resolve(distPath, "index.html")));
