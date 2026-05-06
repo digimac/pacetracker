@@ -88,6 +88,32 @@ export default function BillingPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
+
+      {/* ── Summer promo banner ── */}
+      <div className="relative mb-8 rounded-2xl overflow-hidden">
+        {/* background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#85FF00]/15 via-[#FF6E00]/10 to-[#85FF00]/5 dark:from-[#85FF00]/10 dark:via-[#FF6E00]/8 dark:to-transparent" />
+        <div className="absolute inset-0 border border-[#85FF00]/25 rounded-2xl pointer-events-none" />
+        {/* subtle top highlight line */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#85FF00] via-[#FF6E00] to-[#85FF00]" />
+        <div className="relative flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl select-none">☀️</span>
+            <div>
+              <p className="text-base font-black tracking-tight leading-tight">
+                This Summer, get sweet.
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Summer 2026 promo &mdash; start your daily momentum streak today.
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-full border border-[#85FF00]/30 text-[#85FF00] dark:text-[#85FF00] whitespace-nowrap">
+            May &ndash; Aug 2026
+          </span>
+        </div>
+      </div>
+
       <div className="mb-8">
         <h1 className="text-xl font-black tracking-tight uppercase">Plans & Subscribe</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Choose the plan that fits your momentum</p>
