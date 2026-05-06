@@ -770,6 +770,91 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Book chapter download — public endpoint, sends Chapter 1 PDF via email
+  app.post("/api/book/chapter-download", async (req, res) => {
+    try {
+      const { firstName, lastName, email } = req.body as { firstName?: string; lastName?: string; email?: string };
+      if (!firstName || !lastName || !email) {
+        return res.status(400).json({ error: "firstName, lastName, and email are required" });
+      }
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRe.test(email)) {
+        return res.status(400).json({ error: "Invalid email address" });
+      }
+
+      const transporter = createTransporter();
+      const fromAddress = process.env.SMTP_FROM_EMAIL
+        ? `"${process.env.SMTP_FROM_NAME || "Sweet Momentum"}" <${process.env.SMTP_FROM_EMAIL}>`
+        : `"Sweet Momentum" <${process.env.SMTP_USER}>`;
+      const appUrl = process.env.APP_URL || "https://sweetmo.io";
+
+      // Notify admin
+      if (transporter) {
+        await transporter.sendMail({
+          from: fromAddress,
+          to: "track@sweetmo.io",
+          subject: `[Book] Chapter 1 request — ${firstName} ${lastName} <${email}>`,
+          text: `New Chapter 1 download request:\n\nName: ${firstName} ${lastName}\nEmail: ${email}\nTime: ${new Date().toISOString()}`,
+        });
+      }
+
+      // Send delivery email to requester
+      if (transporter) {
+        await transporter.sendMail({
+          from: fromAddress,
+          to: email,
+          subject: "Your Free Chapter — Sweet Momentum",
+          html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f5f5f5;padding:40px 20px;margin:0;">
+  <div style="max-width:520px;margin:0 auto;">
+    <div style="margin-bottom:28px;">
+      <img src="${appUrl}/favicon.png" alt="Sweet Momentum" style="width:40px;height:40px;border-radius:8px;" />
+    </div>
+    <h1 style="font-size:26px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;">Here's your free chapter, ${firstName}.</h1>
+    <p style="font-size:15px;color:rgba(255,255,255,0.6);margin:0 0 32px;line-height:1.6;">Thanks for your interest in <strong style="color:#fff;">Sweet Momentum</strong>. Chapter One is below — it's about TIME, the metric that everything else is built on.</p>
+
+    <div style="background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;margin-bottom:28px;">
+      <div style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#FF6E00;margin-bottom:8px;">Chapter 1 — 18 pages</div>
+      <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;">TIME: Did You Own Your Hours Today?</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;margin-bottom:20px;">The one resource you can't earn back — and the daily question that changes how you spend it.</div>
+      <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:16px;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;font-style:italic;">
+        "There was a period when I tracked every single day for four months straight. Not because I had to — because the data was telling me something I couldn't ignore. TIME was the metric I kept losing. Not because I was lazy. Because I wasn't protecting it. This chapter is about what I learned when I finally did."
+        <div style="margin-top:10px;font-size:12px;font-weight:700;color:#FF6E00;font-style:normal;">— Kevin McCarron</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(133,255,0,0.08);border:1px solid rgba(133,255,0,0.2);border-radius:12px;padding:20px;margin-bottom:28px;">
+      <div style="font-size:13px;font-weight:800;color:#85FF00;margin-bottom:8px;">📖 The PDF is being prepared.</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;">The full Chapter 1 PDF will be available for download here when the book launches in <strong style="color:#fff;">June 2026</strong>. You're on the early access list — you'll be the first to know when it's ready.</div>
+    </div>
+
+    <div style="text-align:center;margin-bottom:32px;">
+      <a href="${appUrl}/book" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:14px;font-weight:800;padding:14px 32px;border-radius:10px;margin-bottom:10px;">Return to the Book Page</a><br/>
+      <a href="${appUrl}/#/register" style="display:inline-block;color:rgba(255,255,255,0.4);text-decoration:none;font-size:13px;margin-top:8px;">Download the app free at sweetmo.io</a>
+    </div>
+
+    <p style="font-size:11px;color:rgba(255,255,255,0.2);text-align:center;border-top:1px solid rgba(255,255,255,0.06);padding-top:20px;">
+      Sweet Momentum &mdash; sweetmo.io &mdash; Louisville, KY<br/>
+      You're receiving this because you requested the free chapter at sweetmo.io/book.
+    </p>
+  </div>
+</body>
+</html>`,
+        });
+      } else {
+        console.log(`[book-chapter] SMTP not configured. Would send chapter to: ${email} (${firstName} ${lastName})`);
+      }
+
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("[book-chapter] error:", e);
+      res.status(500).json({ error: "Failed to send chapter email" });
+    }
+  });
+
   app.get("/api/pages/:pageKey", requireAuth, async (req, res) => {
     try {
       const page = await storage.getSitePage(req.params.pageKey);
