@@ -813,32 +813,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     <div style="margin-bottom:28px;">
       <img src="${appUrl}/favicon.png" alt="Sweet Momentum" style="width:40px;height:40px;border-radius:8px;" />
     </div>
-    <h1 style="font-size:26px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;">Here's your free chapter, ${firstName}.</h1>
-    <p style="font-size:15px;color:rgba(255,255,255,0.6);margin:0 0 32px;line-height:1.6;">Thanks for your interest in <strong style="color:#fff;">Sweet Momentum</strong>. Chapter One is below — it's about TIME, the metric that everything else is built on.</p>
+    <h1 style="font-size:26px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;">Thanks, ${firstName}. Chapter One is almost in your hands.</h1>
+    <p style="font-size:15px;color:rgba(255,255,255,0.6);margin:0 0 32px;line-height:1.6;">Before the metrics, the tracking, and the streaks — there was something simpler. That’s where <strong style="color:#fff;">Sweet Momentum</strong> begins.</p>
 
     <div style="background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;margin-bottom:28px;">
-      <div style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#FF6E00;margin-bottom:8px;">Chapter 1 — 18 pages</div>
-      <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;">TIME: Did You Own Your Hours Today?</div>
-      <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;margin-bottom:20px;">The one resource you can't earn back — and the daily question that changes how you spend it.</div>
-      <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:16px;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;font-style:italic;">
-        "There was a period when I tracked every single day for four months straight. Not because I had to — because the data was telling me something I couldn't ignore. TIME was the metric I kept losing. Not because I was lazy. Because I wasn't protecting it. This chapter is about what I learned when I finally did."
-        <div style="margin-top:10px;font-size:12px;font-weight:700;color:#FF6E00;font-style:normal;">— Kevin McCarron</div>
+      <div style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#FF6E00;margin-bottom:10px;">Chapter 1 — The Beginning</div>
+      <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:10px;line-height:1.3;">Sweet: On Nostalgia, Reward,<br/>and Why It Still Works</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:20px;">Candy, routine, and the innocent logic of showing up every day for something that matters to you.</div>
+      <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.06);border-left:3px solid #FF6E00;border-radius:0 10px 10px 0;padding:16px 18px;font-size:13px;color:rgba(255,255,255,0.55);line-height:1.8;font-style:italic;">
+        &ldquo;There’s something about the memory of earning something small — a piece of candy, a gold star, a check mark on a chart — that never fully leaves you. It wasn’t the candy. It was the feeling that the day had meant something. That you showed up, and it counted. This book starts there, because I think that’s where all real momentum starts.&rdquo;
+        <div style="margin-top:12px;font-size:12px;font-weight:700;color:#FF6E00;font-style:normal;letter-spacing:0.04em;">— Kevin McCarron</div>
       </div>
     </div>
 
-    <div style="background:rgba(133,255,0,0.08);border:1px solid rgba(133,255,0,0.2);border-radius:12px;padding:20px;margin-bottom:28px;">
-      <div style="font-size:13px;font-weight:800;color:#85FF00;margin-bottom:8px;">📖 The PDF is being prepared.</div>
-      <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;">The full Chapter 1 PDF will be available for download here when the book launches in <strong style="color:#fff;">June 2026</strong>. You're on the early access list — you'll be the first to know when it's ready.</div>
+    <div style="background:rgba(133,255,0,0.06);border:1px solid rgba(133,255,0,0.15);border-radius:12px;padding:20px;margin-bottom:28px;">
+      <div style="font-size:13px;font-weight:800;color:#85FF00;margin-bottom:8px;">📖 Your PDF is on its way.</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;">The full Chapter 1 PDF will land in your inbox as soon as the book launches in <strong style="color:#fff;">June 2026</strong>. You’re on the early access list — you’ll be the first to receive it, no action needed on your end.</div>
     </div>
 
     <div style="text-align:center;margin-bottom:32px;">
-      <a href="${appUrl}/book" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:14px;font-weight:800;padding:14px 32px;border-radius:10px;margin-bottom:10px;">Return to the Book Page</a><br/>
-      <a href="${appUrl}/#/register" style="display:inline-block;color:rgba(255,255,255,0.4);text-decoration:none;font-size:13px;margin-top:8px;">Download the app free at sweetmo.io</a>
+      <a href="${appUrl}/book" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:14px;font-weight:800;padding:14px 32px;border-radius:10px;">Back to the Book Page</a>
     </div>
 
-    <p style="font-size:11px;color:rgba(255,255,255,0.2);text-align:center;border-top:1px solid rgba(255,255,255,0.06);padding-top:20px;">
+    <p style="font-size:11px;color:rgba(255,255,255,0.2);text-align:center;border-top:1px solid rgba(255,255,255,0.06);padding-top:20px;line-height:1.7;">
       Sweet Momentum &mdash; sweetmo.io &mdash; Louisville, KY<br/>
-      You're receiving this because you requested the free chapter at sweetmo.io/book.
+      You’re receiving this because you requested the free chapter at sweetmo.io/book.
     </p>
   </div>
 </body>
