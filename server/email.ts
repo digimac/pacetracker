@@ -764,3 +764,83 @@ export async function sendReminderEmail(opts: {
     console.error(`[email] SMTP error sending reminder to ${toEmail}:`, smtpErr?.message || smtpErr);
   }
 }
+
+export async function sendTrialEndingEmail(opts: {
+  toEmail: string;
+  displayName: string;
+  daysRemaining: number;
+}): Promise<void> {
+  const { toEmail, displayName, daysRemaining } = opts;
+
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.log(`[email] SMTP not configured. Trial-ending email for ${toEmail} skipped.`);
+    return;
+  }
+
+  const fromAddress = SMTP_FROM_EMAIL
+    ? `"${SMTP_FROM_NAME}" <${SMTP_FROM_EMAIL}>`
+    : `"${SMTP_FROM_NAME}" <${SMTP_USER}>`;
+
+  const daysLabel = daysRemaining === 1 ? "1 day" : `${daysRemaining} days`;
+
+  const defaultSubject = `Your free Pro trial ends in {{daysLabel}}`;
+  const defaultHtml = `
+    <body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+      <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+        <div style="background:#85FF00;padding:32px;text-align:center;">
+          <h1 style="margin:0;color:#0a0a0a;font-size:26px;font-weight:800;letter-spacing:1px;">Sweet Momentum</h1>
+          <p style="margin:8px 0 0;color:rgba(10,10,10,0.7);font-size:14px;">Your free Pro trial is almost up</p>
+        </div>
+        <div style="padding:32px;">
+          <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey {{displayName}},</p>
+          <p style="color:#e0e0e0;font-size:15px;margin:0 0 16px;">
+            Your free 6-month Pro trial ends in <strong style="color:#85FF00;">{{daysLabel}}</strong>. After that, you'll move to the Free plan unless you subscribe.
+          </p>
+          <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">
+            Keep your Score Map, Momentum Network, Groups, custom metrics, and coaching sessions by locking in your plan now.
+          </p>
+          <div style="text-align:center;margin:32px 0;">
+            <a href="${APP_URL}/#/billing" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;letter-spacing:0.5px;">
+              View Plans &amp; Subscribe →
+            </a>
+          </div>
+          <p style="color:#666;font-size:12px;text-align:center;margin:0;">
+            You're receiving this because you have a Sweet Momentum account on a free trial.
+          </p>
+        </div>
+      </div>
+    </body>
+  `;
+  const defaultText = `Hey {{displayName}},\n\nYour free 6-month Pro trial ends in {{daysLabel}}. After that, you'll move to the Free plan unless you subscribe.\n\nKeep your Score Map, Momentum Network, Groups, custom metrics, and coaching sessions by locking in your plan now.\n\nView plans: ${APP_URL}/#/billing`;
+
+  let subject = defaultSubject;
+  let html    = defaultHtml;
+  let text    = defaultText;
+
+  try {
+    const tpl = await storage.getEmailTemplate("trial_ending");
+    if (tpl) {
+      subject = tpl.subject;
+      html    = tpl.bodyHtml;
+      text    = tpl.bodyText;
+    }
+  } catch (dbErr) {
+    console.warn("[email] Could not load trial_ending template from DB, using default:", dbErr);
+  }
+
+  const interpolate = (s: string) => s
+    .replace(/\{\{displayName\}\}/g, displayName)
+    .replace(/\{\{daysLabel\}\}/g, daysLabel);
+
+  subject = interpolate(subject);
+  html    = interpolate(html);
+  text    = interpolate(text);
+
+  try {
+    await transporter.sendMail({ from: fromAddress, to: toEmail, subject, html, text });
+    console.log(`[email] Trial-ending email sent to ${toEmail} (${daysLabel} remaining)`);
+  } catch (smtpErr: any) {
+    console.error(`[email] SMTP error sending trial-ending email to ${toEmail}:`, smtpErr?.message || smtpErr);
+  }
+}

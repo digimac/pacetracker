@@ -4,11 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Zap, Star, Crown, ExternalLink, CalendarClock } from "lucide-react";
+import { Check, Zap, Star, Crown, ExternalLink, CalendarClock, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 
 type BillingStatus = {
   isPro: boolean;
+  onTrial: boolean;
+  trialEndsAt: string | null;
+  trialDaysRemaining: number | null;
   plan: string;
   status: string;
   currentPeriodEnd: string | null;
@@ -119,8 +122,28 @@ export default function BillingPage() {
         <p className="text-sm text-muted-foreground mt-0.5">Choose the plan that fits your momentum</p>
       </div>
 
-      {/* Current plan banner if Pro */}
-      {billing?.isPro && (
+      {/* Free trial banner */}
+      {billing?.onTrial && (
+        <Card className="mb-6 border-[#85FF00]/30 bg-[#85FF00]/5">
+          <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-[#85FF00]" />
+              <div>
+                <p className="text-sm font-bold">
+                  Free Pro Trial —{" "}
+                  <span className="text-[#85FF00]">
+                    {billing.trialDaysRemaining === 1 ? "1 day left" : `${billing.trialDaysRemaining} days left`}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground">All Pro features are unlocked. Subscribe below to keep them after your trial ends.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Current plan banner if Pro (paid) */}
+      {billing?.isPro && !billing?.onTrial && (
         <Card className="mb-6 border-primary/40 bg-primary/5">
           <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">

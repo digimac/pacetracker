@@ -125,6 +125,15 @@ app.use((req, res, next) => {
       -- Add SMS opt-in column to users if it doesn't exist yet
       ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "sms_opt_in" boolean NOT NULL DEFAULT false;
 
+      -- Add rolling 6-month free trial column to users if it doesn't exist yet
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "trial_ends_at" timestamp;
+
+      -- Backdate: give any existing user without a trial a fresh 6-month trial starting today
+      UPDATE "users" SET "trial_ends_at" = now() + interval '6 months' WHERE "trial_ends_at" IS NULL;
+
+      -- Tracks whether the trial-ending reminder email has already been sent
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "trial_reminder_sent_at" timestamp;
+
       -- Add SMS reminder columns to user_schedule if they don't exist yet
       ALTER TABLE "user_schedule" ADD COLUMN IF NOT EXISTS "sms_reminder_enabled" boolean NOT NULL DEFAULT false;
       ALTER TABLE "user_schedule" ADD COLUMN IF NOT EXISTS "sms_reminder_time" text DEFAULT '09:00';

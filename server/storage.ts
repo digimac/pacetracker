@@ -58,6 +58,7 @@ export interface IStorage {
   upsertSubscription(data: Partial<Subscription> & { userId: number }): Promise<Subscription>;
   getSubscriptionByStripeCustomerId(customerId: string): Promise<Subscription | undefined>;
   isPro(userId: number): Promise<boolean>;
+  markTrialReminderSent(userId: number): Promise<void>;
 
   // Metric Content
   getAllMetricContent(): Promise<MetricContent[]>;
@@ -141,10 +142,13 @@ export class DrizzleStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
+    const trialEndsAt = new Date();
+    trialEndsAt.setMonth(trialEndsAt.getMonth() + 6);
     const rows = await this.db.insert(users).values({
       ...user,
       email: user.email.toLowerCase(),
       username: user.username.toLowerCase(),
+      trialEndsAt,
     }).returning();
     return rows[0];
   }
@@ -353,9 +357,15 @@ export class DrizzleStorage implements IStorage {
   }
 
   async isPro(userId: number): Promise<boolean> {
+    const user = await this.getUserById(userId);
+    if (user?.trialEndsAt && new Date(user.trialEndsAt).getTime() > Date.now()) return true;
     const sub = await this.getSubscription(userId);
     if (!sub) return false;
     return sub.status === "active" && sub.plan !== "free";
+  }
+
+  async markTrialReminderSent(userId: number): Promise<void> {
+    await this.db.update(users).set({ trialReminderSentAt: new Date() }).where(eq(users.id, userId));
   }
 
   // Metric Content
@@ -696,7 +706,9 @@ export class MemStorage implements IStorage {
     return Array.from(this.usersMap.values()).find(u => u.username.toLowerCase() === username.toLowerCase());
   }
   async createUser(user: InsertUser): Promise<User> {
-    const newUser: User = { ...user, id: this.userIdCounter++, createdAt: new Date() };
+    const trialEndsAt = new Date();
+    trialEndsAt.setMonth(trialEndsAt.getMonth() + 6);
+    const newUser: User = { ...user, id: this.userIdCounter++, createdAt: new Date(), trialEndsAt } as User;
     this.usersMap.set(newUser.id, newUser);
     return newUser;
   }
@@ -819,9 +831,16 @@ export class MemStorage implements IStorage {
     return Array.from(this.subscriptionsMap.values()).find(s => s.stripeCustomerId === customerId);
   }
   async isPro(userId: number): Promise<boolean> {
+    const user = this.usersMap.get(userId);
+    if (user?.trialEndsAt && new Date(user.trialEndsAt).getTime() > Date.now()) return true;
     const sub = this.subscriptionsMap.get(userId);
     if (!sub) return false;
     return sub.status === "active" && sub.plan !== "free";
+  }
+
+  async markTrialReminderSent(userId: number): Promise<void> {
+    const user = this.usersMap.get(userId);
+    if (user) { (user as any).trialReminderSentAt = new Date(); this.usersMap.set(userId, user); }
   }
 
   // Metric Content (in-memory)

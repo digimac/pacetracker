@@ -15,6 +15,7 @@ import PerplexityAttribution from "@/components/PerplexityAttribution";
 import { useUserTimezone, getTodayInTimezone } from "@/hooks/use-user-timezone";
 import { DaySparkline, TimelineEvent, CORE_METRIC_COLORS, getMetricColor } from "@/components/day-sparkline";
 import { DayCountersStrip } from "@/components/day-counters-strip";
+import { Sparkles } from "lucide-react";
 
 
 type DayResult = {
@@ -125,6 +126,12 @@ export default function DashboardPage() {
     staleTime: 5 * 60_000,
   });
 
+  const { data: billing } = useQuery<{ onTrial: boolean; trialDaysRemaining: number | null }>({
+    queryKey: ["/api/billing/status"],
+    queryFn: () => apiRequest("GET", "/api/billing/status").then(r => r.json()),
+    staleTime: 60_000,
+  });
+
   // Stats
   const totalDays = results.length;
   const totalScore = results.reduce((s, r) => s + r.total, 0);
@@ -174,6 +181,27 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
+      {/* Free trial countdown banner */}
+      {billing?.onTrial && (
+        <div className="relative mb-5 rounded-xl overflow-hidden border border-[#85FF00]/25">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#85FF00]/12 via-[#FF6E00]/8 to-transparent" />
+          <div className="relative flex items-center justify-between gap-3 px-4 py-3 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-[#85FF00] flex-shrink-0" />
+              <p className="text-xs md:text-sm font-bold">
+                You're on a free Pro trial —{" "}
+                <span className="text-[#85FF00]">
+                  {billing.trialDaysRemaining === 1 ? "1 day left" : `${billing.trialDaysRemaining} days left`}
+                </span>
+              </p>
+            </div>
+            <Button size="sm" variant="outline" className="h-7 text-xs border-[#85FF00]/30 text-[#85FF00] hover:bg-[#85FF00]/10" onClick={() => setLocation("/billing")}>
+              Lock in your plan
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6 gap-4">
         <div>

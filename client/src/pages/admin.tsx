@@ -12,7 +12,7 @@ import {
   ShieldCheck, Save, ImageIcon, Quote, BookOpen,
   ChevronDown, ChevronUp, Loader2, Users, Settings2,
   Crown, Clock, Globe, FileText, Plus, Trash2, Link, Mail,
-  ArrowUp, ArrowDown, UserX, AlertTriangle, Search,
+  ArrowUp, ArrowDown, UserX, AlertTriangle, Search, Sparkles,
 } from "lucide-react";
 import type { MetricContent } from "@shared/schema";
 import { CloudinaryUpload } from "@/components/cloudinary-upload";
@@ -342,6 +342,9 @@ type Member = {
   plan: string;
   planStatus: string;
   isPro: boolean;
+  onTrial: boolean;
+  trialEndsAt: string | null;
+  trialDaysRemaining: number | null;
   timezone: string | null;
   latestScore: { date: string; score: number; wins: number; losses: number } | null;
 };
@@ -362,7 +365,15 @@ function maskEmail(email: string): string {
   return `${mask(local)}@${mask(domainName)}.${tld.join(".")}`;
 }
 
-function PlanBadge({ isPro, plan }: { isPro: boolean; plan: string }) {
+function PlanBadge({ isPro, plan, onTrial }: { isPro: boolean; plan: string; onTrial?: boolean }) {
+  if (onTrial) {
+    return (
+      <Badge className="text-[10px] bg-[#85FF00]/15 text-[#85FF00] border-[#85FF00]/30 flex items-center gap-1 w-fit">
+        <Sparkles className="w-2.5 h-2.5" />
+        Trial
+      </Badge>
+    );
+  }
   if (isPro) {
     const label = plan === "pro_annual" ? "Pro Annual" : "Pro Monthly";
     return (
@@ -675,7 +686,7 @@ function MembersTab() {
                     <p className="text-xs text-muted-foreground">Member #{i + 1}</p>
                   </div>
                 </div>
-                <PlanBadge isPro={m.isPro} plan={m.plan} />
+                <PlanBadge isPro={m.isPro} plan={m.plan} onTrial={m.onTrial} />
               </div>
 
               {/* Masked details grid */}
@@ -710,6 +721,18 @@ function MembersTab() {
                     {new Date(m.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                   </span>
                 </div>
+
+                {/* Trial status */}
+                {m.onTrial && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 w-20 flex-shrink-0 flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5" /> Trial
+                    </span>
+                    <span className="text-xs text-[#85FF00] font-semibold">
+                      {m.trialDaysRemaining === 1 ? "1 day left" : `${m.trialDaysRemaining} days left`}
+                    </span>
+                  </div>
+                )}
 
                 {/* Latest score */}
                 {m.latestScore && (
@@ -925,6 +948,28 @@ Visit the app: https://sweetmo.io
 
 Questions? Reply to this email.`,
   },
+  {
+    key: "trial_ending",
+    label: "Trial Ending Reminder",
+    description: "Sent to members on the free 6-month Pro trial when it is about 45 days from ending. Available variables: {{displayName}}, {{daysLabel}} (e.g. \"45 days\").",
+    defaultSubject: "Your free Pro trial ends in {{daysLabel}}",
+    defaultBodyHtml: `<body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+  <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+    <div style="background:#85FF00;padding:32px;text-align:center;">
+      <h1 style="margin:0;color:#0a0a0a;font-size:26px;font-weight:800;">Sweet Momentum</h1>
+      <p style="margin:8px 0 0;color:rgba(10,10,10,0.7);font-size:14px;">Your free Pro trial is almost up</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey {{displayName}},</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 16px;">Your free 6-month Pro trial ends in <strong style="color:#85FF00;">{{daysLabel}}</strong>. After that, you'll move to the Free plan unless you subscribe.</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">Keep your Score Map, Momentum Network, Groups, custom metrics, and coaching sessions by locking in your plan now.</p>
+      <div style="text-align:center;margin:32px 0;"><a href="https://sweetmo.io/#/billing" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;">View Plans &amp; Subscribe \u2192</a></div>
+      <p style="color:#666;font-size:12px;text-align:center;margin:0;">You're receiving this because you have a Sweet Momentum account on a free trial.</p>
+    </div>
+  </div>
+</body>`,
+    defaultBodyText: `Hey {{displayName}},\n\nYour free 6-month Pro trial ends in {{daysLabel}}. After that, you'll move to the Free plan unless you subscribe.\n\nKeep your Score Map, Momentum Network, Groups, custom metrics, and coaching sessions by locking in your plan now.\n\nView plans: https://sweetmo.io/#/billing`,
+  },
 ];
 
 type EmailTemplateData = {
@@ -1134,6 +1179,9 @@ function EmailTemplatesTab() {
   const [sendingDigest, setSendingDigest] = useState(false);
   const [digestTestId, setDigestTestId] = useState("");
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [sendingTrialReminder, setSendingTrialReminder] = useState(false);
+  const [trialReminderTestId, setTrialReminderTestId] = useState("");
+  const [trialReminderDays, setTrialReminderDays] = useState("45");
   const [reminderTestId, setReminderTestId] = useState("");
   const [reminderDays, setReminderDays] = useState("3");
   const [smsTestPhone, setSmsTestPhone] = useState("");
@@ -1259,6 +1307,71 @@ function EmailTemplatesTab() {
             data-testid="reminder-send-all-btn"
           >
             {sendingReminder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send to Inactive Members"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Trial-Ending Reminder send controls */}
+      <div className="border border-border rounded-lg p-4 space-y-3">
+        <div>
+          <p className="text-sm font-semibold">Send Trial-Ending Reminders</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Emails members on the free 6-month Pro trial whose trial is within the given number of days of ending. Skips users with an active paid subscription and the admin account.</p>
+        </div>
+        <div className="flex gap-2 items-center flex-wrap">
+          <Input
+            value={trialReminderTestId}
+            onChange={e => setTrialReminderTestId(e.target.value)}
+            placeholder="User ID (optional — for test send)"
+            className="text-sm w-52"
+            data-testid="trial-reminder-test-user-id"
+          />
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Within</span>
+            <Input
+              value={trialReminderDays}
+              onChange={e => setTrialReminderDays(e.target.value)}
+              placeholder="45"
+              className="text-sm w-16 text-center"
+              type="number" min="1" max="180"
+              data-testid="trial-reminder-days-input"
+            />
+            <span className="text-xs text-muted-foreground">days of ending</span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={sendingTrialReminder || !trialReminderTestId}
+            onClick={async () => {
+              setSendingTrialReminder(true);
+              try {
+                const res = await apiRequest("POST", "/api/admin/send-trial-reminders", { userId: trialReminderTestId, thresholdDays: Number(trialReminderDays) || 45 });
+                const data = await res.json();
+                toast({ title: "Test trial reminder sent", description: `Sent: ${data.sent}, Skipped: ${data.skipped}` });
+              } catch (e: any) {
+                toast({ title: "Send failed", description: e.message, variant: "destructive" });
+              } finally { setSendingTrialReminder(false); }
+            }}
+            data-testid="trial-reminder-test-btn"
+          >
+            {sendingTrialReminder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send Test"}
+          </Button>
+          <Button
+            size="sm"
+            variant="default"
+            disabled={sendingTrialReminder}
+            onClick={async () => {
+              setSendingTrialReminder(true);
+              try {
+                const res = await apiRequest("POST", "/api/admin/send-trial-reminders", { thresholdDays: Number(trialReminderDays) || 45 });
+                const data = await res.json();
+                toast({ title: `Trial reminders sent to ${data.sent} member(s)`, description: `Skipped: ${data.skipped}${data.errors ? ` · ${data.errors} error(s)` : ""}` });
+              } catch (e: any) {
+                toast({ title: "Send failed", description: e.message, variant: "destructive" });
+              } finally { setSendingTrialReminder(false); }
+            }}
+            data-testid="trial-reminder-send-all-btn"
+          >
+            {sendingTrialReminder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send to Trial Members"}
           </Button>
         </div>
       </div>

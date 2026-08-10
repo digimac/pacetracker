@@ -17,10 +17,12 @@ export const users = pgTable("users", {
   category: text("category"),   // athlete | graduate | recovery | veteran | caregiver | entrepreneur | writer | musician
   phone: text("phone"),          // mobile phone number for SMS notifications (optional)
   smsOptIn: boolean("sms_opt_in").default(false).notNull(), // user opted in to SMS notifications
+  trialEndsAt: timestamp("trial_ends_at"), // rolling 6-month free Pro trial, set at signup
+  trialReminderSentAt: timestamp("trial_reminder_sent_at"), // when the day-45 trial-ending reminder was sent
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, trialEndsAt: true, trialReminderSentAt: true });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 

@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL, PRICE_GROUP_MONTHLY, PRICE_GROUP_ANNUAL } from "./billing";
-import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, createTransporter } from "./email";
+import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, sendTrialEndingEmail, createTransporter } from "./email";
 import { sendSms, sendDailyReminderSms, sendWelcomeSms } from "./sms";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
@@ -463,8 +463,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const user = await storage.getUserById(req.session!.userId!);
     const isAdminUser = user?.email === ADMIN_EMAIL;
     const isPro = isAdminUser || await storage.isPro(req.session!.userId!);
+    const hasActiveSub = sub?.status === "active" && sub.plan !== "free";
+    const trialActive = !isAdminUser && !hasActiveSub && !!user?.trialEndsAt && new Date(user.trialEndsAt).getTime() > Date.now();
+    const trialDaysRemaining = trialActive
+      ? Math.max(0, Math.ceil((new Date(user!.trialEndsAt!).getTime() - Date.now()) / 86400000))
+      : null;
     res.json({
       isPro,
+      onTrial: trialActive,
+      trialEndsAt: user?.trialEndsAt || null,
+      trialDaysRemaining,
       plan: isAdminUser && !sub?.plan ? "pro_annual" : (sub?.plan || "free"),
       status: isAdminUser ? "active" : (sub?.status || "inactive"),
       currentPeriodEnd: sub?.currentPeriodEnd || null,
@@ -567,7 +575,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             storage.getUserSchedule(u.id),
             storage.getLatestDailyEntry(u.id),
           ]);
-          const isPro = sub?.status === "active" && !!sub.currentPeriodEnd && sub.currentPeriodEnd > new Date();
+          const hasActiveSub = sub?.status === "active" && !!sub.currentPeriodEnd && sub.currentPeriodEnd > new Date();
+          const onTrial = !!u.trialEndsAt && new Date(u.trialEndsAt).getTime() > Date.now();
+          const isPro = hasActiveSub || onTrial;
+          const trialDaysRemaining = onTrial
+            ? Math.max(0, Math.ceil((new Date(u.trialEndsAt!).getTime() - Date.now()) / 86400000))
+            : null;
 
           // Compute score for the most recent day
           let latestScore: { date: string; score: number; wins: number; losses: number } | null = null;
@@ -594,6 +607,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             plan: sub?.plan || "free",
             planStatus: sub?.status || "inactive",
             isPro,
+            onTrial,
+            trialEndsAt: u.trialEndsAt || null,
+            trialDaysRemaining,
             timezone: sched?.timezone || null,
             latestScore,
           };
@@ -1596,6 +1612,56 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           sent++;
         } catch (userErr: any) {
           console.error(`[reminder] Error for user ${u.email}:`, userErr?.message);
+          errors++;
+        }
+      }
+
+      res.json({ ok: true, sent, skipped, errors, thresholdDays });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Admin: send trial-ending reminders to users whose free 6-month trial is within N days of expiring
+  app.post("/api/admin/send-trial-reminders", requireAdmin, async (req, res) => {
+    try {
+      const { userId: targetUserId, thresholdDays: rawThreshold } = req.body;
+      const thresholdDays = Number(rawThreshold) || 45; // send when 45 (or fewer) days remain
+
+      const now = new Date();
+      const allUsers = targetUserId
+        ? [await storage.getUserById(Number(targetUserId))].filter(Boolean)
+        : await storage.getAllUsers();
+
+      let sent = 0, skipped = 0, errors = 0;
+
+      for (const u of allUsers as any[]) {
+        try {
+          if (u.email === "track@sweetmo.io") { skipped++; continue; }
+          if (!u.trialEndsAt) { skipped++; continue; }
+
+          const endsAt = new Date(u.trialEndsAt);
+          if (endsAt.getTime() <= now.getTime()) { skipped++; continue; } // trial already over
+
+          const daysRemaining = Math.ceil((endsAt.getTime() - now.getTime()) / 86400000);
+          if (daysRemaining > thresholdDays) { skipped++; continue; }
+
+          // Skip users who already have an active paid subscription — trial is moot for them
+          const sub = await storage.getSubscription(u.id);
+          if (sub?.status === "active" && sub.plan !== "free") { skipped++; continue; }
+
+          // Only send once per user, unless explicitly re-triggered for a single userId
+          if (!targetUserId && u.trialReminderSentAt) { skipped++; continue; }
+
+          await sendTrialEndingEmail({
+            toEmail: u.email,
+            displayName: u.displayName || u.email,
+            daysRemaining,
+          });
+          await storage.markTrialReminderSent(u.id);
+          sent++;
+        } catch (userErr: any) {
+          console.error(`[trial-reminder] Error for user ${u.email}:`, userErr?.message);
           errors++;
         }
       }

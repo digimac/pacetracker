@@ -40,6 +40,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - "This Summer, get sweet." promo banner on Subscribe page (May–Aug 2026)
 - HubSpot 1-way CRM sync
 - Twilio SMS: opt-in, daily score reminders, welcome text
+- **6-month rolling free Pro trial** — every new signup gets full Pro access free for 6 months from their join date (rolling, per-user). Existing users were backdated to a fresh 6-month trial from launch day. Paid subscribers are unaffected. Trial countdown banner shown on Dashboard, Settings, and Subscribe page. Admin can send a day-45-before-expiry reminder email (test or bulk) from the Emails tab, with an editable template ("Trial Ending Reminder"). Admin member list shows trial status and days remaining.
 
 **Marketing pages**
 - `/start` — public marketing landing page
@@ -58,7 +59,6 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 ## In Progress
 
-- [ ] **6-month free trial pivot** — every new signup gets full Pro access free for 6 months from their join date (rolling, per-user, not a fixed calendar cutoff). Existing paid subscribers keep billing as normal. Implementation: add `trialEndsAt` to user record, extend `isPro` check in `/api/billing/status`, add trial countdown UI + day-45 reminder email, backdate existing free users so nobody's excluded. Decision pending on Group tier trial scope and day-180 behavior.
 - [ ] **Verify Twilio SMS is live** — phone number authentication status was unconfirmed as of last check-in; confirm reminders/welcome texts are actually sending in production.
 - [ ] **Chapter 1 PDF hookup** — `/book` page currently gates an email placeholder ("early access, PDF at launch"). Once the real PDF exists, wire it to Cloudinary and send it directly instead of the placeholder message.
 - [ ] **Fix stale book launch date** — `/book` banner still says "Available June 2026," which has passed. Needs a real date or generic "Coming Soon."

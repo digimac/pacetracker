@@ -128,7 +128,7 @@ export default function SettingsPage() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const { data: billing } = useQuery<{ isPro: boolean }>({  
+  const { data: billing } = useQuery<{ isPro: boolean; onTrial: boolean; trialDaysRemaining: number | null }>({  
     queryKey: ["/api/billing/status"],
     queryFn: () => apiRequest("GET", "/api/billing/status").then(r => r.json()),
   });
@@ -263,6 +263,27 @@ export default function SettingsPage() {
         <h1 className="text-xl font-black tracking-tight uppercase">Settings</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Configure your daily performance system</p>
       </div>
+
+      {/* Free trial status */}
+      {billing?.onTrial && (
+        <div className="relative rounded-xl overflow-hidden border border-[#85FF00]/25">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#85FF00]/12 via-[#FF6E00]/8 to-transparent" />
+          <div className="relative flex items-center justify-between gap-3 px-4 py-3 flex-wrap">
+            <div>
+              <p className="text-xs font-bold">
+                Free Pro trial —{" "}
+                <span className="text-[#85FF00]">
+                  {billing.trialDaysRemaining === 1 ? "1 day left" : `${billing.trialDaysRemaining} days left`}
+                </span>
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">All Pro features are unlocked during your trial.</p>
+            </div>
+            <Button size="sm" variant="outline" className="h-7 text-xs border-[#85FF00]/30 text-[#85FF00] hover:bg-[#85FF00]/10" onClick={() => setLocation("/billing")}>
+              View plans
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Profile */}
       <Card>
