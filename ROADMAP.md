@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: August 10, 2026_
+_Last updated: August 10, 2026 (6-month rolling free trial shipped)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `8784337` — "This Summer, get sweet." promo banner (Aug 2026)
+- **Last shipped commit**: `6792214` — 6-month rolling free Pro trial for all signups
 
 ---
 
