@@ -34,6 +34,54 @@ export function createTransporter() {
   });
 }
 
+// Real connectivity + auth check against the SMTP server — distinguishes
+// "credentials missing" from "credentials present but rejected" from "working".
+export async function checkSmtpStatus(): Promise<{
+  configured: boolean;
+  host: string;
+  port: number;
+  user: string;
+  fromEmail: string;
+  verified: boolean;
+  error: string | null;
+}> {
+  const maskedUser = SMTP_USER ? SMTP_USER[0] + "***" : "(not set)";
+  if (!SMTP_USER || !SMTP_PASS) {
+    return {
+      configured: false,
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      user: maskedUser,
+      fromEmail: SMTP_FROM_EMAIL || "(not set)",
+      verified: false,
+      error: "SMTP_USER and/or SMTP_PASS environment variables are not set on the server. All emails are silently skipped (logged to console only) until these are configured.",
+    };
+  }
+  const transporter = createTransporter()!;
+  try {
+    await transporter.verify();
+    return {
+      configured: true,
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      user: maskedUser,
+      fromEmail: SMTP_FROM_EMAIL || "(not set)",
+      verified: true,
+      error: null,
+    };
+  } catch (err: any) {
+    return {
+      configured: true,
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      user: maskedUser,
+      fromEmail: SMTP_FROM_EMAIL || "(not set)",
+      verified: false,
+      error: err?.message || String(err),
+    };
+  }
+}
+
 export async function sendPasswordResetEmail(toEmail: string, token: string): Promise<void> {
   const resetUrl = `${APP_URL}/#/reset-password?token=${token}`;
   const transporter = createTransporter();
@@ -48,6 +96,7 @@ export async function sendPasswordResetEmail(toEmail: string, token: string): Pr
     ? `"${SMTP_FROM_NAME}" <${SMTP_FROM_EMAIL}>`
     : `"${SMTP_FROM_NAME}" <${SMTP_USER}>`;
 
+  try {
   await transporter.sendMail({
     from: fromAddress,
     to: toEmail,
@@ -89,8 +138,10 @@ export async function sendPasswordResetEmail(toEmail: string, token: string): Pr
     `,
     text: `Reset your Sweet Momentum password\n\nClick the link below to reset your password:\n${resetUrl}\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.`,
   });
-
   console.log(`[email] Password reset email sent to ${toEmail}`);
+  } catch (smtpErr: any) {
+    console.error(`[email] SMTP error sending password reset to ${toEmail}:`, smtpErr?.message || smtpErr);
+  }
 }
 
 export async function sendFeedbackEmail(opts: {

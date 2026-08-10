@@ -1189,6 +1189,26 @@ function EmailTemplatesTab() {
   const [sendingSmsTest, setSendingSmsTest] = useState(false);
   const [sendingSmsReminders, setSendingSmsReminders] = useState(false);
   const [smsReminderDays, setSmsReminderDays] = useState("3");
+  const [checkingSmtp, setCheckingSmtp] = useState(false);
+  const [smtpStatus, setSmtpStatus] = useState<{ configured: boolean; host: string; port: number; user: string; fromEmail: string; verified: boolean; error: string | null } | null>(null);
+
+  async function checkSmtp() {
+    setCheckingSmtp(true);
+    try {
+      const res = await apiRequest("GET", "/api/admin/smtp-status");
+      const data = await res.json();
+      setSmtpStatus(data);
+      if (data.verified) {
+        toast({ title: "SMTP connection verified", description: `Authenticated with ${data.host}:${data.port} as ${data.user}` });
+      } else {
+        toast({ title: data.configured ? "SMTP auth failed" : "SMTP not configured", description: data.error || "Unknown error", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Check failed", description: e.message, variant: "destructive" });
+    } finally {
+      setCheckingSmtp(false);
+    }
+  }
 
   async function sendDigest(all: boolean) {
     setSendingDigest(true);
@@ -1210,6 +1230,30 @@ function EmailTemplatesTab() {
       <p className="text-sm text-muted-foreground leading-relaxed">
         Customise the emails sent by Sweet Momentum. Use the variables shown inside each editor to insert dynamic content. Changes take effect immediately for all future sends.
       </p>
+
+      {/* SMTP connection status */}
+      <div className={`border rounded-lg p-4 space-y-3 ${smtpStatus?.verified ? "border-[#85FF00]/30 bg-[#85FF00]/5" : smtpStatus ? "border-red-500/30 bg-red-500/5" : "border-border"}`}>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-sm font-semibold">SMTP Connection Status</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Runs a live connection + auth check against the mail server (does not send an email). Use this first if emails don't seem to be arriving.</p>
+          </div>
+          <Button size="sm" variant="outline" disabled={checkingSmtp} onClick={checkSmtp} data-testid="smtp-status-check-btn">
+            {checkingSmtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Check SMTP Connection"}
+          </Button>
+        </div>
+        {smtpStatus && (
+          <div className="text-xs space-y-1 pt-2 border-t border-border">
+            <div className="flex items-center gap-2">
+              <span className={`font-bold ${smtpStatus.verified ? "text-[#85FF00]" : "text-red-400"}`}>
+                {smtpStatus.verified ? "✓ Connected & authenticated" : smtpStatus.configured ? "✗ Configured but auth/connection failed" : "✗ Not configured"}
+              </span>
+            </div>
+            <p className="text-muted-foreground font-mono">Host: {smtpStatus.host}:{smtpStatus.port} · User: {smtpStatus.user} · From: {smtpStatus.fromEmail}</p>
+            {smtpStatus.error && <p className="text-red-400/80">{smtpStatus.error}</p>}
+          </div>
+        )}
+      </div>
 
       {/* Weekly digest send controls */}
       <div className="border border-border rounded-lg p-4 space-y-3">

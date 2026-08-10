@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL, PRICE_GROUP_MONTHLY, PRICE_GROUP_ANNUAL } from "./billing";
-import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, sendTrialEndingEmail, createTransporter } from "./email";
+import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, sendTrialEndingEmail, createTransporter, checkSmtpStatus } from "./email";
 import { sendSms, sendDailyReminderSms, sendWelcomeSms } from "./sms";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
@@ -561,6 +561,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json(result);
     } catch (e: any) {
       res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Admin: check live SMTP connectivity/auth status — distinguishes missing env vars from rejected credentials
+  app.get("/api/admin/smtp-status", requireAdmin, async (req, res) => {
+    try {
+      const status = await checkSmtpStatus();
+      res.json(status);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
