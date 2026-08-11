@@ -102,10 +102,12 @@
 
     /* ── Hero ── */
     #hero {
-      padding: 100px 0 60px;
+      padding: 0 0 60px;
       text-align: center;
       position: relative;
     }
+    #hero .hero-image-wrap { margin-top: -1px; }
+    #hero .hero-text { padding: 0 24px; }
     #hero::before {
       content: '';
       position: absolute; top: 0; left: 50%; transform: translateX(-50%);
@@ -113,16 +115,65 @@
       background: radial-gradient(circle, rgba(255,110,0,0.1) 0%, transparent 70%);
       pointer-events: none;
     }
+
+    /* Large hero image — admin-uploadable via Cloudinary in the admin panel — full-bleed banner */
+    .hero-image-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 1400px;
+      height: 460px;
+      margin: 0 auto 44px;
+      border-radius: 0 0 24px 24px;
+      overflow: hidden;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-image-wrap.has-image {
+      border: none;
+    }
+    #hero-image-bg {
+      position: absolute; inset: 0;
+      background-size: cover;
+      background-position: center;
+      display: none;
+    }
+    .hero-image-wrap.has-image #hero-image-bg { display: block; }
+    .hero-image-wrap::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(10,10,10,0.55) 100%);
+      pointer-events: none;
+    }
+    .hero-image-wrap.has-image::after { display: block; }
+    .hero-image-placeholder {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px;
+      color: rgba(255,255,255,0.3);
+    }
+    .hero-image-wrap.has-image .hero-image-placeholder { display: none; }
+    .hero-image-placeholder .icon { font-size: 32px; opacity: 0.5; }
+    .hero-image-placeholder .label {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+    }
+    .hero-image-placeholder .hint {
+      font-size: 12px; color: rgba(255,255,255,0.2); max-width: 320px; text-align: center; line-height: 1.6;
+    }
     .hero-avatar {
-      width: 88px; height: 88px; border-radius: 50%;
-      margin: 0 auto 28px;
+      position: absolute; bottom: -28px; left: 32px;
+      width: 76px; height: 76px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       background: linear-gradient(135deg, var(--accent), #d45a00);
-      font-family: var(--font-disp); font-weight: 900; font-size: 30px; color: #fff;
-      border: 3px solid rgba(255,110,0,0.25);
-      position: relative; z-index: 1;
+      font-family: var(--font-disp); font-weight: 900; font-size: 26px; color: #fff;
+      border: 3px solid var(--bg);
+      z-index: 2;
     }
-    #hero .tag { margin-bottom: 24px; position: relative; z-index: 1; }
+    #hero .tag { margin-bottom: 24px; margin-top: 44px; position: relative; z-index: 1; }
+    @media (max-width: 600px) {
+      .hero-image-wrap { height: 240px; border-radius: 0 0 16px 16px; }
+      .hero-avatar { width: 60px; height: 60px; font-size: 20px; left: 20px; bottom: -22px; }
+    }
     #hero h1 {
       font-family: var(--font-disp);
       font-size: clamp(2.4rem, 6vw, 4rem);
@@ -229,14 +280,24 @@
   </nav>
 
   <!-- ── HERO ── -->
-  <section id="hero" class="container">
-    <div class="hero-avatar">KM</div>
+  <section id="hero">
+    <div class="hero-image-wrap" id="hero-image-wrap">
+      <div id="hero-image-bg"></div>
+      <div class="hero-image-placeholder">
+        <span class="icon">🖼️</span>
+        <span class="label">Hero Image Not Set</span>
+        <span class="hint">Upload a graphic in Admin → Pages → Founder's Story Page to replace this placeholder.</span>
+      </div>
+      <div class="hero-avatar">KM</div>
+    </div>
+    <div class="hero-text container">
     <div class="tag">The Origin Story</div>
-    <h1>How I Got <em>Stuck</em> —<br>And What Got Me Moving</h1>
-    <p class="sub">
+    <h1 id="hero-headline">How I Got <em>Stuck</em> —<br>And What Got Me Moving</h1>
+    <p class="sub" id="hero-sub">
       Before the app, before the book, before any of the six metrics — there was a moment I got stuck. This is that story.
     </p>
     <p class="byline">Kevin McCarron · Founder, Sweet Momentum</p>
+    </div>
   </section>
 
   <!-- ── SECTION 1: The Setup ── -->
@@ -358,6 +419,26 @@
 
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Hydrate hero image (and optional title/subtitle) from admin config
+    fetch('/api/public/stuck')
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null)
+      .then(page => {
+        if (!page) return;
+        if (page.heroImageUrl) {
+          const wrap = document.getElementById('hero-image-wrap');
+          const bg = document.getElementById('hero-image-bg');
+          bg.style.backgroundImage = `url(${page.heroImageUrl})`;
+          wrap.classList.add('has-image');
+        }
+        if (page.title) {
+          document.getElementById('hero-headline').innerHTML = page.title;
+        }
+        if (page.subtitle) {
+          document.getElementById('hero-sub').textContent = page.subtitle;
+        }
+      });
 
     const io = new IntersectionObserver(entries => {
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });

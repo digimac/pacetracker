@@ -796,6 +796,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  app.get("/api/public/stuck", async (req, res) => {
+    try {
+      const page = await storage.getSitePage("stuck");
+      res.json(page || null);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Book chapter download — public endpoint, sends Chapter 1 PDF via email
   app.post("/api/book/chapter-download", async (req, res) => {
     try {
@@ -904,7 +913,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const pageKey = req.params.pageKey;
       const CATEGORY_KEYS = ["cat_athlete","cat_graduate","cat_recovery","cat_veteran","cat_caregiver","cat_entrepreneur","cat_writer","cat_musician"];
-      if (!["story", "tracking", "connect", "login", "register", "terms", "privacy", "eula", "timeline", "seo", "start", "reasons", ...CATEGORY_KEYS].includes(pageKey)) {
+      if (!["story", "tracking", "connect", "login", "register", "terms", "privacy", "eula", "timeline", "seo", "start", "reasons", "stuck", ...CATEGORY_KEYS].includes(pageKey)) {
         return res.status(400).json({ error: "Invalid page key" });
       }
       const data = insertSitePageSchema.parse({ ...req.body, pageKey });

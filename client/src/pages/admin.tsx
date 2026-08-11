@@ -48,6 +48,7 @@ const PAGE_DEFS = [
   { key: "timeline",         label: "Timeline Background", icon: ImageIcon,   accent: "text-cyan-400",   border: "border-cyan-500/30",   color: "from-cyan-500/10 to-cyan-600/5" },
   { key: "start",   label: "Start Page",      icon: Globe,  accent: "text-green-400",  border: "border-green-500/30",  color: "from-green-500/10 to-green-600/5" },
   { key: "reasons", label: "More Reasons Page", icon: Quote,  accent: "text-pink-400",   border: "border-pink-500/30",   color: "from-pink-500/10 to-pink-600/5" },
+  { key: "stuck",   label: "Founder's Story Page", icon: BookOpen, accent: "text-orange-400", border: "border-orange-500/30", color: "from-orange-500/10 to-orange-600/5" },
   // Community category pages
   { key: "cat_athlete",      label: "Athlete",       icon: Users, accent: "text-green-400",  border: "border-green-500/30",  color: "from-green-500/10 to-green-600/5" },
   { key: "cat_graduate",     label: "Graduate",      icon: Users, accent: "text-blue-400",   border: "border-blue-500/30",   color: "from-blue-500/10 to-blue-600/5" },
