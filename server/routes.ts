@@ -1645,23 +1645,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       let sent = 0, skipped = 0, errors = 0;
 
+      // An explicit targetUserId means this is a manual test/preview send — force it
+      // through regardless of the production business rules (admin exclusion, days-remaining
+      // window, already-sent flag). Only a real bulk run (no targetUserId) applies those guards.
+      const isForcedTest = !!targetUserId;
+
       for (const u of allUsers as any[]) {
         try {
-          if (u.email === "track@sweetmo.io") { skipped++; continue; }
+          if (!isForcedTest && u.email === "track@sweetmo.io") { skipped++; continue; }
           if (!u.trialEndsAt) { skipped++; continue; }
 
           const endsAt = new Date(u.trialEndsAt);
-          if (endsAt.getTime() <= now.getTime()) { skipped++; continue; } // trial already over
+          if (!isForcedTest && endsAt.getTime() <= now.getTime()) { skipped++; continue; } // trial already over
 
-          const daysRemaining = Math.ceil((endsAt.getTime() - now.getTime()) / 86400000);
-          if (daysRemaining > thresholdDays) { skipped++; continue; }
+          const daysRemaining = Math.max(0, Math.ceil((endsAt.getTime() - now.getTime()) / 86400000));
+          if (!isForcedTest && daysRemaining > thresholdDays) { skipped++; continue; }
 
           // Skip users who already have an active paid subscription — trial is moot for them
           const sub = await storage.getSubscription(u.id);
-          if (sub?.status === "active" && sub.plan !== "free") { skipped++; continue; }
+          if (!isForcedTest && sub?.status === "active" && sub.plan !== "free") { skipped++; continue; }
 
           // Only send once per user, unless explicitly re-triggered for a single userId
-          if (!targetUserId && u.trialReminderSentAt) { skipped++; continue; }
+          if (!isForcedTest && u.trialReminderSentAt) { skipped++; continue; }
 
           await sendTrialEndingEmail({
             toEmail: u.email,
