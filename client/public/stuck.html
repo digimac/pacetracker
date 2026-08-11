@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stuck — The Origin Story of Sweet Momentum</title>
+  <meta name="description" content="The personal story behind Sweet Momentum — how getting stuck led to a daily practice, six metrics, and a book." />
+  <meta property="og:title" content="Stuck — The Origin Story of Sweet Momentum" />
+  <meta property="og:description" content="Before the app, before the book — there was a moment of being stuck. This is that story." />
+  <meta property="og:url" content="https://sweetmo.io/stuck" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800,900&display=swap" rel="stylesheet" />
+  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap" rel="stylesheet" />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0a;
+      --surface:   #111111;
+      --surface2:  #1a1a1a;
+      --border:    rgba(255,255,255,0.08);
+      --text:      #ffffff;
+      --muted:     rgba(255,255,255,0.5);
+      --accent:    #FF6E00;
+      --green:     #85FF00;
+      --radius:    14px;
+      --font-body: 'Cabinet Grotesk', system-ui, sans-serif;
+      --font-disp: 'Clash Display', 'Cabinet Grotesk', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Utilities ── */
+    .container { max-width: 800px; margin: 0 auto; padding: 0 24px; }
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent); background: rgba(255,110,0,0.12);
+      border: 1px solid rgba(255,110,0,0.3); border-radius: 100px;
+      padding: 5px 14px;
+    }
+    .tag.green { color: var(--green); background: rgba(133,255,0,0.1); border-color: rgba(133,255,0,0.25); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-body); font-size: 15px; font-weight: 800;
+      text-decoration: none; border-radius: var(--radius); cursor: pointer;
+      border: none; transition: all 0.15s ease; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #fff; padding: 14px 32px; }
+    .btn-primary:hover { background: #e55e00; transform: translateY(-1px); }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 13px 31px; }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.3); }
+
+    /* ── Placeholder marker (remove wrapper once real content is added) ── */
+    .placeholder {
+      border: 1px dashed rgba(255,110,0,0.4);
+      background: rgba(255,110,0,0.05);
+      border-radius: 10px;
+      padding: 16px 18px;
+      color: rgba(255,255,255,0.45);
+      font-style: italic;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .placeholder .ph-label {
+      display: block;
+      font-style: normal;
+      font-weight: 800;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px; background: rgba(10,10,10,0.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+    .nav-logo img { width: 30px; height: 30px; border-radius: 7px; }
+    .nav-logo span { font-family: var(--font-disp); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-link { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.15s; }
+    .nav-link:hover { color: var(--text); }
+    @media (max-width: 720px) {
+      .nav-links .nav-link:not(.always-show) { display: none; }
+    }
+
+    /* ── Hero ── */
+    #hero {
+      padding: 100px 0 60px;
+      text-align: center;
+      position: relative;
+    }
+    #hero::before {
+      content: '';
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(circle, rgba(255,110,0,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-avatar {
+      width: 88px; height: 88px; border-radius: 50%;
+      margin: 0 auto 28px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--accent), #d45a00);
+      font-family: var(--font-disp); font-weight: 900; font-size: 30px; color: #fff;
+      border: 3px solid rgba(255,110,0,0.25);
+      position: relative; z-index: 1;
+    }
+    #hero .tag { margin-bottom: 24px; position: relative; z-index: 1; }
+    #hero h1 {
+      font-family: var(--font-disp);
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      font-weight: 700; letter-spacing: -0.03em; line-height: 1.05;
+      margin-bottom: 20px; position: relative; z-index: 1;
+    }
+    #hero h1 em { font-style: normal; color: var(--accent); }
+    #hero .sub {
+      font-size: 18px; color: var(--muted); max-width: 560px; margin: 0 auto 12px;
+      position: relative; z-index: 1;
+    }
+    #hero .byline {
+      font-size: 13px; color: rgba(255,255,255,0.35); font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      margin-top: 20px; position: relative; z-index: 1;
+    }
+
+    /* ── Story sections ── */
+    .story-section { padding: 56px 0; border-top: 1px solid var(--border); }
+    .story-section .tag { margin-bottom: 18px; }
+    .story-section h2 {
+      font-family: var(--font-disp);
+      font-size: clamp(1.6rem, 3vw, 2.1rem);
+      font-weight: 700; letter-spacing: -0.02em; line-height: 1.15;
+      margin-bottom: 22px;
+    }
+    .story-section h2 em { font-style: normal; color: var(--green); }
+    .story-body p { font-size: 16px; color: rgba(255,255,255,0.75); line-height: 1.85; margin-bottom: 18px; }
+    .story-body p:last-child { margin-bottom: 0; }
+
+    /* ── Pull quote ── */
+    .pull-quote {
+      margin: 40px 0;
+      padding: 28px 30px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 14px 14px 0;
+      font-size: 19px; font-style: italic; line-height: 1.7;
+      color: rgba(255,255,255,0.9);
+    }
+    .pull-quote .attribution {
+      display: block; margin-top: 14px; font-style: normal;
+      font-size: 13px; font-weight: 800; color: var(--accent); letter-spacing: 0.03em;
+    }
+
+    /* ── Timeline ── */
+    .timeline { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+    .timeline-item {
+      display: grid; grid-template-columns: 90px 1fr; gap: 20px;
+      padding: 20px 0; border-top: 1px solid var(--border);
+    }
+    .timeline-item:first-child { border-top: none; padding-top: 0; }
+    .timeline-year { font-family: var(--font-disp); font-weight: 700; font-size: 15px; color: var(--green); }
+    .timeline-text h4 { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+    .timeline-text p { font-size: 14px; color: var(--muted); line-height: 1.6; margin: 0; }
+
+    /* ── CTA ── */
+    #final-cta {
+      padding: 72px 0;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      background: linear-gradient(180deg, transparent 0%, rgba(255,110,0,0.04) 100%);
+    }
+    #final-cta h2 {
+      font-family: var(--font-disp);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 700; letter-spacing: -0.03em; margin-bottom: 16px;
+    }
+    #final-cta p { font-size: 16px; color: var(--muted); max-width: 480px; margin: 0 auto 32px; }
+    #final-cta .ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── Footer ── */
+    footer { padding: 40px 0; border-top: 1px solid var(--border); }
+    .footer-inner { text-align: center; font-size: 13px; color: rgba(255,255,255,0.3); }
+    .footer-links { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+    .footer-links a { color: rgba(255,255,255,0.5); text-decoration: none; font-size: 13px; }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ── Fade-in ── */
+    .fade-in { opacity: 0; transform: translateY(16px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 600px) {
+      #hero { padding: 70px 0 40px; }
+      .story-section { padding: 40px 0; }
+      .timeline-item { grid-template-columns: 1fr; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <a href="/start" class="nav-logo">
+      <img src="/favicon.png" alt="Sweet Momentum" />
+      <span>SWEET MOMENTUM</span>
+    </a>
+    <div class="nav-links">
+      <a href="/book" class="nav-link">The Book</a>
+      <a href="/start" class="nav-link">Home</a>
+      <a href="/#/register" class="btn btn-primary always-show" style="font-size:13px;padding:9px 20px;">Get the App Free</a>
+    </div>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section id="hero" class="container">
+    <div class="hero-avatar">KM</div>
+    <div class="tag">The Origin Story</div>
+    <h1>How I Got <em>Stuck</em> —<br>And What Got Me Moving</h1>
+    <p class="sub">
+      Before the app, before the book, before any of the six metrics — there was a moment I got stuck. This is that story.
+    </p>
+    <p class="byline">Kevin McCarron · Founder, Sweet Momentum</p>
+  </section>
+
+  <!-- ── SECTION 1: The Setup ── -->
+  <section class="story-section container">
+    <div class="tag green">Part One</div>
+    <h2 class="fade-in">Where It <em>Started</em></h2>
+    <div class="story-body fade-in">
+      <div class="placeholder">
+        <span class="ph-label">Placeholder — Part One: The Setup</span>
+        [Insert the opening of your story here. What was life like before you got stuck? Set the scene — where you were, what you were working on, what the day-to-day looked like before the moment that changed things.]
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 2: The Moment of Stuck ── -->
+  <section class="story-section container">
+    <div class="tag">Part Two</div>
+    <h2 class="fade-in">The Moment I Got <em style="color:var(--accent);">Stuck</em></h2>
+    <div class="story-body fade-in">
+      <div class="placeholder">
+        <span class="ph-label">Placeholder — Part Two: The Turning Point</span>
+        [Insert the specific moment or period of being stuck here. What happened? What did it feel like? This is the emotional core of the story — be specific about the day, the feeling, or the realization.]
+      </div>
+    </div>
+
+    <div class="pull-quote fade-in">
+      <span class="ph-label" style="margin-bottom:10px;">Placeholder — Pull Quote</span>
+      "[Insert a short, personal quote here — one or two sentences in your own voice that capture the emotional turning point of the story.]"
+      <span class="attribution">— Kevin McCarron</span>
+    </div>
+  </section>
+
+  <!-- ── SECTION 3: The Candy Connection ── -->
+  <section class="story-section container">
+    <div class="tag green">Part Three</div>
+    <h2 class="fade-in">From <em>Candy</em> to Momentum</h2>
+    <div class="story-body fade-in">
+      <div class="placeholder">
+        <span class="ph-label">Placeholder — Part Three: The Nostalgia Thread</span>
+        [Insert the connection between childhood nostalgia, candy as a simple reward, and how that memory shaped the idea for daily devotion and momentum. This is the bridge between your personal history and the book's central theme.]
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 4: The Journey (Timeline) ── -->
+  <section class="story-section container">
+    <div class="tag">Part Four</div>
+    <h2 class="fade-in">The Journey</h2>
+    <div class="timeline fade-in">
+      <div class="timeline-item">
+        <div class="timeline-year">[Year]</div>
+        <div class="timeline-text">
+          <h4>[Milestone title placeholder]</h4>
+          <p>[Insert a short description of this milestone in the journey from stuck to Sweet Momentum.]</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">[Year]</div>
+        <div class="timeline-text">
+          <h4>[Milestone title placeholder]</h4>
+          <p>[Insert a short description of this milestone.]</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">[Year]</div>
+        <div class="timeline-text">
+          <h4>[Milestone title placeholder]</h4>
+          <p>[Insert a short description of this milestone.]</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">Today</div>
+        <div class="timeline-text">
+          <h4>[Where things stand now]</h4>
+          <p>[Insert where the app and book stand today, and what's next.]</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 5: What This Means Today ── -->
+  <section class="story-section container">
+    <div class="tag green">Part Five</div>
+    <h2 class="fade-in">What This Means <em>Today</em></h2>
+    <div class="story-body fade-in">
+      <div class="placeholder">
+        <span class="ph-label">Placeholder — Part Five: The Mission</span>
+        [Insert what Sweet Momentum means to you today, and what you hope it means to the people who use it. Tie it back to the six metrics and the daily practice — why this matters beyond just an app.]
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FINAL CTA ── -->
+  <section id="final-cta" class="container">
+    <h2 class="fade-in">Ready to Build Your Own Momentum?</h2>
+    <p class="fade-in">Read the book that started it all, or start tracking your six metrics today — free.</p>
+    <div class="ctas fade-in">
+      <a href="/book" class="btn btn-primary">Read the Book</a>
+      <a href="/#/register" class="btn btn-outline">Get the App Free</a>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div class="footer-inner container">
+      <div class="footer-links">
+        <a href="/start">Home</a>
+        <a href="/book">The Book</a>
+        <a href="/communities">Communities</a>
+        <a href="/reasons">Reasons</a>
+        <a href="/#/terms">Terms</a>
+        <a href="/#/privacy">Privacy</a>
+        <a href="/#/eula">EULA</a>
+      </div>
+      <p style="margin-bottom:8px;">Sweet Momentum, sweetmo.io, and the Pacetracker app are a service of Projection Creative LLC. Built in Louisville, KY.</p>
+      <p>© <span id="year"></span> Sweet Momentum · <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer" style="color:rgba(255,255,255,0.2);text-decoration:none;">Created with Perplexity Computer</a></p>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.fade-in').forEach(el => io.observe(el));
+  </script>
+
+</body>
+</html>

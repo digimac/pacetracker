@@ -32,6 +32,11 @@ export function serveStatic(app: Express) {
     res.sendFile(path.resolve(distPath, "book.html"));
   });
 
+  // Founder origin story page — clean URL
+  app.get("/stuck", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "stuck.html"));
+  });
+
   // Legal pages — clean URLs
   app.get("/terms",   (_req, res) => res.sendFile(path.resolve(distPath, "index.html")));
   app.get("/privacy", (_req, res) => res.sendFile(path.resolve(distPath, "index.html")));
