@@ -374,18 +374,26 @@ export default function SettingsPage() {
             <p className="text-[11px] text-muted-foreground/60">Optional. Include country code (e.g. +1 for US).</p>
             {/* SMS opt-in toggle — only shown when a phone number is set */}
             {profileForm.phone.trim() && (
-              <label className="flex items-center gap-2.5 cursor-pointer mt-1">
-                <input
-                  type="checkbox"
-                  checked={profileForm.smsOptIn}
-                  onChange={e => setProfileForm(f => ({ ...f, smsOptIn: e.target.checked }))}
-                  className="w-4 h-4 accent-primary rounded"
-                  data-testid="checkbox-sms-opt-in"
-                />
-                <span className="text-xs text-muted-foreground">
-                  Receive SMS reminders and notifications
-                </span>
-              </label>
+              <div className="space-y-1.5 mt-1">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={profileForm.smsOptIn}
+                    onChange={e => setProfileForm(f => ({ ...f, smsOptIn: e.target.checked }))}
+                    className="w-4 h-4 accent-primary rounded"
+                    data-testid="checkbox-sms-opt-in"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Receive SMS reminders and notifications
+                  </span>
+                </label>
+                <p className="text-[10px] text-muted-foreground/60 leading-snug pl-6">
+                  Msg frequency varies (typically 0–7/week). Msg & data rates may apply. Reply HELP for help, STOP to cancel. See our{" "}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms</a>
+                  {" "}and{" "}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</a>.
+                </p>
+              </div>
             )}
           </div>
 

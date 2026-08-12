@@ -32,6 +32,9 @@ You are responsible for maintaining the confidentiality of your account credenti
 SUBSCRIPTION AND BILLING
 Sweet Momentum offers free and paid subscription tiers. Paid subscriptions are billed in advance and are non-refundable except as required by law.
 
+SMS MESSAGING PROGRAM
+By providing your mobile phone number and opting in to SMS notifications, you consent to receive text messages from Sweet Momentum related to your account. You may opt in in two ways: (1) during account registration, by clicking "Yes, enable SMS notifications" on the SMS consent screen shown after you provide a phone number, or (2) at any time afterward from the Settings page, by enabling the "Receive SMS reminders and notifications" checkbox. Message types include daily score reminders, a one-time welcome message, and momentum partner activity alerts. Message frequency varies (typically 0-7 messages per week). Message and data rates may apply. You may opt out at any time by replying STOP to any message or by disabling SMS notifications in Settings. Reply HELP to any message for support, or contact track@sweetmo.io. See our Privacy Policy for details on how your mobile number is handled.
+
 INTELLECTUAL PROPERTY
 All content, features, and functionality of Sweet Momentum are the exclusive property of Sweet Momentum and its licensors.
 
@@ -63,6 +66,9 @@ We do not sell your personal information to third parties. We may share data wit
 
 YOUR RIGHTS
 You have the right to access, correct, or delete your personal information. You may request account deletion at any time by contacting us.
+
+SMS AND TEXT MESSAGING
+If you provide a mobile phone number and opt in to SMS notifications — either during account registration or later from your Settings page — Sweet Momentum will send you text messages related to your account, including daily score reminders, a one-time welcome message, and momentum partner activity alerts. Message frequency varies based on your activity and preferences (typically 0-7 messages per week). Message and data rates may apply. Your mobile phone number is never sold or shared with third parties for marketing purposes. You can opt out of SMS at any time by replying STOP to any message, or by disabling SMS notifications in Settings. Reply HELP for assistance or contact track@sweetmo.io.
 
 COOKIES
 We use cookies and similar tracking technologies to operate and improve the service. You can control cookie settings through your browser.

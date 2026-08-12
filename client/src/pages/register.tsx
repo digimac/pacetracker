@@ -407,7 +407,11 @@ export default function RegisterPage() {
               </div>
 
               <p className="text-[11px] text-muted-foreground/60 leading-snug">
-                Message and data rates may apply. You can turn off SMS notifications at any time from Settings. Reply STOP to any message to unsubscribe.
+                Message frequency varies (typically 0–7 msgs/week). Message and data rates may apply. Reply HELP for help, STOP to cancel. You can also turn off SMS notifications at any time from Settings.
+                {" "}By tapping "Yes, enable SMS notifications" you agree to our{" "}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms</a>
+                {" "}and{" "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</a>.
               </p>
 
               <div className="flex flex-col gap-2 pt-1">
