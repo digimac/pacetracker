@@ -1187,6 +1187,27 @@ function EmailTemplatesTab() {
   const [reminderDays, setReminderDays] = useState("3");
   const [smsTestPhone, setSmsTestPhone] = useState("");
   const [smsTestMsg, setSmsTestMsg] = useState("Test message from Sweet Momentum admin.");
+  const [checkingTwilio, setCheckingTwilio] = useState(false);
+  const [twilioStatus, setTwilioStatus] = useState<{ configured: boolean; fromNumber: string; accountSidMasked: string; verified: boolean; accountStatus: string | null; numberFound: boolean; numberSmsCapable: boolean | null; error: string | null } | null>(null);
+
+  async function checkTwilio() {
+    setCheckingTwilio(true);
+    try {
+      const res = await apiRequest("GET", "/api/admin/twilio-status");
+      const data = await res.json();
+      setTwilioStatus(data);
+      const ok = data.verified && data.numberFound && data.numberSmsCapable;
+      if (ok) {
+        toast({ title: "Twilio connection verified", description: `Account authenticated · ${data.fromNumber} is SMS-capable` });
+      } else {
+        toast({ title: data.configured ? "Twilio issue found" : "Twilio not configured", description: data.error || "Unknown error", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Check failed", description: e.message, variant: "destructive" });
+    } finally {
+      setCheckingTwilio(false);
+    }
+  }
   const [sendingSmsTest, setSendingSmsTest] = useState(false);
   const [sendingSmsReminders, setSendingSmsReminders] = useState(false);
   const [smsReminderDays, setSmsReminderDays] = useState("3");
@@ -1424,6 +1445,38 @@ function EmailTemplatesTab() {
       {/* SMS — separator */}
       <div className="border-t border-border pt-3">
         <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase mb-3">SMS (Twilio)</p>
+
+        {/* Twilio connection status */}
+        <div className={`border rounded-lg p-4 space-y-3 mb-3 ${twilioStatus?.verified && twilioStatus?.numberFound && twilioStatus?.numberSmsCapable ? "border-[#85FF00]/30 bg-[#85FF00]/5" : twilioStatus ? "border-red-500/30 bg-red-500/5" : "border-border"}`}>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold">Twilio Connection Status</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Checks credentials and confirms the from-number is SMS-capable. Does not send a message or cost anything. Use this first if SMS isn't going out.</p>
+            </div>
+            <Button size="sm" variant="outline" disabled={checkingTwilio} onClick={checkTwilio} data-testid="twilio-status-check-btn">
+              {checkingTwilio ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Check Twilio Connection"}
+            </Button>
+          </div>
+          {twilioStatus && (
+            <div className="text-xs space-y-1 pt-2 border-t border-border">
+              <div className="flex items-center gap-2">
+                <span className={`font-bold ${twilioStatus.verified && twilioStatus.numberFound && twilioStatus.numberSmsCapable ? "text-[#85FF00]" : "text-red-400"}`}>
+                  {twilioStatus.verified && twilioStatus.numberFound && twilioStatus.numberSmsCapable
+                    ? "✓ Connected · number is SMS-capable"
+                    : twilioStatus.verified
+                    ? "✗ Authenticated, but number issue found"
+                    : twilioStatus.configured
+                    ? "✗ Configured but authentication failed"
+                    : "✗ Not configured"}
+                </span>
+              </div>
+              <p className="text-muted-foreground font-mono">
+                Account: {twilioStatus.accountSidMasked}{twilioStatus.accountStatus ? ` (${twilioStatus.accountStatus})` : ""} · From: {twilioStatus.fromNumber}
+              </p>
+              {twilioStatus.error && <p className="text-red-400/80">{twilioStatus.error}</p>}
+            </div>
+          )}
+        </div>
 
         {/* Test SMS */}
         <div className="border border-border rounded-lg p-4 space-y-3 mb-3">

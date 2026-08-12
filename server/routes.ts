@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL, PRICE_GROUP_MONTHLY, PRICE_GROUP_ANNUAL } from "./billing";
 import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, sendTrialEndingEmail, createTransporter, checkSmtpStatus } from "./email";
-import { sendSms, sendDailyReminderSms, sendWelcomeSms } from "./sms";
+import { sendSms, sendSmsDetailed, sendDailyReminderSms, sendWelcomeSms, checkTwilioStatus } from "./sms";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
@@ -1743,9 +1743,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         phone: z.string().min(10),
         message: z.string().min(1).max(320),
       }).parse(req.body);
-      const ok = await sendSms(phone, message);
-      res.json({ ok, phone });
+      const result = await sendSmsDetailed(phone, message);
+      res.json({ ok: result.ok, phone, sid: result.sid, error: result.error });
     } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // Admin: check live Twilio connectivity/auth status (no message sent, no cost)
+  app.get("/api/admin/twilio-status", requireAdmin, async (req, res) => {
+    try {
+      const status = await checkTwilioStatus();
+      res.json(status);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // Admin: send inactivity SMS reminders (mirrors the email reminder logic)
