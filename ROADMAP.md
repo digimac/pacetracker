@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: August 12, 2026 (Twilio A2P 10DLC CTA rejection diagnosed and fixed)_
+_Last updated: August 12, 2026 (A2P 10DLC campaign resubmitted, awaiting TCR approval)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -65,10 +65,8 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - [ ] **Get Twilio SMS fully live — A2P 10DLC registration** — first campaign submission was rejected with Twilio error 30909 ("issues verifying the Call to Action"), meaning TCR reviewers could not verify the opt-in/consent flow from a public URL. Root cause found and fixed in code (Aug 12, 2026): the live Privacy Policy and Terms pages had zero SMS-specific disclosures (no mobile-number-not-shared statement, no message frequency, no rates disclosure), and the opt-in screens (register.tsx SMS step, settings.tsx SMS toggle) didn't link to those policies. All of that is now shipped (commit `8da1db9`). Remaining steps (done in the Twilio Console, not in code):
   - [ ] Confirm `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` are set on Render, then run "Check Twilio Connection" in admin to confirm the account authenticates and the number is SMS-capable
   - [ ] Verify sweetmo.io/privacy and sweetmo.io/terms are live with the new SMS disclosures (check admin → Pages → Privacy Policy / Terms & Conditions — if custom content was set there instead of the default, add the same SMS language manually in the admin editor, since custom content overrides the code default)
-  - [ ] Resubmit the campaign in Twilio Console → Messaging → Regulatory Compliance with a corrected `message_flow` field describing both opt-in paths, e.g.: "End users opt in by (1) providing their mobile number during account registration at sweetmo.io/#/register and tapping 'Yes, enable SMS notifications' on the consent screen, or (2) visiting sweetmo.io/#/settings and checking the 'Receive SMS reminders and notifications' box. Message types include daily score reminders, a one-time welcome message, and momentum partner activity alerts. Message frequency varies (typically 0-7 messages per week). Message and data rates may apply. Reply HELP for help, STOP to cancel. Terms and Conditions: sweetmo.io/terms. Privacy Policy: sweetmo.io/privacy (mobile numbers are not shared with third parties)."
-  - [ ] Ensure sample messages in the campaign match the actual message bodies in `sms.ts` verbatim (brand name + STOP language included)
-  - [ ] Wait for carrier approval (can take anywhere from same-day to ~1–2 weeks depending on campaign type and vetting)
-  - [ ] Once approved, send a real test via admin "Send Test SMS" and confirm delivery to an actual phone
+  - [x] Resubmitted the campaign with a corrected `message_flow` field describing both opt-in paths, sample messages, frequency, rates disclosure, and Terms/Privacy links (Aug 12, 2026) — **awaiting carrier/TCR approval status**
+  - [ ] Once a decision comes back: if approved, run a real test via admin "Send Test SMS" and confirm delivery to an actual phone. If rejected again, get the new rejection code/reason and re-diagnose (different codes point to different gaps — e.g. 30909 CTA vs. 30952 non-compliant use case vs. brand vetting issues).
 - [ ] **Chapter 1 PDF hookup** — `/book` page currently gates an email placeholder ("early access, PDF at launch"). Once the real PDF exists, wire it to Cloudinary and send it directly instead of the placeholder message.
 - [ ] **Fix stale book launch date** — `/book` banner still says "Available June 2026," which has passed. Needs a real date or generic "Coming Soon."
 
