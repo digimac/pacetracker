@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: August 11, 2026 (SMTP verified working; trial reminder test-send fixed)_
+_Last updated: August 12, 2026 (Twilio A2P 10DLC CTA rejection diagnosed and fixed)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `ec5adba` — fix trial-reminder test send to force-send with a specific userId
+- **Last shipped commit**: `8da1db9` — add SMS/A2P 10DLC required disclosures for Twilio campaign resubmission
 
 ---
 
@@ -62,11 +62,11 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 ## In Progress
 
-- [ ] **Get Twilio SMS fully live — A2P 10DLC registration** — credentials/number can check out fine in the new Twilio diagnostic while real texts still fail to deliver, because US carriers require A2P 10DLC registration before a standard Twilio number can send SMS to real phones. Steps (done in the Twilio Console, not in code):
+- [ ] **Get Twilio SMS fully live — A2P 10DLC registration** — first campaign submission was rejected with Twilio error 30909 ("issues verifying the Call to Action"), meaning TCR reviewers could not verify the opt-in/consent flow from a public URL. Root cause found and fixed in code (Aug 12, 2026): the live Privacy Policy and Terms pages had zero SMS-specific disclosures (no mobile-number-not-shared statement, no message frequency, no rates disclosure), and the opt-in screens (register.tsx SMS step, settings.tsx SMS toggle) didn't link to those policies. All of that is now shipped (commit `8da1db9`). Remaining steps (done in the Twilio Console, not in code):
   - [ ] Confirm `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` are set on Render, then run "Check Twilio Connection" in admin to confirm the account authenticates and the number is SMS-capable
-  - [ ] In Twilio Console → Messaging → Regulatory Compliance, register a **Brand** (business identity — legal name, EIN/Tax ID, address)
-  - [ ] Register a **Campaign** under that brand (use case: "Customer Care / Notifications" fits daily reminder + welcome texts), including sample message copy and opt-in/opt-out language (STOP/HELP already included in `sms.ts` message bodies)
-  - [ ] Link the `TWILIO_FROM_NUMBER` to the approved campaign
+  - [ ] Verify sweetmo.io/privacy and sweetmo.io/terms are live with the new SMS disclosures (check admin → Pages → Privacy Policy / Terms & Conditions — if custom content was set there instead of the default, add the same SMS language manually in the admin editor, since custom content overrides the code default)
+  - [ ] Resubmit the campaign in Twilio Console → Messaging → Regulatory Compliance with a corrected `message_flow` field describing both opt-in paths, e.g.: "End users opt in by (1) providing their mobile number during account registration at sweetmo.io/#/register and tapping 'Yes, enable SMS notifications' on the consent screen, or (2) visiting sweetmo.io/#/settings and checking the 'Receive SMS reminders and notifications' box. Message types include daily score reminders, a one-time welcome message, and momentum partner activity alerts. Message frequency varies (typically 0-7 messages per week). Message and data rates may apply. Reply HELP for help, STOP to cancel. Terms and Conditions: sweetmo.io/terms. Privacy Policy: sweetmo.io/privacy (mobile numbers are not shared with third parties)."
+  - [ ] Ensure sample messages in the campaign match the actual message bodies in `sms.ts` verbatim (brand name + STOP language included)
   - [ ] Wait for carrier approval (can take anywhere from same-day to ~1–2 weeks depending on campaign type and vetting)
   - [ ] Once approved, send a real test via admin "Send Test SMS" and confirm delivery to an actual phone
 - [ ] **Chapter 1 PDF hookup** — `/book` page currently gates an email placeholder ("early access, PDF at launch"). Once the real PDF exists, wire it to Cloudinary and send it directly instead of the placeholder message.
