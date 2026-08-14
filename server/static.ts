@@ -37,6 +37,11 @@ export function serveStatic(app: Express) {
     res.sendFile(path.resolve(distPath, "stuck.html"));
   });
 
+  // SMS Terms & Consent documentation — public, no login required (for A2P 10DLC verification)
+  app.get("/sms-terms", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "sms-terms.html"));
+  });
+
   // Legal pages — clean URLs
   app.get("/terms",   (_req, res) => res.sendFile(path.resolve(distPath, "index.html")));
   app.get("/privacy", (_req, res) => res.sendFile(path.resolve(distPath, "index.html")));

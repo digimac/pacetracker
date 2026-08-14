@@ -133,6 +133,7 @@ function LegalFooterLinks({ current }: { current: string }) {
           <a className="hover:text-foreground transition-colors">{l.label}</a>
         </Link>
       ))}
+      <a href="/sms-terms" className="hover:text-foreground transition-colors">SMS Terms &amp; Consent</a>
     </div>
   );
 }
