@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL, PRICE_GROUP_MONTHLY, PRICE_GROUP_ANNUAL } from "./billing";
 import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, sendTrialEndingEmail, createTransporter, checkSmtpStatus } from "./email";
-import { sendSms, sendSmsDetailed, sendDailyReminderSms, sendWelcomeSms, checkTwilioStatus } from "./sms";
+import { sendSms, sendSmsDetailed, sendDailyReminderSms, sendWelcomeSms, checkTwilioStatus, SMS_STATUS_CALLBACK_URL, recordSmsStatusEvent, getRecentSmsStatusEvents, KNOWN_ERROR_CODES } from "./sms";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
@@ -1771,12 +1771,44 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reply = "Sweet Momentum: We received your message. For help reply HELP, to unsubscribe reply STOP, or visit sweetmo.io/#/today to score your day.";
       }
 
-      const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${reply.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</Message></Response>`;
+      const escapedReply = reply.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const escapedCallback = SMS_STATUS_CALLBACK_URL.replace(/&/g, "&amp;");
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message statusCallback="${escapedCallback}">${escapedReply}</Message></Response>`;
       res.status(200).send(twiml);
     } catch (e: any) {
       console.error("[sms-inbound] error:", e?.message || e);
       res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
     }
+  });
+
+  // Public: Twilio delivery status callback — called for every outbound SMS we send
+  // (queued -> sent -> delivered/undelivered/failed). Configure automatically via the
+  // `statusCallback` param passed on every send; no manual Twilio Console setup needed
+  // for this one (unlike the inbound "A Message Comes In" webhook).
+  app.post("/api/sms/status", (req, res) => {
+    try {
+      const sid = String(req.body.MessageSid || req.body.SmsSid || "");
+      const to = String(req.body.To || "");
+      const status = String(req.body.MessageStatus || "");
+      const errorCode = req.body.ErrorCode ? String(req.body.ErrorCode) : null;
+      const errorMessage = errorCode ? (KNOWN_ERROR_CODES[errorCode] || `Twilio error ${errorCode}`) : null;
+
+      recordSmsStatusEvent({ sid, to, status, errorCode, errorMessage, receivedAt: new Date().toISOString() });
+
+      if (status === "undelivered" || status === "failed") {
+        console.warn(`[sms-status] ${status} for ${to} (SID ${sid})${errorCode ? ` — error ${errorCode}: ${errorMessage}` : ""}`);
+      } else {
+        console.log(`[sms-status] ${status} for ${to} (SID ${sid})`);
+      }
+    } catch (e: any) {
+      console.error("[sms-status] error:", e?.message || e);
+    }
+    res.status(200).send("");
+  });
+
+  // Admin: view recent SMS delivery status events (debugging aid, not persisted across restarts)
+  app.get("/api/admin/sms-status-log", requireAdmin, (req, res) => {
+    res.json({ events: getRecentSmsStatusEvents(), statusCallbackUrl: SMS_STATUS_CALLBACK_URL });
   });
 
   app.post("/api/admin/send-test-sms", requireAdmin, async (req, res) => {

@@ -1189,6 +1189,21 @@ function EmailTemplatesTab() {
   const [smsTestMsg, setSmsTestMsg] = useState("Test message from Sweet Momentum admin.");
   const [checkingTwilio, setCheckingTwilio] = useState(false);
   const [twilioStatus, setTwilioStatus] = useState<{ configured: boolean; fromNumber: string; accountSidMasked: string; verified: boolean; accountStatus: string | null; numberFound: boolean; numberSmsCapable: boolean | null; error: string | null } | null>(null);
+  const [loadingSmsLog, setLoadingSmsLog] = useState(false);
+  const [smsStatusLog, setSmsStatusLog] = useState<{ sid: string; to: string; status: string; errorCode: string | null; errorMessage: string | null; receivedAt: string }[]>([]);
+
+  async function loadSmsStatusLog() {
+    setLoadingSmsLog(true);
+    try {
+      const res = await apiRequest("GET", "/api/admin/sms-status-log");
+      const data = await res.json();
+      setSmsStatusLog(data.events || []);
+    } catch (e: any) {
+      toast({ title: "Failed to load log", description: e.message, variant: "destructive" });
+    } finally {
+      setLoadingSmsLog(false);
+    }
+  }
 
   async function checkTwilio() {
     setCheckingTwilio(true);
@@ -1474,6 +1489,37 @@ function EmailTemplatesTab() {
                 Account: {twilioStatus.accountSidMasked}{twilioStatus.accountStatus ? ` (${twilioStatus.accountStatus})` : ""} · From: {twilioStatus.fromNumber}
               </p>
               {twilioStatus.error && <p className="text-red-400/80">{twilioStatus.error}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Delivery status log */}
+        <div className="border border-border rounded-lg p-4 space-y-3 mb-3">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold">Delivery Status Log</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Live delivery status for every outbound SMS (queued → sent → delivered/undelivered/failed), reported by Twilio's status callback. Resets on server restart.</p>
+            </div>
+            <Button size="sm" variant="outline" disabled={loadingSmsLog} onClick={loadSmsStatusLog} data-testid="sms-status-log-refresh-btn">
+              {loadingSmsLog ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Refresh Log"}
+            </Button>
+          </div>
+          {smsStatusLog.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No delivery events recorded yet since the server last restarted. Send a test message or wait for a real one.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
+              {smsStatusLog.map((evt, i) => (
+                <div key={i} className={`text-xs border rounded-md p-2 ${evt.status === "delivered" ? "border-[#85FF00]/20 bg-[#85FF00]/5" : evt.status === "undelivered" || evt.status === "failed" ? "border-red-500/20 bg-red-500/5" : "border-border"}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`font-bold ${evt.status === "delivered" ? "text-[#85FF00]" : evt.status === "undelivered" || evt.status === "failed" ? "text-red-400" : "text-muted-foreground"}`}>
+                      {evt.status || "unknown"}
+                    </span>
+                    <span className="text-muted-foreground font-mono">{evt.to}</span>
+                    <span className="text-muted-foreground">{new Date(evt.receivedAt).toLocaleTimeString()}</span>
+                  </div>
+                  {evt.errorMessage && <p className="text-red-400/80 mt-1">{evt.errorCode}: {evt.errorMessage}</p>}
+                </div>
+              ))}
             </div>
           )}
         </div>

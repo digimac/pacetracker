@@ -15,6 +15,47 @@ function isConfigured(): boolean {
   return !!(ACCOUNT_SID && AUTH_TOKEN && FROM_NUMBER);
 }
 
+// The URL Twilio POSTs delivery status updates to for every outbound message we send
+// (queued -> sent -> delivered/undelivered/failed). Passed as `statusCallback` on every
+// create() call below.
+export const SMS_STATUS_CALLBACK_URL = `${APP_URL}/api/sms/status`;
+
+// Small in-memory ring buffer of the most recent delivery status events, so the admin
+// panel can show "why did this message fail" without needing a database table or a trip
+// to the Twilio Console. Not persisted across server restarts — that's fine, it's a
+// debugging aid, not a system of record (Twilio's own logs remain the source of truth).
+type SmsStatusEvent = {
+  sid: string;
+  to: string;
+  status: string; // queued | sent | delivered | undelivered | failed
+  errorCode: string | null;
+  errorMessage: string | null;
+  receivedAt: string;
+};
+const recentStatusEvents: SmsStatusEvent[] = [];
+const MAX_STATUS_EVENTS = 200;
+
+export function recordSmsStatusEvent(evt: SmsStatusEvent) {
+  recentStatusEvents.unshift(evt);
+  if (recentStatusEvents.length > MAX_STATUS_EVENTS) recentStatusEvents.length = MAX_STATUS_EVENTS;
+}
+
+export function getRecentSmsStatusEvents(): SmsStatusEvent[] {
+  return recentStatusEvents;
+}
+
+// Twilio error code -> plain-English explanation for the most common delivery failures,
+// shown in the admin panel so a rejection doesn't require a docs lookup every time.
+export const KNOWN_ERROR_CODES: Record<string, string> = {
+  "30034": "Message blocked — sent from a 10DLC number not yet attached to an approved A2P 10DLC campaign. Resolves automatically once the campaign is approved.",
+  "30003": "Unreachable destination handset (phone off or out of coverage).",
+  "30004": "Message blocked by the recipient's carrier or the recipient has opted out (replied STOP).",
+  "30005": "Unknown destination number — the number may be unallocated or invalid.",
+  "30006": "Landline or unreachable carrier — the number cannot receive SMS.",
+  "30007": "Message filtered by the carrier as spam/suspicious content.",
+  "30008": "Unknown delivery error from the carrier (no further detail provided).",
+};
+
 // Real connectivity + auth check against the Twilio API — does NOT send a message
 // (account fetch + number lookup are free/no-cost calls). Distinguishes
 // "credentials missing" from "credentials rejected" from "number not usable" from "working".
@@ -120,6 +161,7 @@ export async function sendSmsDetailed(to: string, body: string): Promise<{ ok: b
       to: toNorm,
       from: FROM_NUMBER!,
       body,
+      statusCallback: SMS_STATUS_CALLBACK_URL,
     });
     console.log(`[sms] Sent to ${toNorm} — SID: ${message.sid}`);
     return { ok: true, sid: message.sid };
