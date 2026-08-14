@@ -406,9 +406,8 @@ export default function RegisterPage() {
                 </ul>
               </div>
 
-              <p className="text-[11px] text-muted-foreground/60 leading-snug">
-                Message frequency varies (typically 0–7 msgs/week). Message and data rates may apply. Reply HELP for help, STOP to cancel. You can also turn off SMS notifications at any time from Settings.
-                {" "}By tapping "Yes, enable SMS notifications" you agree to our{" "}
+              <p className="text-[12px] text-muted-foreground leading-relaxed border border-border rounded-lg p-3 bg-muted/10" data-testid="text-sms-consent-disclosure">
+                By tapping "Yes, enable SMS notifications" below, you agree to receive recurring transactional text messages from Sweet Momentum (daily score reminders, a one-time welcome message, and momentum partner alerts) at the number provided. <strong className="text-foreground">Message frequency varies (typically 0–7 msgs/week).</strong> {" "}<strong className="text-foreground">Message and data rates may apply.</strong> {" "}<strong className="text-foreground">Reply STOP to cancel, HELP for help.</strong> Consent is not a condition of purchase. See our{" "}
                 <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms</a>
                 {" "}and{" "}
                 <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</a>.

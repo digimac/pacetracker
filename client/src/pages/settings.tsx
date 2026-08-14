@@ -374,25 +374,22 @@ export default function SettingsPage() {
             <p className="text-[11px] text-muted-foreground/60">Optional. Include country code (e.g. +1 for US).</p>
             {/* SMS opt-in toggle — only shown when a phone number is set */}
             {profileForm.phone.trim() && (
-              <div className="space-y-1.5 mt-1">
-                <label className="flex items-center gap-2.5 cursor-pointer">
+              <div className="mt-1 border border-border rounded-lg p-3 bg-muted/10">
+                <label className="flex items-start gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={profileForm.smsOptIn}
                     onChange={e => setProfileForm(f => ({ ...f, smsOptIn: e.target.checked }))}
-                    className="w-4 h-4 accent-primary rounded"
+                    className="w-4 h-4 mt-0.5 accent-primary rounded flex-shrink-0"
                     data-testid="checkbox-sms-opt-in"
                   />
-                  <span className="text-xs text-muted-foreground">
-                    Receive SMS reminders and notifications
+                  <span className="text-[12px] text-muted-foreground leading-relaxed" data-testid="text-sms-consent-disclosure">
+                    By checking this box, I agree to receive recurring transactional text messages from Sweet Momentum (daily score reminders, a one-time welcome message, and momentum partner alerts) at the number provided. <strong className="text-foreground">Message frequency varies (typically 0–7/week).</strong> {" "}<strong className="text-foreground">Message and data rates may apply.</strong> {" "}<strong className="text-foreground">Reply STOP to cancel, HELP for help.</strong> Consent is not a condition of purchase. See our{" "}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground" onClick={e => e.stopPropagation()}>Terms</a>
+                    {" "}and{" "}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground" onClick={e => e.stopPropagation()}>Privacy Policy</a>.
                   </span>
                 </label>
-                <p className="text-[10px] text-muted-foreground/60 leading-snug pl-6">
-                  Msg frequency varies (typically 0–7/week). Msg & data rates may apply. Reply HELP for help, STOP to cancel. See our{" "}
-                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms</a>
-                  {" "}and{" "}
-                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</a>.
-                </p>
               </div>
             )}
           </div>
