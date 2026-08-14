@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: August 12, 2026 (A2P 10DLC: second rejection diagnosed and fixed, ready to resubmit)_
+_Last updated: August 14, 2026 (A2P 10DLC: third rejection prep — public /sms-terms evidence page shipped)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `6f8b24a` — fix TCPA/CTIA consent language per Twilio error 30924
+- **Last shipped commit**: `67f9e06` — add public /sms-terms verification page for A2P 10DLC
 
 ---
 
@@ -67,8 +67,10 @@ This document tracks what's shipped, what's in progress, and what's planned for 
   - [ ] Verify sweetmo.io/privacy and sweetmo.io/terms are live with the new SMS disclosures (check admin → Pages → Privacy Policy / Terms & Conditions — if custom content was set there instead of the default, add the same SMS language manually in the admin editor, since custom content overrides the code default)
   - [x] Resubmitted the campaign with a corrected `message_flow` field describing both opt-in paths, sample messages, frequency, rates disclosure, and Terms/Privacy links (Aug 12, 2026, ~9:10am) — rejected again
   - [x] **Second rejection: Twilio error 30924** ("Missing or non-compliant consent agreement language") — the message type, frequency, rates, and opt-out instructions were split across two visually separate blocks on the opt-in screens instead of one unified statement immediately adjacent to the consent control, which is a hard TCPA/CTIA requirement. Fixed (Aug 12, 2026, commit `6f8b24a`): both `register.tsx` (SMS opt-in screen) and `settings.tsx` (SMS toggle) now show a single boxed consent statement combining message type + frequency + rates + opt-out + "consent not a condition of purchase" + Terms/Privacy links, directly beside the button/checkbox.
-  - [ ] Resubmit again with `message_flow` quoting the live consent text verbatim, e.g.: "End users opt in by (1) tapping 'Yes, enable SMS notifications' at sweetmo.io/#/register after seeing the disclosure: 'By tapping \"Yes, enable SMS notifications\" below, you agree to receive recurring transactional text messages from Sweet Momentum (daily score reminders, a one-time welcome message, and momentum partner alerts) at the number provided. Message frequency varies (typically 0-7 msgs/week). Message and data rates may apply. Reply STOP to cancel, HELP for help. Consent is not a condition of purchase.', or (2) checking the SMS box at sweetmo.io/#/settings next to the identical disclosure. Terms: sweetmo.io/terms. Privacy: sweetmo.io/privacy (mobile numbers not shared with third parties)."
-  - [ ] Once a decision comes back: if approved, run a real test via admin "Send Test SMS" and confirm delivery to an actual phone. If rejected again, get the new rejection code/reason and re-diagnose (different codes point to different gaps — e.g. 30909 CTA vs. 30924 consent language vs. brand vetting issues).
+  - [x] Resubmitted with the consolidated consent language — **rejected again with the identical 30924 message** (Aug 14, 2026). Same wording twice in a row despite fixed language pointed to a *reachability* problem, not a *wording* problem: the actual consent screens sit behind a multi-step registration wizard (account + phone number entry) that TCR reviewers/crawlers generally won't complete, so the compliant language was effectively unverifiable to them.
+  - [x] Built a standalone public verification page at **sweetmo.io/sms-terms** (no login/signup required) documenting the SMS program end-to-end: who sends messages, message types, frequency, cost, opt-out, and the exact verbatim consent text from both opt-in screens shown next to a mockup of the real button/checkbox. Linked from Terms & Privacy footers. (Aug 14, 2026, commit `67f9e06`)
+  - [ ] Resubmit a third time with `message_flow` pointing directly to this page, e.g.: "Full opt-in evidence, exact consent language, message types, frequency, and opt-out instructions are documented at https://sweetmo.io/sms-terms (no login required). End users opt in by (1) tapping 'Yes, enable SMS notifications' during registration at sweetmo.io/#/register, or (2) checking the SMS box at sweetmo.io/#/settings. Terms: sweetmo.io/terms. Privacy: sweetmo.io/privacy (mobile numbers not shared with third parties)." Also paste the sweetmo.io/sms-terms URL into any "opt-in evidence URL" or screenshot-upload field the campaign form provides, if separate from `message_flow`.
+  - [ ] Once a decision comes back: if approved, run a real test via admin "Send Test SMS" and confirm delivery to an actual phone. If rejected again, get the new rejection code/reason — a third identical 30924 would suggest contacting Twilio support directly, since the evidence would then be about as complete as it can be from the code side.
 - [ ] **Chapter 1 PDF hookup** — `/book` page currently gates an email placeholder ("early access, PDF at launch"). Once the real PDF exists, wire it to Cloudinary and send it directly instead of the placeholder message.
 - [ ] **Fix stale book launch date** — `/book` banner still says "Available June 2026," which has passed. Needs a real date or generic "Coming Soon."
 
