@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: August 14, 2026 (A2P 10DLC: root cause found — keyword opt-in webhook built)_
+_Last updated: August 14, 2026 (A2P 10DLC: root cause found; delivery status callback added)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `f20a3b7` — add working keyword opt-in/opt-out/help SMS webhook (JOIN/STOP/HELP)
+- **Last shipped commit**: `28c0f7b` — add Twilio delivery status callback + admin log
 
 ---
 
@@ -72,6 +72,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
   - [x] Resubmitted pointing `message_flow` at the `/sms-terms` page — **rejected a THIRD time, identical 30924 message** (Aug 14, 2026). Kevin shared the actual TCR campaign form field list, which revealed the real gap: the form has a dedicated **"List all opt-in keywords" / "What is the opt-in message?"** field set (separate from the free-text consent description), meaning the campaign registration declares a text-keyword opt-in path. The codebase had **zero inbound SMS handling** — nothing responded if a user texted the Twilio number — so the declared keyword flow was non-functional and unverifiable, explaining all three identical rejections regardless of website consent language quality.
   - [x] Built a real inbound SMS webhook (Aug 14, 2026, commit `f20a3b7`): `POST /api/sms/inbound` handles `JOIN/START/YES/SUBSCRIBE` (opts in + compliant confirmation reply), `STOP/STOPALL/UNSUBSCRIBE/CANCEL/END/QUIT` (opts out + confirmation), and `HELP/INFO` (support info reply). Matches inbound phone numbers to user accounts via new `storage.getUserByPhone()` and updates their `smsOptIn` flag. `/sms-terms` page updated with the exact auto-reply message text for all three keyword flows.
   - [x] Webhook configured in Twilio Console ("A Message Comes In" → `https://sweetmo.io/api/sms/inbound`, HTTP POST) and verified directly working via curl (returns 200 + correct TwiML reply). Texting JOIN/START from a real phone shows the inbound message logged in Twilio, but the auto-reply comes back **"Undelivered."** Since the webhook itself is confirmed functioning correctly, this is very likely Twilio's known A2P 10DLC outbound-blocking behavior (error 30034 family): inbound texts are received fine, but outbound replies from a 10DLC number without an approved campaign get silently blocked by carriers. This should self-resolve once the campaign is approved and the number is attached to it — not something further code can fix.
+  - [x] Added a delivery **status callback** (Aug 14, 2026, commit `28c0f7b`): every outbound SMS now reports queued/sent/delivered/undelivered/failed to `POST /api/sms/status`, logged with plain-English explanations for common Twilio error codes (30034 = pre-approval 10DLC blocking, 30003-30008 = various carrier issues). Visible in admin → SMS section → "Delivery Status Log" — no more guessing from the Twilio Console UI. No Twilio Console config needed for this one, it's passed automatically on every send.
   - [ ] Fill in the campaign form's keyword fields to match the code exactly: **Opt-in keywords**: `JOIN, START, YES, SUBSCRIBE`. **Opt-in message**: "Sweet Momentum: You're subscribed to SMS alerts (daily score reminders, welcome message, momentum partner alerts). Msg frequency varies (typically 0-7/week). Msg & data rates may apply. Reply HELP for help, STOP to cancel." **Opt-out keywords**: `STOP, STOPALL, UNSUBSCRIBE, CANCEL, END, QUIT`. **Opt-out message**: "Sweet Momentum: You have been unsubscribed and will no longer receive SMS messages. Reply JOIN to resubscribe at any time." **Help keywords**: `HELP, INFO`. **Help message**: "Sweet Momentum: Daily score reminders, welcome text, and momentum partner alerts. Msg frequency varies. Msg & data rates may apply. Reply STOP to cancel. Support: track@sweetmo.io or sweetmo.io/sms-terms."
   - [ ] For "How do end-users consent to receive messages?": describe all three paths together — website registration, website settings, and text keyword — quoting the consent language for each and linking sweetmo.io/sms-terms, sweetmo.io/terms, sweetmo.io/privacy.
   - [ ] Once approved: verify the webhook is live first, then run a real test via admin "Send Test SMS" and confirm delivery. If rejected a fourth time, escalate directly to Twilio support with the campaign SID — at that point the evidence is as complete as it can be from the code side and a human review is warranted.
