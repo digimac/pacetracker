@@ -25,6 +25,7 @@ export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByPhone(phone: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserProfile(userId: number, updates: { firstName?: string | null; lastName?: string | null; city?: string | null; region?: string | null; country?: string | null; category?: string | null; phone?: string | null; smsOptIn?: boolean }): Promise<User | undefined>;
@@ -139,6 +140,12 @@ export class DrizzleStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     const rows = await this.db.select().from(users).where(eq(users.username, username.toLowerCase())).limit(1);
     return rows[0];
+  }
+
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const digits = phone.replace(/\D/g, "").slice(-10); // match on last 10 digits
+    const all = await this.db.select().from(users);
+    return all.find(u => u.phone && u.phone.replace(/\D/g, "").slice(-10) === digits);
   }
 
   async createUser(user: InsertUser): Promise<User> {
@@ -704,6 +711,11 @@ export class MemStorage implements IStorage {
   }
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.usersMap.values()).find(u => u.username.toLowerCase() === username.toLowerCase());
+  }
+
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const digits = phone.replace(/\D/g, "").slice(-10);
+    return Array.from(this.usersMap.values()).find(u => u.phone && u.phone.replace(/\D/g, "").slice(-10) === digits);
   }
   async createUser(user: InsertUser): Promise<User> {
     const trialEndsAt = new Date();

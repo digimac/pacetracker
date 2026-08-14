@@ -1736,7 +1736,49 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  // Admin: send test SMS to a specific phone number
+  // Public: inbound SMS webhook — handles keyword opt-in/opt-out/help replies from Twilio.
+  // Configure this URL as the "A Message Comes In" webhook on the Twilio phone number
+  // (Twilio Console → Phone Numbers → your number → Messaging → Webhook, HTTP POST).
+  app.post("/api/sms/inbound", async (req, res) => {
+    res.set("Content-Type", "text/xml");
+    try {
+      const from = String(req.body.From || "");
+      const bodyRaw = String(req.body.Body || "");
+      const keyword = bodyRaw.trim().toUpperCase();
+
+      const OPT_IN_KEYWORDS = ["JOIN", "START", "YES", "SUBSCRIBE"];
+      const OPT_OUT_KEYWORDS = ["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"];
+      const HELP_KEYWORDS = ["HELP", "INFO"];
+
+      let reply = "";
+
+      if (OPT_IN_KEYWORDS.includes(keyword)) {
+        const user = await storage.getUserByPhone(from);
+        if (user) {
+          await storage.updateUserProfile(user.id, { smsOptIn: true, phone: user.phone });
+        }
+        reply = "Sweet Momentum: You're subscribed to SMS alerts (daily score reminders, welcome message, momentum partner alerts). Msg frequency varies (typically 0-7/week). Msg & data rates may apply. Reply HELP for help, STOP to cancel.";
+      } else if (OPT_OUT_KEYWORDS.includes(keyword)) {
+        const user = await storage.getUserByPhone(from);
+        if (user) {
+          await storage.updateUserProfile(user.id, { smsOptIn: false, phone: user.phone });
+        }
+        reply = "Sweet Momentum: You have been unsubscribed and will no longer receive SMS messages. Reply JOIN to resubscribe at any time.";
+      } else if (HELP_KEYWORDS.includes(keyword)) {
+        reply = "Sweet Momentum: Daily score reminders, welcome text, and momentum partner alerts. Msg frequency varies. Msg & data rates may apply. Reply STOP to cancel. Support: track@sweetmo.io or sweetmo.io/sms-terms.";
+      } else {
+        // Unrecognized message — acknowledge without creating message loops
+        reply = "Sweet Momentum: We received your message. For help reply HELP, to unsubscribe reply STOP, or visit sweetmo.io/#/today to score your day.";
+      }
+
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${reply.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</Message></Response>`;
+      res.status(200).send(twiml);
+    } catch (e: any) {
+      console.error("[sms-inbound] error:", e?.message || e);
+      res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+    }
+  });
+
   app.post("/api/admin/send-test-sms", requireAdmin, async (req, res) => {
     try {
       const { phone, message } = z.object({
