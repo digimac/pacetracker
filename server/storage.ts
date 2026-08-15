@@ -16,6 +16,7 @@ import {
   DayCounter, InsertDayCounter, dayCounters,
   MomentumGroup, InsertMomentumGroup, momentumGroups,
   GroupMember, InsertGroupMember, groupMembers,
+  BookResource, InsertBookResource, bookResources,
   users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections, emailTemplates,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
@@ -115,6 +116,12 @@ export interface IStorage {
   createGoalItem(data: InsertGoalItem): Promise<GoalItem>;
   updateGoalItem(id: number, userId: number, updates: Partial<Pick<GoalItem, 'text' | 'timeframe' | 'targetDate' | 'sortOrder' | 'completed'>>): Promise<GoalItem | undefined>;
   deleteGoalItem(id: number, userId: number): Promise<void>;
+
+  // Book Resources
+  getAllBookResources(): Promise<BookResource[]>;
+  createBookResource(data: InsertBookResource): Promise<BookResource>;
+  updateBookResource(id: number, updates: Partial<InsertBookResource>): Promise<BookResource | undefined>;
+  deleteBookResource(id: number): Promise<void>;
 }
 
 // ─── Drizzle (PostgreSQL) implementation ────────────────────────────────────
@@ -625,6 +632,22 @@ export class DrizzleStorage implements IStorage {
   async deleteGoalItem(id: number, userId: number): Promise<void> {
     await this.db.delete(goalItems).where(and(eq(goalItems.id, id), eq(goalItems.userId, userId)));
   }
+
+  // Book Resources
+  async getAllBookResources(): Promise<BookResource[]> {
+    return this.db.select().from(bookResources).orderBy(asc(bookResources.sortOrder), asc(bookResources.createdAt));
+  }
+  async createBookResource(data: InsertBookResource): Promise<BookResource> {
+    const [row] = await this.db.insert(bookResources).values(data).returning();
+    return row;
+  }
+  async updateBookResource(id: number, updates: Partial<InsertBookResource>): Promise<BookResource | undefined> {
+    const [row] = await this.db.update(bookResources).set(updates).where(eq(bookResources.id, id)).returning();
+    return row;
+  }
+  async deleteBookResource(id: number): Promise<void> {
+    await this.db.delete(bookResources).where(eq(bookResources.id, id));
+  }
 }
 
 // ─── In-memory fallback (used in local dev without DATABASE_URL) ─────────────
@@ -1042,6 +1065,28 @@ export class MemStorage implements IStorage {
   async deleteGoalItem(id: number, userId: number): Promise<void> {
     const g = this.goalItemsMap.get(id);
     if (g?.userId === userId) this.goalItemsMap.delete(id);
+  }
+
+  // Book Resources (in-memory)
+  private bookResourcesMap: Map<number, BookResource> = new Map();
+  private bookResourceIdCtr = 1;
+  async getAllBookResources(): Promise<BookResource[]> {
+    return Array.from(this.bookResourcesMap.values()).sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.getTime() - b.createdAt.getTime());
+  }
+  async createBookResource(data: InsertBookResource): Promise<BookResource> {
+    const row = { ...data, id: this.bookResourceIdCtr++, caption: data.caption ?? null, imageUrl: data.imageUrl ?? null, downloadUrl: data.downloadUrl ?? null, sortOrder: data.sortOrder ?? 0, createdAt: new Date() } as BookResource;
+    this.bookResourcesMap.set(row.id, row);
+    return row;
+  }
+  async updateBookResource(id: number, updates: Partial<InsertBookResource>): Promise<BookResource | undefined> {
+    const row = this.bookResourcesMap.get(id);
+    if (!row) return undefined;
+    const updated = { ...row, ...updates } as BookResource;
+    this.bookResourcesMap.set(id, updated);
+    return updated;
+  }
+  async deleteBookResource(id: number): Promise<void> {
+    this.bookResourcesMap.delete(id);
   }
 }
 

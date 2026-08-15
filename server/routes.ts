@@ -818,6 +818,86 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Public: book resources gallery (illustrations + downloadable charts) for /book/resources
+  app.get("/api/public/book-resources", async (req, res) => {
+    try {
+      const items = await storage.getAllBookResources();
+      res.json(items);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Admin: book resources CRUD
+  app.get("/api/admin/book-resources", requireAdmin, async (_req, res) => {
+    try {
+      const items = await storage.getAllBookResources();
+      res.json(items);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/admin/book-resources", requireAdmin, async (req, res) => {
+    try {
+      const schema = z.object({
+        kind: z.enum(["illustration", "download"]).default("illustration"),
+        title: z.string().min(1).max(150),
+        caption: z.string().max(500).optional().nullable(),
+        imageUrl: z.string().url().optional().nullable().or(z.literal("")),
+        downloadUrl: z.string().url().optional().nullable().or(z.literal("")),
+        sortOrder: z.number().int().optional(),
+      });
+      const data = schema.parse(req.body);
+      const created = await storage.createBookResource({
+        kind: data.kind,
+        title: data.title,
+        caption: data.caption || null,
+        imageUrl: data.imageUrl || null,
+        downloadUrl: data.downloadUrl || null,
+        sortOrder: data.sortOrder ?? 0,
+      });
+      res.json(created);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/admin/book-resources/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const schema = z.object({
+        kind: z.enum(["illustration", "download"]).optional(),
+        title: z.string().min(1).max(150).optional(),
+        caption: z.string().max(500).optional().nullable(),
+        imageUrl: z.string().url().optional().nullable().or(z.literal("")),
+        downloadUrl: z.string().url().optional().nullable().or(z.literal("")),
+        sortOrder: z.number().int().optional(),
+      });
+      const data = schema.parse(req.body);
+      const updated = await storage.updateBookResource(id, {
+        ...data,
+        caption: data.caption === undefined ? undefined : (data.caption || null),
+        imageUrl: data.imageUrl === undefined ? undefined : (data.imageUrl || null),
+        downloadUrl: data.downloadUrl === undefined ? undefined : (data.downloadUrl || null),
+      });
+      if (!updated) return res.status(404).json({ error: "Not found" });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  app.delete("/api/admin/book-resources/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      await storage.deleteBookResource(id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   // Book chapter download — public endpoint, sends Chapter 1 PDF via email
   app.post("/api/book/chapter-download", async (req, res) => {
     try {

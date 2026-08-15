@@ -181,6 +181,17 @@ app.use((req, res, next) => {
         "joined_at" timestamp
       );
 
+      CREATE TABLE IF NOT EXISTS "book_resources" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "kind" text NOT NULL DEFAULT 'illustration',
+        "title" text NOT NULL,
+        "caption" text,
+        "image_url" text,
+        "download_url" text,
+        "sort_order" integer NOT NULL DEFAULT 0,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS "day_counters" (
         "id" serial PRIMARY KEY NOT NULL,
         "user_id" integer NOT NULL,

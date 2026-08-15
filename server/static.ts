@@ -32,6 +32,11 @@ export function serveStatic(app: Express) {
     res.sendFile(path.resolve(distPath, "book.html"));
   });
 
+  // Book resources gallery — nested under /book
+  app.get("/book/resources", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "book-resources.html"));
+  });
+
   // Founder origin story page — clean URL
   app.get("/stuck", (_req, res) => {
     res.sendFile(path.resolve(distPath, "stuck.html"));

@@ -279,3 +279,20 @@ export type MomentumGroup = typeof momentumGroups.$inferSelect;
 export const insertGroupMemberSchema = createInsertSchema(groupMembers).omit({ id: true, invitedAt: true });
 export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
 export type GroupMember = typeof groupMembers.$inferSelect;
+
+// Book Resources — admin-managed gallery of illustrations/charts and downloadable
+// resources shown at /book/resources, nested under the book companion page.
+export const bookResources = pgTable("book_resources", {
+  id: serial("id").primaryKey(),
+  kind: text("kind").notNull().default("illustration"), // "illustration" | "download"
+  title: text("title").notNull(),
+  caption: text("caption"),
+  imageUrl: text("image_url"),        // shown for both kinds — preview/thumbnail for downloads too
+  downloadUrl: text("download_url"),  // set when kind = "download" (PDF/asset link)
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertBookResourceSchema = createInsertSchema(bookResources).omit({ id: true, createdAt: true });
+export type InsertBookResource = z.infer<typeof insertBookResourceSchema>;
+export type BookResource = typeof bookResources.$inferSelect;

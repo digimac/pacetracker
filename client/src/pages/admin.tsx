@@ -1770,7 +1770,7 @@ export default function AdminPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"content" | "members" | "pages" | "emails" | "seo">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "members" | "pages" | "emails" | "seo" | "resources">("content");
   const [savingPageKey, setSavingPageKey] = useState<string | null>(null);
 
   // Redirect if not admin
@@ -1847,6 +1847,7 @@ export default function AdminPage() {
         {([
           { key: "content", label: "Metrics", icon: Settings2 },
           { key: "pages",   label: "Pages",          icon: FileText },
+          { key: "resources", label: "Resources",    icon: ImageIcon },
           { key: "members", label: "Members",         icon: Users },
           { key: "emails",  label: "Emails",          icon: Mail },
           { key: "seo",     label: "SEO",             icon: Search },
@@ -1932,6 +1933,346 @@ export default function AdminPage() {
       {activeTab === "emails" && <EmailTemplatesTab />}
 
       {activeTab === "seo" && <SeoTab />}
+
+      {activeTab === "resources" && <BookResourcesTab />}
     </div>
+  );
+}
+
+// ─── Book Resources Tab ──────────────────────────────────────────────────────
+
+type BookResource = {
+  id: number;
+  kind: "illustration" | "download";
+  title: string;
+  caption: string | null;
+  imageUrl: string | null;
+  downloadUrl: string | null;
+  sortOrder: number;
+  createdAt: string;
+};
+
+function BookResourceEditor({
+  item,
+  onSave,
+  onDelete,
+  isSaving,
+  isDeleting,
+}: {
+  item: BookResource;
+  onSave: (id: number, updates: Partial<BookResource>) => void;
+  onDelete: (id: number) => void;
+  isSaving: boolean;
+  isDeleting: boolean;
+}) {
+  const [kind, setKind] = useState<"illustration" | "download">(item.kind);
+  const [title, setTitle] = useState(item.title);
+  const [caption, setCaption] = useState(item.caption || "");
+  const [imageUrl, setImageUrl] = useState(item.imageUrl || "");
+  const [downloadUrl, setDownloadUrl] = useState(item.downloadUrl || "");
+  const [expanded, setExpanded] = useState(false);
+
+  const dirty =
+    kind !== item.kind ||
+    title !== item.title ||
+    caption !== (item.caption || "") ||
+    imageUrl !== (item.imageUrl || "") ||
+    downloadUrl !== (item.downloadUrl || "");
+
+  return (
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center justify-between gap-3 p-3 text-left"
+        data-testid={`resource-toggle-${item.id}`}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-md bg-muted overflow-hidden flex items-center justify-center shrink-0">
+            {imageUrl ? (
+              <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <ImageIcon className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-bold truncate">{title || "Untitled resource"}</div>
+            <Badge variant="outline" className="text-[10px] mt-0.5">
+              {kind === "download" ? "Download" : "Illustration"}
+            </Badge>
+          </div>
+        </div>
+        {expanded ? <ChevronUp className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
+      </button>
+
+      {expanded && (
+        <div className="p-3 pt-0 space-y-3 border-t border-border">
+          <div className="flex gap-2 pt-3">
+            <Button
+              type="button"
+              size="sm"
+              variant={kind === "illustration" ? "default" : "outline"}
+              onClick={() => setKind("illustration")}
+              className="flex-1 text-xs"
+              data-testid={`resource-kind-illustration-${item.id}`}
+            >
+              🖼️ Illustration
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={kind === "download" ? "default" : "outline"}
+              onClick={() => setKind("download")}
+              className="flex-1 text-xs"
+              data-testid={`resource-kind-download-${item.id}`}
+            >
+              📄 Download
+            </Button>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1 block">Title</label>
+            <Input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="e.g. The Six Metrics Wheel"
+              data-testid={`resource-title-${item.id}`}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1 block">Caption</label>
+            <Textarea
+              value={caption}
+              onChange={e => setCaption(e.target.value)}
+              placeholder="Short description shown under the image"
+              rows={2}
+              data-testid={`resource-caption-${item.id}`}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1 block">
+              {kind === "download" ? "Preview Image" : "Image"}
+            </label>
+            <CloudinaryUpload
+              value={imageUrl}
+              onChange={setImageUrl}
+              testId={`resource-image-${item.id}`}
+              hint={kind === "download" ? "Optional thumbnail shown on the card." : "The illustration or chart itself."}
+            />
+          </div>
+
+          {kind === "download" && (
+            <div>
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1 block">Download File</label>
+              <CloudinaryUpload
+                value={downloadUrl}
+                onChange={setDownloadUrl}
+                accept="application/pdf,image/*"
+                showPreview={false}
+                testId={`resource-download-${item.id}`}
+                hint="Upload the PDF or asset readers will download."
+              />
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive gap-1.5"
+              onClick={() => onDelete(item.id)}
+              disabled={isDeleting}
+              data-testid={`resource-delete-${item.id}`}
+            >
+              {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              Remove
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="gap-1.5"
+              disabled={!dirty || isSaving}
+              onClick={() => onSave(item.id, { kind, title, caption: caption || null, imageUrl: imageUrl || null, downloadUrl: downloadUrl || null })}
+              data-testid={`resource-save-${item.id}`}
+            >
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              Save
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BookResourcesTab() {
+  const { toast } = useToast();
+  const [savingId, setSavingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [reorderingId, setReorderingId] = useState<number | null>(null);
+
+  const { data: items = [], isLoading } = useQuery<BookResource[]>({
+    queryKey: ["/api/admin/book-resources"],
+    queryFn: () => apiRequest("GET", "/api/admin/book-resources").then(r => r.json()),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (kind: "illustration" | "download") =>
+      apiRequest("POST", "/api/admin/book-resources", {
+        kind,
+        title: kind === "download" ? "New Download" : "New Illustration",
+        sortOrder: items.length,
+      }).then(r => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/book-resources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/book-resources"] });
+      toast({ title: "Added", description: "New resource created — expand it to fill in details." });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message || "Could not create resource", variant: "destructive" }),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: Partial<BookResource> }) => {
+      setSavingId(id);
+      return apiRequest("PUT", `/api/admin/book-resources/${id}`, updates).then(r => r.json());
+    },
+    onSuccess: () => {
+      setSavingId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/book-resources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/book-resources"] });
+      toast({ title: "Saved", description: "Resource updated." });
+    },
+    onError: (e: any) => {
+      setSavingId(null);
+      toast({ title: "Error", description: e.message || "Save failed", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => {
+      setDeletingId(id);
+      return apiRequest("DELETE", `/api/admin/book-resources/${id}`).then(r => r.json());
+    },
+    onSuccess: () => {
+      setDeletingId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/book-resources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/book-resources"] });
+      toast({ title: "Removed", description: "Resource deleted." });
+    },
+    onError: (e: any) => {
+      setDeletingId(null);
+      toast({ title: "Error", description: e.message || "Delete failed", variant: "destructive" });
+    },
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: ({ id, sortOrder }: { id: number; sortOrder: number }) => {
+      setReorderingId(id);
+      return apiRequest("PUT", `/api/admin/book-resources/${id}`, { sortOrder }).then(r => r.json());
+    },
+    onSuccess: () => {
+      setReorderingId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/book-resources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/book-resources"] });
+    },
+    onError: (e: any) => {
+      setReorderingId(null);
+      toast({ title: "Error", description: e.message || "Reorder failed", variant: "destructive" });
+    },
+  });
+
+  function moveItem(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= items.length) return;
+    const a = items[index];
+    const b = items[target];
+    reorderMutation.mutate({ id: a.id, sortOrder: b.sortOrder });
+    reorderMutation.mutate({ id: b.id, sortOrder: a.sortOrder });
+  }
+
+  return (
+    <>
+      <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+        Manage the illustrations and downloadable resources shown at{" "}
+        <a href="/book/resources" target="_blank" rel="noopener noreferrer" className="underline">
+          sweetmo.io/book/resources
+        </a>
+        . Reorder with the arrows — the top item shows first.
+      </p>
+
+      <div className="flex gap-2 mb-4">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="gap-1.5 flex-1"
+          onClick={() => createMutation.mutate("illustration")}
+          disabled={createMutation.isPending}
+          data-testid="add-illustration-btn"
+        >
+          <Plus className="w-3.5 h-3.5" /> Add Illustration
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="gap-1.5 flex-1"
+          onClick={() => createMutation.mutate("download")}
+          disabled={createMutation.isPending}
+          data-testid="add-download-btn"
+        >
+          <Plus className="w-3.5 h-3.5" /> Add Download
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : items.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground text-sm">
+          No resources yet — add your first illustration or download above.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {items.map((item, index) => (
+            <div key={item.id} className="flex items-start gap-2">
+              <div className="flex flex-col gap-1 pt-3">
+                <button
+                  type="button"
+                  onClick={() => moveItem(index, -1)}
+                  disabled={index === 0 || reorderingId !== null}
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  data-testid={`resource-up-${item.id}`}
+                >
+                  <ArrowUp className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveItem(index, 1)}
+                  disabled={index === items.length - 1 || reorderingId !== null}
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  data-testid={`resource-down-${item.id}`}
+                >
+                  <ArrowDown className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="flex-1 min-w-0">
+                <BookResourceEditor
+                  item={item}
+                  onSave={(id, updates) => saveMutation.mutate({ id, updates })}
+                  onDelete={id => deleteMutation.mutate(id)}
+                  isSaving={savingId === item.id && saveMutation.isPending}
+                  isDeleting={deletingId === item.id && deleteMutation.isPending}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
