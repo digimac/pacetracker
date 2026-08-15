@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: August 15, 2026 (candy icons + standalone /metrics/:key pages shipped)_
+_Last updated: August 15, 2026 (book resources page shipped)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `5843647` — add candy icons per core metric + standalone /metrics/:key summary pages
+- **Last shipped commit**: `fd8b788` — add /book/resources page: illustrations + downloadable book resources
 
 ---
 
@@ -53,6 +53,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - `/book` — book companion landing page (hero, 6-metrics breakdown, personalized app screens, Free vs Pro pricing, Chapter 1 email-gated download)
 - `/stuck` — founder origin story page template (hero image banner, admin-uploadable via Cloudinary in Admin → Pages → Founder's Story Page; 5 structured story sections + timeline, all placeholder text pending Kevin's actual story). Linked from `/book` and `/start` nav/footer.
 - `/metrics/:key` (time, goal, team, task, view, pace) — standalone editorial pages for each core metric: candy icon, short story, pull quote, CTA to buy the book or get the app. No daily score data shown, by design — these explain what each metric *means*, not how you're performing. One shared template pulls live content from the admin-editable Metrics tab; a metric switcher strip lets visitors jump between all 6. Linked from the in-app metric info modal ("Read more about X →"). All 6 URLs in sitemap.xml.
+- `/book/resources` — gallery of book illustrations/charts and downloadable resources, nested under `/book`. Admin-managed via a new "Resources" tab (add/reorder/delete, upload image + optional download file per item via Cloudinary). Kind filter (Illustration vs Download) auto-appears once both types exist. Linked from `/book` nav and an in-page teaser card; breadcrumb back to `/book`. Empty state shown until Kevin uploads the first resources.
 
 **Compliance/infra**
 - Terms, Privacy Policy, EULA pages
@@ -90,6 +91,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - [ ] Reduce signup friction: personalized onboarding questions, contextual tooltips, embedded instructional clips
 - [ ] Decide primary acquisition channel to build content around (paid social vs. organic vs. email)
 - [ ] Wire the candy icon into Dashboard and History views too (currently only shows on the Today page's MetricCard — Kevin is sourcing the actual icon artwork to upload via admin)
+- [ ] Populate `/book/resources` with real content — page and admin manager are live but empty; add the actual illustrations/charts from the book and any downloadable resources via Admin → Resources
 
 ---
 
