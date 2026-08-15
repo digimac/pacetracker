@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: August 14, 2026 (A2P 10DLC: confirmed pending carrier approval, code side fully verified)_
+_Last updated: August 15, 2026 (candy icons + standalone /metrics/:key pages shipped)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `28c0f7b` — add Twilio delivery status callback + admin log
+- **Last shipped commit**: `5843647` — add candy icons per core metric + standalone /metrics/:key summary pages
 
 ---
 
@@ -43,6 +43,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **6-month rolling free Pro trial** — every new signup gets full Pro access free for 6 months from their join date (rolling, per-user). Existing users were backdated to a fresh 6-month trial from launch day. Paid subscribers are unaffected. Trial countdown banner shown on Dashboard, Settings, and Subscribe page. Admin can send a day-45-before-expiry reminder email (test or bulk) from the Emails tab, with an editable template ("Trial Ending Reminder"). Admin member list shows trial status and days remaining. Test send confirmed working end-to-end (Aug 11, 2026).
 - **SMTP diagnostics** — admin Emails tab has a "Check SMTP Connection" button that runs a live `transporter.verify()` against the mail server (no email sent) and reports configured/verified/error state distinctly. Fixed a bug where `sendPasswordResetEmail` had no try/catch (unlike every other send function). Password reset delivery confirmed working (Aug 11, 2026).
 - **Twilio diagnostics** — admin SMS section has a "Check Twilio Connection" button that authenticates against the Twilio API and confirms the from-number is SMS-capable, without sending a message or incurring cost. Distinguishes missing env vars, bad credentials, number not found, and number not SMS-capable. Test-SMS route now surfaces the real Twilio error message instead of a bare pass/fail (Aug 11, 2026).
+- **Candy icons per core metric** — admin can upload a small candy icon per metric (TIME, GOAL, TEAM, TASK, VIEW, PACE) via Cloudinary in the Metrics tab. Shows next to the metric label on the Today page's scoring card when set; falls back gracefully (no icon) otherwise. Ties the UI to the book's nostalgia/candy theme (Aug 15, 2026).
 
 **Marketing pages**
 - `/start` — public marketing landing page
@@ -51,6 +52,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - `/story` — generic "Why Momentum" philosophy page (admin-editable)
 - `/book` — book companion landing page (hero, 6-metrics breakdown, personalized app screens, Free vs Pro pricing, Chapter 1 email-gated download)
 - `/stuck` — founder origin story page template (hero image banner, admin-uploadable via Cloudinary in Admin → Pages → Founder's Story Page; 5 structured story sections + timeline, all placeholder text pending Kevin's actual story). Linked from `/book` and `/start` nav/footer.
+- `/metrics/:key` (time, goal, team, task, view, pace) — standalone editorial pages for each core metric: candy icon, short story, pull quote, CTA to buy the book or get the app. No daily score data shown, by design — these explain what each metric *means*, not how you're performing. One shared template pulls live content from the admin-editable Metrics tab; a metric switcher strip lets visitors jump between all 6. Linked from the in-app metric info modal ("Read more about X →"). All 6 URLs in sitemap.xml.
 
 **Compliance/infra**
 - Terms, Privacy Policy, EULA pages
@@ -87,7 +89,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - [ ] Warehouse "content lab" initiatives (from May 2026 discussion): signup-focused short ad videos (3–5), 1–2 longer brand videos, onboarding/UI footage library, guided-audio clips tied to Weekly/Monthly/Quarterly framing
 - [ ] Reduce signup friction: personalized onboarding questions, contextual tooltips, embedded instructional clips
 - [ ] Decide primary acquisition channel to build content around (paid social vs. organic vs. email)
-- [ ] **Candy icon per core metric** — associate a distinct candy icon/illustration with each of the 6 core metrics (TIME, GOAL, TEAM, TASK, VIEW, PACE), tying the UI visually to the book's nostalgia/candy-as-reward theme. Needs icon set sourced or commissioned, then wired into the metric rows on Today, Dashboard, History, and admin metrics config.
+- [ ] Wire the candy icon into Dashboard and History views too (currently only shows on the Today page's MetricCard — Kevin is sourcing the actual icon artwork to upload via admin)
 
 ---
 
