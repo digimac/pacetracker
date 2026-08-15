@@ -39,6 +39,7 @@ function MetricCard({
   showInfo,
   isCustom,
   streak,
+  candyIconUrl,
 }: {
   metricKey: string;
   label: string;
@@ -49,6 +50,7 @@ function MetricCard({
   showInfo?: boolean;
   isCustom?: boolean;
   streak?: number;
+  candyIconUrl?: string | null;
 }) {
   const isSuccess = rating === "success";
   const isSetback = rating === "setback";
@@ -102,6 +104,9 @@ function MetricCard({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
+            {candyIconUrl && (
+              <img src={candyIconUrl} alt="" className="w-5 h-5 rounded object-cover flex-shrink-0" />
+            )}
             <span className={labelClass} style={isSuccess && isCustom ? { color: CUSTOM_ORANGE } : undefined}>
               {label}
             </span>
@@ -370,6 +375,7 @@ export default function TodayPage() {
                 showInfo={true}
                 onInfo={() => setActiveModal({ key: m.key, label: m.label })}
                 streak={streaks[m.key]}
+                candyIconUrl={(metricContentMap[m.key] as any)?.candyIconUrl}
               />
               {m.key === "GOAL" && (
                 <div className="mt-1.5 ml-1">

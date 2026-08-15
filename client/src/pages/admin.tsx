@@ -400,7 +400,7 @@ interface MetricEditorProps {
   accent: string;
   border: string;
   existing: MetricContent | undefined;
-  onSave: (data: { metricKey: string; subtext: string; prompt: string; story: string; imageUrl: string; quote: string; quoteAuthor: string }) => void;
+  onSave: (data: { metricKey: string; subtext: string; prompt: string; story: string; imageUrl: string; quote: string; quoteAuthor: string; candyIconUrl: string }) => void;
   isSaving: boolean;
 }
 
@@ -412,6 +412,7 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
   const [imageUrl, setImageUrl] = useState(existing?.imageUrl || "");
   const [quote, setQuote] = useState(existing?.quote || "");
   const [quoteAuthor, setQuoteAuthor] = useState(existing?.quoteAuthor || "");
+  const [candyIconUrl, setCandyIconUrl] = useState((existing as any)?.candyIconUrl || "");
 
   // Sync when existing content loads
   useEffect(() => {
@@ -421,6 +422,7 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
     setImageUrl(existing?.imageUrl || "");
     setQuote(existing?.quote || "");
     setQuoteAuthor(existing?.quoteAuthor || "");
+    setCandyIconUrl((existing as any)?.candyIconUrl || "");
   }, [existing]);
 
   const hasContent = !!(existing?.story || existing?.imageUrl || existing?.quote || existing?.subtext || (existing as any)?.prompt);
@@ -482,6 +484,20 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
               data-testid={`input-prompt-${metricKey.toLowerCase()}`}
             />
             <p className="text-[10px] text-muted-foreground mt-1 text-right">{prompt.length}/300</p>
+          </div>
+
+          {/* Candy Icon */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5">
+              🍬 Candy Icon
+            </label>
+            <p className="text-[10px] text-muted-foreground/70 mb-1.5">Small icon shown next to {label} on Today, Dashboard, and History. Square images work best. If not set, {label} shows without an icon.</p>
+            <CloudinaryUpload
+              value={candyIconUrl}
+              onChange={setCandyIconUrl}
+              testId={`metric-candy-icon-${metricKey.toLowerCase()}`}
+              hint="Square candy icon, e.g. a small illustrated piece of candy representing this metric."
+            />
           </div>
 
           {/* Story */}
@@ -547,7 +563,7 @@ function MetricEditor({ metricKey, label, color, accent, border, existing, onSav
 
           {/* Save button */}
           <Button
-            onClick={() => onSave({ metricKey, subtext, prompt, story, imageUrl, quote, quoteAuthor })}
+            onClick={() => onSave({ metricKey, subtext, prompt, story, imageUrl, quote, quoteAuthor, candyIconUrl })}
             disabled={isSaving}
             className="w-full"
             data-testid={`btn-save-${metricKey.toLowerCase()}`}

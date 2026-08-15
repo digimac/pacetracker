@@ -42,6 +42,11 @@ export function serveStatic(app: Express) {
     res.sendFile(path.resolve(distPath, "sms-terms.html"));
   });
 
+  // Standalone core-metric pages — one shared template, keyed by URL segment
+  app.get("/metrics/:key", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "metrics.html"));
+  });
+
   // Legal pages — clean URLs
   app.get("/terms",   (_req, res) => res.sendFile(path.resolve(distPath, "index.html")));
   app.get("/privacy", (_req, res) => res.sendFile(path.resolve(distPath, "index.html")));

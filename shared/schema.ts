@@ -118,6 +118,7 @@ export const metricContent = pgTable("metric_content", {
   imageUrl: text("image_url"),
   quote: text("quote"),
   quoteAuthor: text("quote_author"),
+  candyIconUrl: text("candy_icon_url"), // small candy icon shown next to the metric on Today/Dashboard/History
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 

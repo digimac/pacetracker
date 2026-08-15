@@ -151,6 +151,16 @@ export default function MetricInfoModal({ metricKey, metricLabel, content, onClo
               </div>
             </div>
           )}
+
+          {/* Link to full standalone page */}
+          <a
+            href={`/metrics/${metricKey.toLowerCase()}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`block text-center text-xs font-bold tracking-wide ${colors.accent} hover:underline pt-1`}
+          >
+            Read more about {metricLabel} →
+          </a>
         </div>
       </div>
     </div>

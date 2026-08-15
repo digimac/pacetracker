@@ -138,6 +138,9 @@ app.use((req, res, next) => {
       ALTER TABLE "user_schedule" ADD COLUMN IF NOT EXISTS "sms_reminder_enabled" boolean NOT NULL DEFAULT false;
       ALTER TABLE "user_schedule" ADD COLUMN IF NOT EXISTS "sms_reminder_time" text DEFAULT '09:00';
 
+      -- Candy icon per core metric
+      ALTER TABLE "metric_content" ADD COLUMN IF NOT EXISTS "candy_icon_url" text;
+
       -- Add rated_at timestamp to metric_scores if it doesn't exist yet
       ALTER TABLE "metric_scores" ADD COLUMN IF NOT EXISTS "rated_at" timestamp DEFAULT now() NOT NULL;
 

@@ -547,6 +547,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         imageUrl: z.string().url().optional().nullable().or(z.literal("")),
         quote: z.string().max(500).optional().nullable(),
         quoteAuthor: z.string().max(100).optional().nullable(),
+        candyIconUrl: z.string().url().optional().nullable().or(z.literal("")),
       });
       const data = schema.parse(req.body);
       const result = await storage.upsertMetricContent({
@@ -557,6 +558,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         imageUrl: data.imageUrl || null,
         quote: data.quote || null,
         quoteAuthor: data.quoteAuthor || null,
+        candyIconUrl: data.candyIconUrl || null,
       });
       res.json(result);
     } catch (e: any) {
@@ -800,6 +802,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const page = await storage.getSitePage("stuck");
       res.json(page || null);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Public: metric content (story, quote, candy icon) for the standalone /metrics/:key pages
+  // and for showing candy icons on unauthenticated pages. No user data included.
+  app.get("/api/public/metric-content", async (req, res) => {
+    try {
+      const content = await storage.getAllMetricContent();
+      res.json(content);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
