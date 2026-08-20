@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: August 20, 2026 (Twilio SMS confirmed fully working end-to-end)_
+_Last updated: August 20, 2026 (removed summer promo banner)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `fd8b788` — add /book/resources page: illustrations + downloadable book resources
+- **Last shipped commit**: (pending) — remove summer promo banner from Subscribe page
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -38,7 +38,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 **Billing & growth**
 - Stripe subscriptions: Pro ($4.99/mo, $59/yr), Group ($49/mo, $549/yr)
-- "This Summer, get sweet." promo banner on Subscribe page (May–Aug 2026)
+- ~~"This Summer, get sweet." promo banner on Subscribe page~~ — removed Aug 20, 2026 (promo window ended)
 - HubSpot 1-way CRM sync
 - Twilio SMS: opt-in, daily score reminders, welcome text
 - **6-month rolling free Pro trial** — every new signup gets full Pro access free for 6 months from their join date (rolling, per-user). Existing users were backdated to a fresh 6-month trial from launch day. Paid subscribers are unaffected. Trial countdown banner shown on Dashboard, Settings, and Subscribe page. Admin can send a day-45-before-expiry reminder email (test or bulk) from the Emails tab, with an editable template ("Trial Ending Reminder"). Admin member list shows trial status and days remaining. Test send confirmed working end-to-end (Aug 11, 2026).
