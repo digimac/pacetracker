@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: September 2, 2026 (added Day Quality tiered breakdown to Dashboard)_
+_Last updated: September 2, 2026 (added site-wide subnav bar)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `136bf87` — dashboard: add tiered Day Quality breakdown (Strong/Solid/Off)
+- **Last shipped commit**: `e516a65` — add site-wide subnav bar above footer on all public pages + Dashboard
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -63,6 +63,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - Google Analytics, sitemap submitted to Search Console
 - Informal accessibility touch-ups (alt text added on marketing pages) — no formal WCAG/ADA audit performed, no compliance verified. Do not represent the site as ADA-compliant or display a compliance badge until a real audit (automated scan + manual keyboard/screen-reader review) has been done.
 - Cloudinary for image uploads
+- **Site-wide subnav bar** (Sep 2, 2026) — the required "Created with Perplexity Computer" attribution can't be removed (it's a platform notice, not optional branding), so instead added a consistent pill-style subnav directly above the footer on every public page (`/start`, `/communities`, `/reasons`, `/book`, `/stuck`, `/book/resources`, `/metrics/:key`, `/sms-terms`) linking to all main site sections with the current page highlighted. Also fixed 3 pages (`book-resources.html`, `metrics.html`, `sms-terms.html`) that were missing the attribution line entirely — now present site-wide. Logged-in Dashboard also got an equivalent site-links row above its attribution line, separate from the primary in-app sidebar nav.
 
 ---
 
