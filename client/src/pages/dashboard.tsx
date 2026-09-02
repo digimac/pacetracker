@@ -462,6 +462,28 @@ export default function DashboardPage() {
           )}
         </>
       )}
+
+      {/* Site links — bridges to the public marketing pages, not in-app navigation (that's the sidebar) */}
+      <nav className="flex flex-wrap justify-center gap-x-1 gap-y-1.5 pt-6 pb-1 border-t border-border mt-2" aria-label="Site sections">
+        {[
+          { href: "/start", label: "Home" },
+          { href: "/book", label: "The Book" },
+          { href: "/book/resources", label: "Resources" },
+          { href: "/stuck", label: "Founder's Story" },
+          { href: "/communities", label: "Communities" },
+          { href: "/reasons", label: "Reasons" },
+          { href: "/metrics/time", label: "The 6 Metrics" },
+        ].map(link => (
+          <a
+            key={link.href}
+            href={link.href}
+            className="text-xs font-bold text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-full transition-colors"
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
+
       <PerplexityAttribution />
     </div>
   );

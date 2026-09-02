@@ -87,6 +87,21 @@
     table th, table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
     table th { color: var(--muted); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
 
+    .subnav {
+      display: flex; justify-content: center; align-items: center; gap: 8px;
+      flex-wrap: wrap; padding: 0 24px 20px; margin: 40px auto 0;
+      max-width: 900px;
+    }
+    .subnav a {
+      font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
+      color: var(--muted); text-decoration: none;
+      padding: 7px 14px; border-radius: 100px;
+      border: 1px solid transparent; transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .subnav a:hover { color: var(--text); border-color: var(--border); background: rgba(255,255,255,0.04); }
+    .subnav a.current { color: var(--accent); border-color: rgba(255,110,0,0.3); background: rgba(255,110,0,0.08); }
+
     footer { padding: 32px 0; border-top: 1px solid var(--border); text-align: center; font-size: 13px; color: rgba(255,255,255,0.3); }
     footer a { color: rgba(255,255,255,0.5); text-decoration: none; margin: 0 10px; }
     footer a:hover { color: var(--text); }
@@ -197,6 +212,16 @@
 
   </main>
 
+  <nav class="subnav" aria-label="Site sections">
+    <a href="/start">Home</a>
+    <a href="/book">The Book</a>
+    <a href="/book/resources">Resources</a>
+    <a href="/stuck">Founder's Story</a>
+    <a href="/communities">Communities</a>
+    <a href="/reasons">Reasons</a>
+    <a href="/metrics/time">The 6 Metrics</a>
+  </nav>
+
   <footer>
     <div>
       <a href="/start">Home</a>
@@ -204,6 +229,7 @@
       <a href="/privacy">Privacy</a>
     </div>
     <p style="margin-top:14px;">© <span id="year"></span> Sweet Momentum · Louisville, KY</p>
+    <p style="margin-top:6px;"><a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer" style="color:rgba(255,255,255,0.3);">Created with Perplexity Computer</a></p>
   </footer>
 
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>

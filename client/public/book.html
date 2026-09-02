@@ -482,6 +482,21 @@
     /* ── Footer ── */
     footer { padding: 48px 24px 40px; border-top: 1px solid var(--border); }
     .footer-inner { max-width: 1200px; margin: 0 auto; text-align: center; }
+    .subnav {
+      display: flex; justify-content: center; align-items: center; gap: 8px;
+      flex-wrap: wrap; padding: 20px 24px; margin: 0 auto;
+      max-width: 900px; border-top: 1px solid var(--border);
+    }
+    .subnav a {
+      font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
+      color: var(--muted); text-decoration: none;
+      padding: 7px 14px; border-radius: 100px;
+      border: 1px solid transparent; transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .subnav a:hover { color: var(--text); border-color: var(--border); background: rgba(255,255,255,0.04); }
+    .subnav a.current { color: var(--accent); border-color: rgba(255,110,0,0.3); background: rgba(255,110,0,0.08); }
+
     .footer-links { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
     .footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; }
     .footer-links a:hover { color: var(--text); }
@@ -889,6 +904,16 @@
       <p class="avail-note">Book pre-orders open soon. App available now at <a href="https://sweetmo.io" style="color:var(--accent);">sweetmo.io</a></p>
     </div>
   </section>
+
+  <nav class="subnav" aria-label="Site sections">
+    <a href="/start">Home</a>
+    <a href="/book" class="current">The Book</a>
+    <a href="/book/resources">Resources</a>
+    <a href="/stuck">Founder's Story</a>
+    <a href="/communities">Communities</a>
+    <a href="/reasons">Reasons</a>
+    <a href="/metrics/time">The 6 Metrics</a>
+  </nav>
 
   <!-- ── FOOTER ── -->
   <footer>
