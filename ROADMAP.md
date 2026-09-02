@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: August 20, 2026 (removed summer promo banner)_
+_Last updated: September 2, 2026 (added Day Quality tiered breakdown to Dashboard)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `33b5f80` — remove summer promo banner from Subscribe page
+- **Last shipped commit**: `136bf87` — dashboard: add tiered Day Quality breakdown (Strong/Solid/Off)
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -46,6 +46,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **Twilio diagnostics** — admin SMS section has a "Check Twilio Connection" button that authenticates against the Twilio API and confirms the from-number is SMS-capable, without sending a message or incurring cost. Distinguishes missing env vars, bad credentials, number not found, and number not SMS-capable. Test-SMS route now surfaces the real Twilio error message instead of a bare pass/fail (Aug 11, 2026).
 - **Twilio A2P 10DLC campaign approved** (Aug 18, 2026) — the full SMS compliance saga is closed out. Timeline: 3 rejections (error 30909, then 30924 twice) traced to, in order, missing SMS disclosures on Privacy/Terms, split-up consent language, and finally an unreachable consent screen plus a declared-but-nonfunctional keyword opt-in flow. Fixes shipped: SMS disclosures on `/privacy` and `/terms` (`8da1db9`), unified consent block on `register.tsx`/`settings.tsx` (`6f8b24a`), standalone public `/sms-terms` verification page (`67f9e06`), a real inbound SMS webhook handling JOIN/START/STOP/HELP keywords (`f20a3b7`), and a delivery status callback with plain-English Twilio error logging in admin → SMS (`28c0f7b`). Campaign is now carrier-approved, and **live re-test confirmed working** (Aug 20, 2026): texting HELP from a real phone gets an immediate auto-reply, confirming outbound delivery is fully unblocked post-approval. SMS program is fully operational end-to-end.
 - **Candy icons per core metric** — admin can upload a small candy icon per metric (TIME, GOAL, TEAM, TASK, VIEW, PACE) via Cloudinary in the Metrics tab. Shows next to the metric label on the Today page's scoring card when set; falls back gracefully (no icon) otherwise. Ties the UI to the book's nostalgia/candy theme (Aug 15, 2026).
+- **Dashboard "Day Quality" tiered breakdown** (Sep 2, 2026) — replaced the misleading "Win Rate" stat, which counted any day with a net score above zero as a "win" (so 1 net point out of 6 metrics looked identical to a perfect day). New Day Quality card splits days into Strong (total ≥ 4), Solid (1–3), and Off (≤ 0), shown as a 3-segment bar plus per-tier counts/percentages. The top-line stat-grid card was renamed "Net Positive" / "days above even" so it no longer implies more than it measures.
 
 **Marketing pages**
 - `/start` — public marketing landing page
