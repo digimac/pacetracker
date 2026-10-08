@@ -156,8 +156,9 @@ export default function SettingsPage() {
     workEndTime: "17:00",
     timezone: "America/New_York",
     dailyGoal: "",
-    smsReminderEnabled: false,
-    smsReminderTime: "09:00",
+    reminderEnabled: true,
+    reminderMethod: "email" as "email" | "sms",
+    reminderTime: "08:00",
   });
 
   useEffect(() => {
@@ -169,8 +170,9 @@ export default function SettingsPage() {
         workEndTime: schedule.workEndTime || "17:00",
         timezone: schedule.timezone || getBrowserTimezone(),
         dailyGoal: schedule.dailyGoal || "",
-        smsReminderEnabled: (schedule as any).smsReminderEnabled ?? false,
-        smsReminderTime: (schedule as any).smsReminderTime || "09:00",
+        reminderEnabled: schedule.reminderEnabled ?? true,
+        reminderMethod: schedule.reminderMethod === "sms" ? "sms" : "email",
+        reminderTime: schedule.reminderTime || "08:00",
       });
     } else {
       // Auto-detect browser timezone for new users
@@ -187,7 +189,9 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/schedule"] });
       toast({ title: "Schedule saved" });
     },
+    onError: (e: any) => toast({ title: "Couldn't save schedule", description: e.message, variant: "destructive" }),
   });
+  const canSms = !!((user as any)?.phone && (user as any)?.smsOptIn);
 
   // Custom Metrics
   const { data: customMetrics = [] } = useQuery<CustomMetric[]>({
@@ -698,58 +702,108 @@ export default function SettingsPage() {
               data-testid="textarea-daily-goal"
             />
           </div>
-          {/* SMS Daily Reminder — only for opted-in users with a phone */}
-          {(user as any)?.phone && (user as any)?.smsOptIn && (
-            <div className="pt-3 border-t border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Daily SMS Reminder</p>
-                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">Get a text prompt to score your day if you haven't yet.</p>
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={scheduleForm.smsReminderEnabled}
-                    onChange={e => setScheduleForm(f => ({ ...f, smsReminderEnabled: e.target.checked }))}
-                    className="w-4 h-4 accent-primary rounded"
-                    data-testid="checkbox-sms-reminder"
-                  />
-                  <span className="text-xs font-medium">{scheduleForm.smsReminderEnabled ? "On" : "Off"}</span>
-                </label>
+          {/* Daily Score Reminder — one channel only (email OR text), never both */}
+          <div className="pt-3 border-t border-border space-y-3" data-testid="section-daily-reminder">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Daily Score Reminder</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-0.5">A nudge to score your day, only if you haven't scored yet.</p>
               </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={scheduleForm.reminderEnabled}
+                  onChange={e => setScheduleForm(f => ({ ...f, reminderEnabled: e.target.checked }))}
+                  className="w-4 h-4 accent-primary rounded"
+                  data-testid="checkbox-daily-reminder"
+                />
+                <span className="text-xs font-medium">{scheduleForm.reminderEnabled ? "On" : "Off"}</span>
+              </label>
+            </div>
 
-              {scheduleForm.smsReminderEnabled && (
+            {scheduleForm.reminderEnabled && (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Preferred method</Label>
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Preferred reminder method">
+                    {([
+                      { value: "email", label: "Email" },
+                      { value: "sms", label: "Text message" },
+                    ] as const).map(opt => {
+                      const disabled = opt.value === "sms" && !canSms;
+                      const selected = scheduleForm.reminderMethod === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          disabled={disabled}
+                          onClick={() => setScheduleForm(f => ({ ...f, reminderMethod: opt.value }))}
+                          className={`h-9 rounded-md border text-xs font-semibold transition-colors ${
+                            selected ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+                          } ${disabled ? "opacity-40 cursor-not-allowed hover:text-muted-foreground" : ""}`}
+                          data-testid={`radio-reminder-method-${opt.value}`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/60">
+                    {scheduleForm.reminderMethod === "sms"
+                      ? `Texts go to ${(user as any)?.phone || "your phone"}. You'll get a text only, no email.`
+                      : `Emails go to ${user?.email || "your account email"}. You'll get an email only, no text.`}
+                  </p>
+                  {!canSms && (
+                    <p className="text-[10px] text-muted-foreground/60">
+                      To get reminders by text, add a mobile number and turn on SMS notifications in your profile above.
+                    </p>
+                  )}
+                  {scheduleForm.reminderMethod === "sms" && !canSms && (
+                    <p className="text-[10px] text-red-400">
+                      SMS notifications are off, so text reminders won't send. Turn SMS back on or switch to Email.
+                    </p>
+                  )}
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="settings-sms-reminder-time" className="text-xs">Send reminder at</Label>
+                  <Label htmlFor="settings-reminder-time" className="text-xs">Send reminder at</Label>
                   <input
-                    id="settings-sms-reminder-time"
+                    id="settings-reminder-time"
                     type="time"
-                    value={scheduleForm.smsReminderTime}
-                    onChange={e => setScheduleForm(f => ({ ...f, smsReminderTime: e.target.value }))}
+                    value={scheduleForm.reminderTime}
+                    onChange={e => setScheduleForm(f => ({ ...f, reminderTime: e.target.value || "08:00" }))}
                     className="border border-border rounded px-3 py-1.5 bg-background text-foreground text-sm w-full"
-                    data-testid="input-sms-reminder-time"
+                    data-testid="input-reminder-time"
                   />
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       type="button" size="sm" variant="outline" className="h-7 text-[10px] px-2"
-                      onClick={() => setScheduleForm(f => ({ ...f, smsReminderTime: f.wakeTime }))}
+                      onClick={() => setScheduleForm(f => ({ ...f, reminderTime: "08:00" }))}
+                    >
+                      Default (08:00)
+                    </Button>
+                    <Button
+                      type="button" size="sm" variant="outline" className="h-7 text-[10px] px-2"
+                      onClick={() => setScheduleForm(f => ({ ...f, reminderTime: f.wakeTime }))}
                     >
                       Use wake time ({scheduleForm.wakeTime})
                     </Button>
                     <Button
                       type="button" size="sm" variant="outline" className="h-7 text-[10px] px-2"
-                      onClick={() => setScheduleForm(f => ({ ...f, smsReminderTime: f.workStartTime }))}
+                      onClick={() => setScheduleForm(f => ({ ...f, reminderTime: f.workStartTime }))}
                     >
                       Use work start ({scheduleForm.workStartTime})
                     </Button>
                   </div>
                   <p className="text-[10px] text-muted-foreground/50">
-                    Reminder fires in your timezone ({scheduleForm.timezone || "not set"}) only if you haven't scored yet that day.
+                    Sent once a day in your timezone ({scheduleForm.timezone || "not set"}), only if you haven't scored yet.
                   </p>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
           <Button
             onClick={() => savSchedule.mutate()}

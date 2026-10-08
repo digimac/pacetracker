@@ -895,3 +895,76 @@ export async function sendTrialEndingEmail(opts: {
     console.error(`[email] SMTP error sending trial-ending email to ${toEmail}:`, smtpErr?.message || smtpErr);
   }
 }
+
+// ── Daily scoring reminder email (automatic, sent by server/reminders.ts) ─────
+// Unlike most senders in this file, this one reports success/failure so the
+// reminder job can write an accurate row to reminder_log.
+// Admin-editable via the "daily_reminder" email template. Variables: {{displayName}}, {{settingsUrl}}.
+export async function sendDailyScoreReminderEmail(opts: {
+  toEmail: string;
+  displayName: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const { toEmail, displayName } = opts;
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.log(`[email] SMTP not configured. Daily reminder for ${toEmail} skipped.`);
+    return { ok: false, error: "SMTP not configured" };
+  }
+
+  const fromAddress = SMTP_FROM_EMAIL
+    ? `"${SMTP_FROM_NAME}" <${SMTP_FROM_EMAIL}>`
+    : `"${SMTP_FROM_NAME}" <${SMTP_USER}>`;
+  const settingsUrl = `${APP_URL}/#/settings`;
+
+  const defaultSubject = `{{displayName}}, time to score your day`;
+  const defaultHtml = `
+    <body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+      <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+        <div style="background:#FF6E00;padding:32px;text-align:center;">
+          <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;letter-spacing:1px;">Sweet Momentum</h1>
+          <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Daily Performance Tracking</p>
+        </div>
+        <div style="padding:32px;">
+          <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Good morning {{displayName}},</p>
+          <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">
+            Take a minute to score today across your 6 core metrics. Small daily check-ins are what build momentum.
+          </p>
+          <div style="text-align:center;margin:32px 0;">
+            <a href="${APP_URL}/#/today" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;letter-spacing:0.5px;">
+              Score Today →
+            </a>
+          </div>
+          <p style="color:#666;font-size:12px;text-align:center;margin:0;">
+            You're getting this because daily reminders are on for your account.<br>
+            <a href="{{settingsUrl}}" style="color:#999;">Change your reminder time or method, or turn reminders off</a> in Settings.
+          </p>
+        </div>
+      </div>
+    </body>
+  `;
+  const defaultText = `Good morning {{displayName}},\n\nTake a minute to score today across your 6 core metrics.\n\nScore today: ${APP_URL}/#/today\n\nChange your reminder time or method, or turn reminders off: {{settingsUrl}}`;
+
+  let subject = defaultSubject;
+  let html = defaultHtml;
+  let text = defaultText;
+  try {
+    const tpl = await storage.getEmailTemplate("daily_reminder");
+    if (tpl) { subject = tpl.subject; html = tpl.bodyHtml; text = tpl.bodyText; }
+  } catch (dbErr) {
+    console.warn("[email] Could not load daily_reminder template from DB, using default:", dbErr);
+  }
+
+  const interpolate = (s: string) => s
+    .replace(/\{\{displayName\}\}/g, displayName)
+    .replace(/\{\{settingsUrl\}\}/g, settingsUrl);
+
+  try {
+    await transporter.sendMail({ from: fromAddress, to: toEmail, subject: interpolate(subject), html: interpolate(html), text: interpolate(text) });
+    console.log(`[email] Daily reminder sent to ${toEmail}`);
+    return { ok: true };
+  } catch (smtpErr: any) {
+    const msg = smtpErr?.message || String(smtpErr);
+    console.error(`[email] SMTP error sending daily reminder to ${toEmail}:`, msg);
+    return { ok: false, error: msg };
+  }
+}

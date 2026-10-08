@@ -917,6 +917,27 @@ This link expires in 1 hour.`,
     defaultBodyText: `Hey {{displayName}},\n\n{{sinceLabel}}. Your streak is waiting \u2014 today is the perfect day to get back on track.\n\nScore today: https://sweetmo.io/#/today\n\nReply to unsubscribe from reminders.`,
   },
   {
+    key: "daily_reminder",
+    label: "Daily Score Reminder",
+    description: "Sent automatically each morning (default 8:00 AM local time) to members whose preferred reminder method is Email and who haven't scored yet that day. Available variables: {{displayName}}, {{settingsUrl}}.",
+    defaultSubject: "{{displayName}}, time to score your day",
+    defaultBodyHtml: `<body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
+  <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
+    <div style="background:#FF6E00;padding:32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;">Sweet Momentum</h1>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Daily Performance Tracking</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Good morning {{displayName}},</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">Take a minute to score today across your 6 core metrics. Small daily check-ins are what build momentum.</p>
+      <div style="text-align:center;margin:32px 0;"><a href="https://sweetmo.io/#/today" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;">Score Today \u2192</a></div>
+      <p style="color:#666;font-size:12px;text-align:center;margin:0;">You're getting this because daily reminders are on for your account.<br><a href="{{settingsUrl}}" style="color:#999;">Change your reminder time or method, or turn reminders off</a> in Settings.</p>
+    </div>
+  </div>
+</body>`,
+    defaultBodyText: `Good morning {{displayName}},\n\nTake a minute to score today across your 6 core metrics.\n\nScore today: https://sweetmo.io/#/today\n\nChange your reminder time or method, or turn reminders off: {{settingsUrl}}`,
+  },
+  {
     key: "weekly_digest",
     label: "Weekly Summary Digest",
     description: "Sent each Monday to all members with a recap of their previous week's scores. Available variables: {{displayName}}, {{weekRange}}, {{daysScored}}, {{avgScore}}, {{bestDay}}, {{dayRows}}.",
@@ -1239,6 +1260,54 @@ function EmailTemplatesTab() {
       setCheckingTwilio(false);
     }
   }
+  type ReminderLogRow = { id: number; userId: number; userEmail: string | null; userDisplayName: string | null; localDate: string; channel: string; destination: string | null; status: string; error: string | null; timezone: string | null; createdAt: string };
+  const [reminderLog, setReminderLog] = useState<ReminderLogRow[]>([]);
+  const [loadingReminderLog, setLoadingReminderLog] = useState(false);
+  const [runningReminders, setRunningReminders] = useState<"" | "preview" | "run">("");
+  const [reminderRun, setReminderRun] = useState<{ checkedAt: string; dryRun: boolean; considered: number; sent: number; failed: number; wouldSend: number; skipped: Record<string, number>; results: { userId: number; email: string; outcome: string; channel: string; error?: string }[] } | null>(null);
+
+  async function loadReminderLog() {
+    setLoadingReminderLog(true);
+    try {
+      const res = await apiRequest("GET", "/api/admin/reminder-log?limit=100");
+      const data = await res.json();
+      setReminderLog(data.entries || []);
+    } catch (e: any) {
+      toast({ title: "Failed to load reminder log", description: e.message, variant: "destructive" });
+    } finally {
+      setLoadingReminderLog(false);
+    }
+  }
+
+  async function runReminders(dryRun: boolean) {
+    setRunningReminders(dryRun ? "preview" : "run");
+    try {
+      const res = await apiRequest("POST", "/api/admin/send-scheduled-sms", { dryRun });
+      const data = await res.json();
+      setReminderRun(data);
+      toast({
+        title: dryRun ? `${data.wouldSend} member(s) due right now` : `Reminders sent: ${data.sent}`,
+        description: dryRun ? "Preview only. Nothing was sent." : `${data.failed ? `${data.failed} failed · ` : ""}Checked ${data.considered} member(s)`,
+      });
+      if (!dryRun) loadReminderLog();
+    } catch (e: any) {
+      toast({ title: "Reminder run failed", description: e.message, variant: "destructive" });
+    } finally {
+      setRunningReminders("");
+    }
+  }
+
+  const SKIP_LABELS: Record<string, string> = {
+    not_due: "not due yet",
+    already_scored: "already scored",
+    already_reminded: "already reminded",
+    no_timezone: "no timezone saved",
+    reminders_off: "reminders off",
+    sms_not_opted_in: "prefers SMS, not opted in",
+    no_email: "no email",
+    admin_account: "admin account",
+  };
+
   const [sendingSmsTest, setSendingSmsTest] = useState(false);
   const [sendingSmsReminders, setSendingSmsReminders] = useState(false);
   const [smsReminderDays, setSmsReminderDays] = useState("3");
@@ -1470,6 +1539,81 @@ function EmailTemplatesTab() {
           >
             {sendingTrialReminder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send to Trial Members"}
           </Button>
+        </div>
+      </div>
+
+      {/* Daily score reminders (automatic) */}
+      <div className="border-t border-border pt-3">
+        <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase mb-3">Daily Score Reminders (Automatic)</p>
+        <div className="border border-border rounded-lg p-4 space-y-3 mb-3">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="max-w-xl">
+              <p className="text-sm font-semibold">Reminder Job</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Runs automatically every 5 minutes. Each member gets one reminder per day at their reminder time (default 8:00 AM local),
+                by their preferred method only: email or text, never both. Texts only go to opted-in members. Members who already scored,
+                were already reminded, or have no saved timezone are skipped.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" disabled={!!runningReminders} onClick={() => runReminders(true)} data-testid="reminder-preview-btn">
+                {runningReminders === "preview" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Preview Who's Due"}
+              </Button>
+              <Button size="sm" variant="default" disabled={!!runningReminders} onClick={() => runReminders(false)} data-testid="reminder-run-btn">
+                {runningReminders === "run" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Run Now"}
+              </Button>
+            </div>
+          </div>
+          {reminderRun && (
+            <div className="text-xs space-y-1 pt-2 border-t border-border">
+              <p className="font-semibold">
+                {reminderRun.dryRun ? `Preview: ${reminderRun.wouldSend} due now` : `Sent ${reminderRun.sent} · Failed ${reminderRun.failed}`}
+                <span className="text-muted-foreground font-normal"> · checked {reminderRun.considered} at {new Date(reminderRun.checkedAt).toLocaleTimeString()}</span>
+              </p>
+              {Object.keys(reminderRun.skipped).length > 0 && (
+                <p className="text-muted-foreground">
+                  Skipped: {Object.entries(reminderRun.skipped).map(([k, v]) => `${v} ${SKIP_LABELS[k] || k}`).join(" · ")}
+                </p>
+              )}
+              {reminderRun.results.length > 0 && (
+                <ul className="text-muted-foreground font-mono space-y-0.5">
+                  {reminderRun.results.slice(0, 20).map(r => (
+                    <li key={r.userId}>{r.outcome} · {r.channel} · {r.email}{r.error ? ` · ${r.error}` : ""}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="border border-border rounded-lg p-4 space-y-3 mb-3">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold">Reminder Send Log</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Every daily reminder attempt, newest first. Saved in the database, so it survives restarts.</p>
+            </div>
+            <Button size="sm" variant="outline" disabled={loadingReminderLog} onClick={loadReminderLog} data-testid="reminder-log-refresh-btn">
+              {loadingReminderLog ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Load Log"}
+            </Button>
+          </div>
+          {reminderLog.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No reminders loaded. Click Load Log to see recent sends.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-72 overflow-y-auto">
+              {reminderLog.map(r => (
+                <div key={r.id} className={`text-xs border rounded-md p-2 ${r.status === "sent" ? "border-[#85FF00]/20 bg-[#85FF00]/5" : r.status === "failed" ? "border-red-500/20 bg-red-500/5" : "border-border"}`}>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className={`font-bold ${r.status === "sent" ? "text-[#85FF00]" : r.status === "failed" ? "text-red-400" : "text-muted-foreground"}`}>{r.status}</span>
+                    <span className="text-muted-foreground uppercase">{r.channel}</span>
+                    <span className="truncate">{r.userDisplayName || r.userEmail || `User ${r.userId}`}</span>
+                    <span className="text-muted-foreground font-mono">{r.destination}</span>
+                    <span className="text-muted-foreground">{r.localDate} · {new Date(r.createdAt).toLocaleString()}</span>
+                  </div>
+                  {r.error && <p className="text-red-400/80 mt-1">{r.error}</p>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

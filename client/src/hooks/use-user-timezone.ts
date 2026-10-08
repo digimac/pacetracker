@@ -1,5 +1,9 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+// One auto-capture attempt per page load, no matter how many components use the hook.
+let timezoneCaptureAttempted = false;
 import type { UserSchedule } from "@shared/schema";
 
 /**
@@ -15,6 +19,17 @@ export function useUserTimezone() {
 
   const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const timezone = schedule?.timezone || browserTz;
+
+  // If the user has never actually chosen a timezone (signup stores a placeholder),
+  // save the browser's detected one so daily reminders arrive at the right local time.
+  // The server ignores this once a timezone has been saved in Settings.
+  useEffect(() => {
+    if (!schedule || schedule.timezoneConfirmed || timezoneCaptureAttempted || !browserTz) return;
+    timezoneCaptureAttempted = true;
+    apiRequest("POST", "/api/schedule/timezone", { timezone: browserTz })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["/api/schedule"] }))
+      .catch(() => {});
+  }, [schedule, browserTz]);
 
   function getTodayString(): string {
     return getTodayInTimezone(timezone);

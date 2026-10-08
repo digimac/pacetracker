@@ -7,6 +7,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { runMigrations } from "./migrate";
 import { pool } from "./db";
+import { startReminderScheduler } from "./reminders";
 
 const app = express();
 const httpServer = createServer(app);
@@ -217,6 +218,66 @@ app.use((req, res, next) => {
     console.error("[startup] Could not ensure tables:", err?.message);
   }
 
+  // 2b. Daily scoring reminder columns + send log. Kept in its own query so a failure here
+  // can't take down the table-ensure block above (and vice versa).
+  try {
+    await pool.query(`
+      DO $$ BEGIN
+        -- One-time backfill: runs only on the boot that first adds the reminder columns.
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'user_schedule' AND column_name = 'reminder_method'
+        ) THEN
+          ALTER TABLE "user_schedule" ADD COLUMN "reminder_enabled" boolean NOT NULL DEFAULT true;
+          ALTER TABLE "user_schedule" ADD COLUMN "reminder_method" text NOT NULL DEFAULT 'email';
+          ALTER TABLE "user_schedule" ADD COLUMN "reminder_time" text NOT NULL DEFAULT '08:00';
+          ALTER TABLE "user_schedule" ADD COLUMN IF NOT EXISTS "timezone_confirmed" boolean NOT NULL DEFAULT false;
+
+          -- Users who already turned on the old SMS-only reminder keep SMS + their chosen time
+          -- (only if they're still opted in with a phone on file).
+          UPDATE "user_schedule" s
+             SET "reminder_method" = 'sms',
+                 "reminder_time"   = COALESCE(NULLIF(s."sms_reminder_time", ''), '08:00')
+            FROM "users" u
+           WHERE u."id" = s."user_id"
+             AND s."sms_reminder_enabled" = true
+             AND u."sms_opt_in" = true
+             AND u."phone" IS NOT NULL AND u."phone" <> '';
+
+          -- Signup always wrote 'America/New_York' as a placeholder, so only treat a timezone as
+          -- "saved" if it differs from that placeholder or the user configured SMS reminders
+          -- (which required saving the Settings form). Everyone else is confirmed automatically
+          -- by browser detection the next time they open the app.
+          UPDATE "user_schedule"
+             SET "timezone_confirmed" = true
+           WHERE "timezone" IS NOT NULL AND "timezone" <> ''
+             AND ("timezone" <> 'America/New_York' OR "sms_reminder_enabled" = true);
+        END IF;
+      END $$;
+
+      ALTER TABLE "user_schedule" ADD COLUMN IF NOT EXISTS "timezone_confirmed" boolean NOT NULL DEFAULT false;
+
+      CREATE TABLE IF NOT EXISTS "reminder_log" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "user_id" integer NOT NULL,
+        "kind" text NOT NULL DEFAULT 'daily_score',
+        "local_date" date NOT NULL,
+        "channel" text NOT NULL,
+        "destination" text,
+        "status" text NOT NULL DEFAULT 'sending',
+        "provider_id" text,
+        "error" text,
+        "timezone" text,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS "reminder_log_user_kind_date_unique" ON "reminder_log" ("user_id", "kind", "local_date");
+      CREATE INDEX IF NOT EXISTS "reminder_log_created_at_idx" ON "reminder_log" ("created_at");
+    `);
+    console.log("[startup] Reminder columns + reminder_log ensured ✓");
+  } catch (err: any) {
+    console.error("[startup] Could not ensure reminder tables:", err?.message);
+  }
+
   // 3. NOW set up session middleware, after the session table is guaranteed to exist
   function buildSessionStore() {
     if (process.env.DATABASE_URL) {
@@ -276,5 +337,7 @@ app.use((req, res, next) => {
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
     log(`serving on port ${port}`);
+    // Automatic daily scoring reminder (email OR sms per user preference)
+    startReminderScheduler();
   });
 })();

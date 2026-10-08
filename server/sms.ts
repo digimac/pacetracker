@@ -205,6 +205,21 @@ export async function sendDailyReminderSms(opts: {
   return sendSms(to, body);
 }
 
+/**
+ * Automatic daily scoring reminder (sent by server/reminders.ts to opted-in users
+ * whose preferred reminder method is SMS). Returns the detailed result so the send
+ * can be logged with its Twilio SID or error.
+ */
+export async function sendDailyScoreReminderSms(opts: {
+  to: string;
+  displayName: string;
+}): Promise<{ ok: boolean; sid?: string; error?: string }> {
+  const body =
+    `Sweet Momentum: Good morning ${opts.displayName}, time to score your day → ${APP_URL}/#/today\n` +
+    `Reply STOP to unsubscribe.`;
+  return sendSmsDetailed(opts.to, body);
+}
+
 export async function sendWelcomeSms(opts: {
   to: string;
   displayName: string;

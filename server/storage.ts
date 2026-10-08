@@ -17,9 +17,20 @@ import {
   MomentumGroup, InsertMomentumGroup, momentumGroups,
   GroupMember, InsertGroupMember, groupMembers,
   BookResource, InsertBookResource, bookResources,
+  ReminderLogEntry, reminderLog,
   users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections, emailTemplates,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
+
+export type ReminderClaim = {
+  userId: number;
+  kind: string;
+  localDate: string;
+  channel: "email" | "sms";
+  destination: string | null;
+  timezone: string | null;
+};
+export type ReminderLogWithUser = ReminderLogEntry & { userEmail: string | null; userDisplayName: string | null };
 
 export interface IStorage {
   // Users
@@ -122,6 +133,15 @@ export interface IStorage {
   createBookResource(data: InsertBookResource): Promise<BookResource>;
   updateBookResource(id: number, updates: Partial<InsertBookResource>): Promise<BookResource | undefined>;
   deleteBookResource(id: number): Promise<void>;
+
+  // Daily scoring reminder
+  /** Every user that has a schedule row, paired with it (one query, used by the reminder job). */
+  getUsersWithSchedules(): Promise<{ user: User; schedule: UserSchedule }[]>;
+  getReminderLogEntry(userId: number, kind: string, localDate: string): Promise<ReminderLogEntry | undefined>;
+  /** Atomically reserve today's reminder slot. Returns null if one already exists (already reminded). */
+  claimReminderSend(claim: ReminderClaim): Promise<ReminderLogEntry | null>;
+  updateReminderLog(id: number, updates: { status: string; providerId?: string | null; error?: string | null }): Promise<void>;
+  getRecentReminderLog(limit: number): Promise<ReminderLogWithUser[]>;
 }
 
 // ─── Drizzle (PostgreSQL) implementation ────────────────────────────────────
@@ -648,6 +668,40 @@ export class DrizzleStorage implements IStorage {
   async deleteBookResource(id: number): Promise<void> {
     await this.db.delete(bookResources).where(eq(bookResources.id, id));
   }
+
+  // Daily scoring reminder
+  async getUsersWithSchedules(): Promise<{ user: User; schedule: UserSchedule }[]> {
+    const rows = await this.db.select({ user: users, schedule: userSchedule })
+      .from(users)
+      .innerJoin(userSchedule, eq(userSchedule.userId, users.id));
+    return rows;
+  }
+  async getReminderLogEntry(userId: number, kind: string, localDate: string): Promise<ReminderLogEntry | undefined> {
+    const rows = await this.db.select().from(reminderLog)
+      .where(and(eq(reminderLog.userId, userId), eq(reminderLog.kind, kind), eq(reminderLog.localDate, localDate)))
+      .limit(1);
+    return rows[0];
+  }
+  async claimReminderSend(claim: ReminderClaim): Promise<ReminderLogEntry | null> {
+    // Relies on the unique index (user_id, kind, local_date): a concurrent or repeated run
+    // for the same user/day inserts nothing and gets null back.
+    const rows = await this.db.insert(reminderLog)
+      .values({ ...claim, status: "sending" })
+      .onConflictDoNothing({ target: [reminderLog.userId, reminderLog.kind, reminderLog.localDate] })
+      .returning();
+    return rows[0] ?? null;
+  }
+  async updateReminderLog(id: number, updates: { status: string; providerId?: string | null; error?: string | null }): Promise<void> {
+    await this.db.update(reminderLog).set(updates).where(eq(reminderLog.id, id));
+  }
+  async getRecentReminderLog(limit: number): Promise<ReminderLogWithUser[]> {
+    const rows = await this.db.select({ log: reminderLog, email: users.email, displayName: users.displayName })
+      .from(reminderLog)
+      .leftJoin(users, eq(users.id, reminderLog.userId))
+      .orderBy(desc(reminderLog.createdAt))
+      .limit(limit);
+    return rows.map((r: any) => ({ ...r.log, userEmail: r.email ?? null, userDisplayName: r.displayName ?? null }));
+  }
 }
 
 // ─── In-memory fallback (used in local dev without DATABASE_URL) ─────────────
@@ -1087,6 +1141,42 @@ export class MemStorage implements IStorage {
   }
   async deleteBookResource(id: number): Promise<void> {
     this.bookResourcesMap.delete(id);
+  }
+
+  // Daily scoring reminder
+  private reminderLogMap: Map<number, ReminderLogEntry> = new Map();
+  private reminderLogIdCtr = 1;
+  async getUsersWithSchedules(): Promise<{ user: User; schedule: UserSchedule }[]> {
+    const out: { user: User; schedule: UserSchedule }[] = [];
+    for (const user of Array.from(this.usersMap.values())) {
+      const schedule = this.userSchedules.get(user.id);
+      if (schedule) out.push({ user, schedule });
+    }
+    return out;
+  }
+  async getReminderLogEntry(userId: number, kind: string, localDate: string): Promise<ReminderLogEntry | undefined> {
+    return Array.from(this.reminderLogMap.values()).find(r => r.userId === userId && r.kind === kind && r.localDate === localDate);
+  }
+  async claimReminderSend(claim: ReminderClaim): Promise<ReminderLogEntry | null> {
+    // Synchronous check-and-set (no await in between) so overlapping runs can't both claim.
+    const taken = Array.from(this.reminderLogMap.values()).some(r => r.userId === claim.userId && r.kind === claim.kind && r.localDate === claim.localDate);
+    if (taken) return null;
+    const row: ReminderLogEntry = { ...claim, id: this.reminderLogIdCtr++, status: "sending", providerId: null, error: null, createdAt: new Date() };
+    this.reminderLogMap.set(row.id, row);
+    return row;
+  }
+  async updateReminderLog(id: number, updates: { status: string; providerId?: string | null; error?: string | null }): Promise<void> {
+    const row = this.reminderLogMap.get(id);
+    if (row) this.reminderLogMap.set(id, { ...row, ...updates } as ReminderLogEntry);
+  }
+  async getRecentReminderLog(limit: number): Promise<ReminderLogWithUser[]> {
+    return Array.from(this.reminderLogMap.values())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit)
+      .map(r => {
+        const u = this.usersMap.get(r.userId);
+        return { ...r, userEmail: u?.email ?? null, userDisplayName: u?.displayName ?? null };
+      });
   }
 }
 

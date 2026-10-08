@@ -6,10 +6,11 @@ import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgrade
 import { sendSms, sendSmsDetailed, sendDailyReminderSms, sendWelcomeSms, checkTwilioStatus, SMS_STATUS_CALLBACK_URL, recordSmsStatusEvent, getRecentSmsStatusEvents, KNOWN_ERROR_CODES } from "./sms";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
-import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema } from "@shared/schema";
+import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema, REMINDER_METHODS } from "@shared/schema";
 import { z } from "zod";
 import { getCoordsForTimezone } from "./timezone-coords";
 import { geocodeCity } from "./geocode";
+import { tickReminders, isValidTimeZone } from "./reminders";
 
 // Admin email — the one account with full admin privileges
 const ADMIN_EMAIL = "track@sweetmo.io";
@@ -727,8 +728,48 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/schedule", requireAuth, async (req, res) => {
     try {
       const userId = req.session!.userId!;
-      const data = insertUserScheduleSchema.parse({ ...req.body, userId });
-      const schedule = await storage.upsertUserSchedule({ ...data, userId });
+      // timezoneConfirmed is server-controlled; never trust it from the client.
+      const { timezoneConfirmed: _ignored, ...body } = req.body || {};
+      const data = insertUserScheduleSchema.parse({ ...body, userId });
+
+      if (data.reminderMethod !== undefined && !(REMINDER_METHODS as readonly string[]).includes(data.reminderMethod)) {
+        return res.status(400).json({ error: "Reminder method must be email or sms" });
+      }
+      if (data.reminderTime !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(data.reminderTime)) {
+        return res.status(400).json({ error: "Reminder time must be HH:MM" });
+      }
+      if (data.reminderMethod === "sms") {
+        // Only block *switching* to SMS without opt-in; a user who already had SMS selected
+        // and later texted STOP can still save other settings (the job skips them anyway).
+        const current = await storage.getUserSchedule(userId);
+        const u = current?.reminderMethod === "sms" ? { phone: "kept", smsOptIn: true } : await storage.getUserById(userId);
+        if (!u?.phone || !u.smsOptIn) {
+          return res.status(400).json({ error: "To get reminders by text, add a mobile number and turn on SMS notifications in your profile first." });
+        }
+      }
+
+      const updates: any = { ...data, userId };
+      if (data.timezone !== undefined) {
+        if (!isValidTimeZone(data.timezone)) return res.status(400).json({ error: "Unknown timezone" });
+        updates.timezoneConfirmed = true; // user explicitly saved a timezone in Settings
+      }
+      const schedule = await storage.upsertUserSchedule(updates);
+      res.json(schedule);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Browser timezone auto-capture. Only fills in a timezone the user hasn't actually
+  // chosen yet (signup writes a placeholder); never overrides one saved in Settings.
+  app.post("/api/schedule/timezone", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const { timezone } = z.object({ timezone: z.string().min(1).max(64) }).parse(req.body);
+      if (!isValidTimeZone(timezone)) return res.status(400).json({ error: "Unknown timezone" });
+      const existing = await storage.getUserSchedule(userId);
+      if (existing?.timezoneConfirmed && existing.timezone) return res.json(existing);
+      const schedule = await storage.upsertUserSchedule({ userId, timezone, timezoneConfirmed: true } as any);
       res.json(schedule);
     } catch (e: any) {
       res.status(400).json({ error: e.message });
@@ -1789,43 +1830,24 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // Admin: fire daily score SMS reminders — checks each user's smsReminderTime in their timezone
+  // Admin: run the automatic daily scoring reminder job now. This endpoint used to be a
+  // standalone SMS-only checker; it now delegates to server/reminders.ts, which the
+  // in-process scheduler also calls every 5 minutes. Pass { dryRun: true } to preview
+  // who is due right now without sending or logging anything.
   app.post("/api/admin/send-scheduled-sms", requireAdmin, async (req, res) => {
     try {
-      const now = new Date();
-      const allUsers = await storage.getAllUsers();
-      let sent = 0, skipped = 0, errors = 0;
+      const dryRun = !!req.body?.dryRun;
+      const summary = await tickReminders({ dryRun });
+      if (!summary) return res.status(409).json({ error: "A reminder run is already in progress — try again in a moment." });
+      res.json({ ok: true, ...summary });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
 
-      for (const u of allUsers as any[]) {
-        try {
-          if (!u.phone || !u.smsOptIn) { skipped++; continue; }
-          if (u.email === ADMIN_EMAIL) { skipped++; continue; }
-          const sched = await storage.getUserSchedule(u.id);
-          if (!sched?.smsReminderEnabled || !sched.smsReminderTime) { skipped++; continue; }
-
-          const tz = sched.timezone || 'America/New_York';
-          // Get current time in user's timezone
-          const userNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
-          const userHH = userNow.getHours().toString().padStart(2, '0');
-          const userMM = userNow.getMinutes().toString().padStart(2, '0');
-          const userTime = `${userHH}:${userMM}`;
-          // Match within a 5-minute window of their chosen time
-          const [rH, rM] = sched.smsReminderTime.split(':').map(Number);
-          const reminderMinutes = rH * 60 + rM;
-          const nowMinutes = userNow.getHours() * 60 + userNow.getMinutes();
-          if (Math.abs(nowMinutes - reminderMinutes) > 5) { skipped++; continue; }
-
-          // Check if they already scored today in their timezone
-          const todayStr = `${userNow.getFullYear()}-${String(userNow.getMonth()+1).padStart(2,'0')}-${String(userNow.getDate()).padStart(2,'0')}`;
-          const todayEntry = await storage.getDailyEntry(u.id, todayStr);
-          if (todayEntry) { skipped++; continue; } // Already scored
-
-          const displayName = u.displayName || u.email;
-          const ok = await sendDailyReminderSms({ to: u.phone, displayName, daysSinceLastScore: null });
-          if (ok) sent++; else errors++;
-        } catch (err: any) { console.error(`[scheduled-sms] ${u.email}:`, err?.message); errors++; }
-      }
-      res.json({ ok: true, sent, skipped, errors, checkedAt: now.toISOString() });
+  // Admin: recent daily-reminder sends (persisted in reminder_log)
+  app.get("/api/admin/reminder-log", requireAdmin, async (req, res) => {
+    try {
+      const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+      res.json({ entries: await storage.getRecentReminderLog(limit) });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 

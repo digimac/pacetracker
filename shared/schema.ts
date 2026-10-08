@@ -99,12 +99,23 @@ export const userSchedule = pgTable("user_schedule", {
   workEndTime: text("work_end_time").default("17:00"),
   timezone: text("timezone").default("America/New_York"),
   dailyGoal: text("daily_goal"),
+  // Legacy SMS-only reminder columns. Superseded by reminderEnabled/reminderMethod/reminderTime
+  // below (values were migrated on first boot). Kept so old rows/clients don't break; no longer read.
   smsReminderEnabled: boolean("sms_reminder_enabled").default(false).notNull(),
   smsReminderTime: text("sms_reminder_time").default("09:00"), // HH:MM local time
+  // Automatic daily scoring reminder — goes out by exactly ONE channel (never both).
+  reminderEnabled: boolean("reminder_enabled").default(true).notNull(),
+  reminderMethod: text("reminder_method").default("email").notNull(), // "email" | "sms"
+  reminderTime: text("reminder_time").default("08:00").notNull(),     // HH:MM in the user's local timezone
+  // True once the timezone was actually chosen/detected for this user (Settings save or browser
+  // auto-detect). Signup writes a placeholder "America/New_York", so `timezone` alone can't tell us.
+  timezoneConfirmed: boolean("timezone_confirmed").default(false).notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertUserScheduleSchema = createInsertSchema(userSchedule).omit({ id: true, updatedAt: true });
+export const REMINDER_METHODS = ["email", "sms"] as const;
+export type ReminderMethod = typeof REMINDER_METHODS[number];
 export type InsertUserSchedule = z.infer<typeof insertUserScheduleSchema>;
 export type UserSchedule = typeof userSchedule.$inferSelect;
 
@@ -296,3 +307,21 @@ export const bookResources = pgTable("book_resources", {
 export const insertBookResourceSchema = createInsertSchema(bookResources).omit({ id: true, createdAt: true });
 export type InsertBookResource = z.infer<typeof insertBookResourceSchema>;
 export type BookResource = typeof bookResources.$inferSelect;
+
+// Reminder send log — one row per reminder actually attempted. The unique index on
+// (user_id, kind, local_date) is what guarantees a user is never reminded twice for the
+// same local day, even across server restarts or multiple instances.
+export const reminderLog = pgTable("reminder_log", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  kind: text("kind").notNull().default("daily_score"), // room for a later "second reminder" kind
+  localDate: date("local_date").notNull(),             // the user's local calendar day (YYYY-MM-DD)
+  channel: text("channel").notNull(),                  // "email" | "sms"
+  destination: text("destination"),                    // masked email / phone
+  status: text("status").notNull().default("sending"), // sending | sent | failed
+  providerId: text("provider_id"),                     // Twilio SID when available
+  error: text("error"),
+  timezone: text("timezone"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ReminderLogEntry = typeof reminderLog.$inferSelect;
