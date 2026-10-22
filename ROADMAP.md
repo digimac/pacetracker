@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: October 8, 2026 (added automatic daily scoring reminder)_
+_Last updated: October 22, 2026 (added reversible Simple mode)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `cd57917` — automatic daily scoring reminder (email OR SMS per user preference)
+- **Last shipped commit**: `c48b759` — reversible Simple mode (Today, History, Settings only)
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -57,6 +57,14 @@ This document tracks what's shipped, what's in progress, and what's planned for 
   - **Settings → Daily Schedule → Daily Score Reminder**: on/off, preferred method (Email / Text message), reminder time (Default 08:00 / wake time / work start shortcuts).
   - **Admin → Emails → Daily Score Reminders**: "Preview Who's Due" (dry run, sends nothing), "Run Now", a persisted send log, and a new editable **Daily Score Reminder** email template (`daily_reminder`, variables `{{displayName}}`, `{{settingsUrl}}`).
   - Env: `REMINDER_SCHEDULER=off` disables the scheduler (`on` enables it outside production). Email links use `APP_URL`, so make sure it's set to `https://sweetmo.io` on Render. Because the scheduler runs inside the web service, the service has to stay awake; Render free instances sleep when idle.
+- **Simple mode** (Oct 22, 2026, `c48b759`) — one app-wide, reversible switch that trims Sweet Momentum to its core loop: get a reminder, score 6 metrics, see your streak. **On by default**; flip it in **Admin → Content → App Mode** (Simple / Full). Nothing is deleted, and turning it off restores every page and section immediately (members pick it up on their next page load). Stored in the new `app_settings` table (key `simple_mode`).
+  - **Menu**: Today, History, Settings (plus Admin for the admin). Opening the app, logging in, and every hidden page (Dashboard, Score Map, Network, Groups, Story, Daily Tracking, Connect, Community) go to **Today**. Billing pages stay reachable (Stripe returns, trial banner) but aren't in the menu.
+  - **Signup**: one step (name, email, password), then straight to Today. Phone, location, and category can be added later in Settings.
+  - **Today**: the 6 metrics are the screen. One Save button (bottom); goal box and notes sit behind **"Add a note"** (auto-opens if today already has one); day counters, Momentum Partners, Groups, and the "add custom metrics" link are hidden. Existing custom metrics still show so nobody loses data. After saving, a **streak + Day Quality** card appears at the top with a "See history" button.
+  - **History**: the Dashboard's **Day Quality** breakdown (last 30 days) now sits under the stats strip; Goal History is hidden.
+  - **Settings**: Profile (name, mobile number, SMS opt-in), **Reminder & Timezone** (timezone + daily reminder). Location, community, core/custom metrics, wake/sleep/work times, daily goal statement, day counters, goal list, and connections are hidden.
+  - Day Quality thresholds (Strong 4+, Solid 1–3, Off ≤0) now live in one shared helper used by Dashboard, History, and Today.
+  - Also fixed: on narrow phones the metric-card badges ran under the Win button; they now wrap, and the redundant SUCCESS/SETBACK badge hides below tablet width.
 
 **Marketing pages**
 - `/start` — public marketing landing page
@@ -91,6 +99,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - [ ] Reduce signup friction: personalized onboarding questions, contextual tooltips, embedded instructional clips
 - [ ] Decide primary acquisition channel to build content around (paid social vs. organic vs. email)
 - [ ] Wire the candy icon into Dashboard and History views too (currently only shows on the Today page's MetricCard — Kevin is sourcing the actual icon artwork to upload via admin)
+- [ ] **Measure Simple mode**: add GA events for first-day score, 7-day return, and days scored per week; compare against pre-switch signups before deciding what (if anything) to bring back
 - [ ] **Daily reminder follow-ups**: (1) optional second reminder later in the day (log already supports a separate `kind`); (2) one-click unsubscribe link in reminder emails (they currently link to Settings); (3) confirm `APP_URL` on Render and verify the first real 8 AM sends in Admin → Emails → Reminder Send Log
 - [ ] Populate `/book/resources` with real content — page and admin manager are live but empty; add the actual illustrations/charts from the book and any downloadable resources via Admin → Resources
 
