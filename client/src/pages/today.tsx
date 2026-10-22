@@ -14,6 +14,10 @@ import MetricInfoModal from "@/components/metric-info-modal";
 import { DayCountersStrip } from "@/components/day-counters-strip";
 import { GroupCard } from "@/components/group-card";
 import { useUserTimezone } from "@/hooks/use-user-timezone";
+import { useSimpleMode } from "@/lib/simple-mode";
+import { dayTier, DAY_TIER_LABEL, currentStreak } from "@/lib/day-quality";
+import { format, subDays } from "date-fns";
+import { Flame, StickyNote } from "lucide-react";
 
 const CORE_METRICS = [
   { key: "TIME", label: "TIME", description: "Did you manage your time with intention today?" },
@@ -103,7 +107,8 @@ function MetricCard({
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          {/* flex-wrap: on narrow phones the badges wrap instead of running under the Win button */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
             {candyIconUrl && (
               <img src={candyIconUrl} alt="" className="w-5 h-5 rounded object-cover flex-shrink-0" />
             )}
@@ -111,7 +116,7 @@ function MetricCard({
               {label}
             </span>
             {isSuccess && !isCustom && (
-              <Badge className="text-[10px] bg-green-500/20 text-green-400 border-green-500/30">SUCCESS +1</Badge>
+              <Badge className="hidden sm:inline-flex text-[10px] bg-green-500/20 text-green-400 border-green-500/30">SUCCESS +1</Badge>
             )}
             {isSuccess && isCustom && (
               <Badge
@@ -121,7 +126,7 @@ function MetricCard({
                 SUCCESS +1
               </Badge>
             )}
-            {isSetback && <Badge className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30">SETBACK -1</Badge>}
+            {isSetback && <Badge className="hidden sm:inline-flex text-[10px] bg-red-500/20 text-red-400 border-red-500/30">SETBACK -1</Badge>}
             {/* Streak badge */}
             {streak && streak >= 2 && (
               <span
@@ -212,6 +217,8 @@ export default function TodayPage() {
   const [notes, setNotes] = useState("");
   const [goalText, setGoalText] = useState("");
   const [activeModal, setActiveModal] = useState<{ key: string; label: string } | null>(null);
+  const { simpleMode } = useSimpleMode();
+  const [noteOpen, setNoteOpen] = useState(false);
 
   // Fetch today's entry
   const { data: entryData, isLoading } = useQuery({
@@ -240,6 +247,16 @@ export default function TodayPage() {
     queryKey: ["/api/connections"],
     queryFn: () => apiRequest("GET", "/api/connections").then(r => r.json()),
     staleTime: 60_000,
+    enabled: !simpleMode, // partners are hidden in Simple mode
+  });
+
+  // Simple mode: scored-day history for the streak shown after saving
+  const streakStart = format(subDays(new Date(today + "T12:00:00"), 400), "yyyy-MM-dd");
+  const { data: recentDays = [] } = useQuery<{ entry: { entryDate: string }; total: number }[]>({
+    queryKey: ["/api/dashboard", streakStart, today],
+    queryFn: () => apiRequest("GET", `/api/dashboard?startDate=${streakStart}&endDate=${today}`).then(r => r.json()),
+    enabled: simpleMode,
+    staleTime: 60_000,
   });
 
   // Metric streaks
@@ -259,6 +276,7 @@ export default function TodayPage() {
       setRatings(scoreMap);
       setNotes(entryData.entry?.notes || "");
       setGoalText((entryData.entry as any)?.goalText || "");
+      if (entryData.entry?.notes || (entryData.entry as any)?.goalText) setNoteOpen(true);
     } else {
       const defaults: Record<string, Rating> = {};
       CORE_METRICS.forEach(m => defaults[m.key] = "skip");
@@ -300,6 +318,8 @@ export default function TodayPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/goal-history"] });
       toast({ title: "Saved", description: "Today's metrics have been recorded." });
+      // Simple mode: bring the streak + Day Quality summary at the top into view
+      if (simpleMode) document.getElementById("main-content")?.scrollTo({ top: 0, behavior: "smooth" });
     },
     onError: () => toast({ title: "Error", description: "Could not save.", variant: "destructive" }),
   });
@@ -314,6 +334,15 @@ export default function TodayPage() {
 
   const scoreColor = totalScore > 0 ? "text-green-400" : totalScore < 0 ? "text-red-400" : "text-muted-foreground";
   const scorePct = maxScore > 0 ? Math.max(0, Math.round((totalScore / maxScore) * 100)) : 0;
+
+  // Simple mode summary uses what's SAVED, not unsaved taps
+  const savedScores: MetricScore[] = (entryData as any)?.scores || [];
+  const savedToday = savedScores.length > 0;
+  const savedTotal = savedScores.filter(s => s.rating === "success").length - savedScores.filter(s => s.rating === "setback").length;
+  const savedTier = dayTier(savedTotal);
+  const scoredDates = new Set(recentDays.map(d => d.entry.entryDate));
+  if (savedToday) scoredDates.add(today);
+  const streak = currentStreak(scoredDates, today);
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
@@ -344,8 +373,33 @@ export default function TodayPage() {
         </div>
       </div>
 
-      {/* Save button — top (duplicate of bottom button) */}
-      <Button
+      {/* Simple mode: streak + Day Quality once today is saved */}
+      {simpleMode && savedToday && (
+        <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between gap-4" data-testid="simple-day-summary">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <Flame className={`w-5 h-5 ${streak > 0 ? "text-amber-400" : "text-muted-foreground"}`} />
+              <div>
+                <p className="text-2xl font-black leading-none">{streak}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">day streak</p>
+              </div>
+            </div>
+            <div className="h-10 w-px bg-border" />
+            <div>
+              <p className={`text-2xl font-black leading-none ${savedTier === "strong" ? "text-green-400" : savedTier === "solid" ? "text-primary" : "text-muted-foreground"}`}>
+                {DAY_TIER_LABEL[savedTier]}
+              </p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">day quality · {savedTotal > 0 ? `+${savedTotal}` : savedTotal}</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setLocation("/history")} data-testid="button-see-history">
+            See history
+          </Button>
+        </div>
+      )}
+
+      {/* Save button — top (duplicate of bottom button; hidden in Simple mode) */}
+      {!simpleMode && <Button
         onClick={() => saveMutation.mutate()}
         disabled={saveMutation.isPending}
         className="w-full mb-6"
@@ -354,7 +408,7 @@ export default function TodayPage() {
       >
         <Save className="w-4 h-4 mr-2" />
         {saveMutation.isPending ? "Saving..." : "Save Today's Score"}
-      </Button>
+      </Button>}
 
       {/* Core Metrics */}
       <section className="mb-6">
@@ -377,7 +431,7 @@ export default function TodayPage() {
                 streak={streaks[m.key]}
                 candyIconUrl={(metricContentMap[m.key] as any)?.candyIconUrl}
               />
-              {m.key === "GOAL" && (
+              {m.key === "GOAL" && !simpleMode && (
                 <div className="mt-1.5 ml-1">
                   <Input
                     placeholder="What is your goal for today?"
@@ -420,7 +474,7 @@ export default function TodayPage() {
         </section>
       )}
 
-      {customMetrics.length < 4 && (
+      {customMetrics.length < 4 && !simpleMode && (
         <div className="mb-6">
           <button onClick={() => setLocation("/settings")} className="flex items-center gap-2 text-xs text-primary hover:underline">
             <span>+ Add up to {4 - customMetrics.length} more custom metrics in Settings</span>
@@ -429,11 +483,11 @@ export default function TodayPage() {
         </div>
       )}
 
-      {/* Day Counters */}
-      <DayCountersStrip />
+      {/* Day Counters, partners, groups — hidden in Simple mode */}
+      {!simpleMode && <DayCountersStrip />}
 
       {/* Momentum Partners */}
-      {partners.length > 0 && (
+      {!simpleMode && partners.length > 0 && (
         <section className="mb-6">
           <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">Momentum Partners</p>
           <div className="grid grid-cols-4 gap-2">
@@ -480,10 +534,34 @@ export default function TodayPage() {
       )}
 
       {/* Momentum Groups */}
-      {user && <GroupCard userId={user.id} />}
+      {user && !simpleMode && <GroupCard userId={user.id} />}
+
+      {/* Simple mode: goal + notes tucked behind "Add a note" */}
+      {simpleMode && !noteOpen && (
+        <button
+          type="button"
+          onClick={() => setNoteOpen(true)}
+          className="mb-6 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+          data-testid="button-add-note"
+        >
+          <StickyNote className="w-3.5 h-3.5" /> Add a note
+        </button>
+      )}
+      {simpleMode && noteOpen && (
+        <div className="mb-3">
+          <Input
+            placeholder="What is your goal for today? (optional)"
+            value={goalText}
+            onChange={e => setGoalText(e.target.value)}
+            className="text-sm h-9 bg-muted/30 border-border/50 placeholder:text-muted-foreground/50"
+            data-testid="input-goal-text"
+            maxLength={300}
+          />
+        </div>
+      )}
 
       {/* Notes */}
-      <section className="mb-6">
+      {(!simpleMode || noteOpen) && <section className="mb-6">
         <div className="flex items-baseline justify-between mb-2">
           <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Today's Notes for Tomorrow's Goal</h2>
           <span className="text-[10px] text-muted-foreground/50">Optional · saved with your score</span>
@@ -496,7 +574,7 @@ export default function TodayPage() {
           className="resize-none"
           data-testid="textarea-notes"
         />
-      </section>
+      </section>}
 
       {/* Save */}
       <Button

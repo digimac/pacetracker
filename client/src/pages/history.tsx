@@ -18,6 +18,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { MetricScore, CustomMetric } from "@shared/schema";
 import { DaySparkline } from "@/components/day-sparkline";
+import { DayQualityCard } from "@/components/day-quality-card";
+import { useSimpleMode } from "@/lib/simple-mode";
 import type { TimelineEvent } from "@/components/day-sparkline";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -548,6 +550,7 @@ function getListRange(period: string) {
 }
 
 export default function HistoryPage() {
+  const { simpleMode } = useSimpleMode();
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const [listPeriod, setListPeriod] = useState("30d");
 
@@ -616,6 +619,13 @@ export default function HistoryPage() {
         ))}
       </div>
 
+      {/* Simple mode: Dashboard's Day Quality breakdown lives here (last 30 days) */}
+      {simpleMode && (() => {
+        const cutoff = format(subDays(new Date(), 29), "yyyy-MM-dd");
+        const last30 = calResults.filter(r => r.entry.entryDate >= cutoff).map(r => r.total);
+        return <DayQualityCard totals={last30} label="Last 30 Days" className="mb-5" />;
+      })()}
+
       {/* View toggle */}
       <div className="flex items-center gap-2 mb-5">
         <button
@@ -668,8 +678,8 @@ export default function HistoryPage() {
         />
       )}
 
-      {/* Goal Inventory */}
-      <GoalList />
+      {/* Goal Inventory (hidden in Simple mode) */}
+      {!simpleMode && <GoalList />}
     </div>
   );
 }

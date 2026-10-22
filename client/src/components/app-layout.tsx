@@ -25,6 +25,7 @@ import {
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
+import { useSimpleMode } from "@/lib/simple-mode";
 
 const ADMIN_EMAIL = "track@sweetmo.io";
 
@@ -36,9 +37,19 @@ const NAV_ITEMS = [
   { label: "Settings",  icon: Settings,         path: "/settings" },
 ];
 
+// Simple mode: three items, Today first.
+const SIMPLE_NAV_ITEMS = [
+  { label: "Today",    icon: CalendarCheck, path: "/today" },
+  { label: "History",  icon: History,       path: "/history" },
+  { label: "Settings", icon: Settings,      path: "/settings" },
+];
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, setUser } = useAuth();
   const isAdmin = user?.email === ADMIN_EMAIL;
+  const { simpleMode } = useSimpleMode();
+  const navItems = simpleMode ? SIMPLE_NAV_ITEMS : NAV_ITEMS;
+  const homePath = simpleMode ? "/today" : "/dashboard";
 
   const { data: billing } = useQuery<{ isPro: boolean }>({
     queryKey: ["/api/billing/status"],
@@ -98,8 +109,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <nav aria-label="Main navigation" className="flex-1 px-3 py-4 space-y-1">
-          {NAV_ITEMS.map(({ label, icon: Icon, path }) => {
-            const active = location === path || (location === "/" && path === "/dashboard") || (location === "" && path === "/dashboard");
+          {navItems.map(({ label, icon: Icon, path }) => {
+            const active = location === path || (location === "/" && path === homePath) || (location === "" && path === homePath);
             return (
               <button
                 key={path}
@@ -120,8 +131,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             );
           })}
 
-          {/* Content pages — all users */}
-          <div className="pt-2 mt-2 border-t border-[hsl(var(--sidebar-border))]">
+          {/* Content pages — all users (hidden in Simple mode) */}
+          {!simpleMode && <div className="pt-2 mt-2 border-t border-[hsl(var(--sidebar-border))]">
             {([
               { label: "The Story", icon: BookOpen, path: "/story" },
               { label: "Daily Tracking", icon: Monitor, path: "/tracking" },
@@ -144,10 +155,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {label}
               </button>
             ))}
-          </div>
+          </div>}
 
           {/* Globe — Pro only */}
-          {isPro && (
+          {isPro && !simpleMode && (
             <button
               type="button"
               data-testid="nav-globe"
@@ -166,7 +177,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
 
           {/* Network — Pro only */}
-          {isPro && (
+          {isPro && !simpleMode && (
             <button
               type="button"
               data-testid="nav-network"
@@ -185,7 +196,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
 
           {/* Groups — Pro only */}
-          {isPro && (
+          {isPro && !simpleMode && (
             <button
               type="button"
               data-testid="nav-groups"

@@ -16,6 +16,7 @@ import { useUserTimezone, getTodayInTimezone } from "@/hooks/use-user-timezone";
 import { DaySparkline, TimelineEvent, CORE_METRIC_COLORS, getMetricColor } from "@/components/day-sparkline";
 import { DayCountersStrip } from "@/components/day-counters-strip";
 import { Sparkles } from "lucide-react";
+import { DayQualityCard } from "@/components/day-quality-card";
 
 
 type DayResult = {
@@ -146,11 +147,6 @@ export default function DashboardPage() {
   // "barely broke even" to "swept every metric," so split days into three honest bands
   // instead of one binary win/loss number. Strong = clearly ahead, Solid = net positive
   // but modest, Off = at or below even.
-  const strongDays = results.filter(r => r.total >= 4).length;
-  const solidDays = results.filter(r => r.total >= 1 && r.total <= 3).length;
-  const offDays = results.filter(r => r.total <= 0).length;
-  const dayTiers = { strong: strongDays, solid: solidDays, off: offDays };
-  const dayTierPct = (n: number) => totalDays > 0 ? Math.round((n / totalDays) * 100) : 0;
 
   const todayScore = todayData
     ? (todayData.scores || []).filter((s: any) => s.rating === "success").length -
@@ -333,52 +329,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Day Quality Breakdown */}
-          {totalDays > 0 && (
-            <Card className="mb-6">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider">Day Quality — {label}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex h-2.5 w-full rounded-full overflow-hidden bg-muted mb-4">
-                  {dayTiers.strong > 0 && (
-                    <div className="bg-green-500" style={{ width: `${dayTierPct(dayTiers.strong)}%` }} />
-                  )}
-                  {dayTiers.solid > 0 && (
-                    <div className="bg-primary" style={{ width: `${dayTierPct(dayTiers.solid)}%` }} />
-                  )}
-                  {dayTiers.off > 0 && (
-                    <div className="bg-muted-foreground/40" style={{ width: `${dayTierPct(dayTiers.off)}%` }} />
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="w-2 h-2 rounded-full bg-green-500" />
-                      <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Strong</span>
-                    </div>
-                    <div className="text-xl font-black">{dayTiers.strong}</div>
-                    <div className="text-[11px] text-muted-foreground">{dayTierPct(dayTiers.strong)}% · 4+ metrics net</div>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="w-2 h-2 rounded-full bg-primary" />
-                      <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Solid</span>
-                    </div>
-                    <div className="text-xl font-black">{dayTiers.solid}</div>
-                    <div className="text-[11px] text-muted-foreground">{dayTierPct(dayTiers.solid)}% · 1–3 metrics net</div>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="w-2 h-2 rounded-full bg-muted-foreground/40" />
-                      <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Off</span>
-                    </div>
-                    <div className="text-xl font-black">{dayTiers.off}</div>
-                    <div className="text-[11px] text-muted-foreground">{dayTierPct(dayTiers.off)}% · even or below</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <DayQualityCard totals={results.map(r => r.total)} label={label} />
 
           {/* Chart */}
           {chartData.length > 0 ? (

@@ -17,6 +17,7 @@ import {
 import type { MetricContent } from "@shared/schema";
 import { CloudinaryUpload } from "@/components/cloudinary-upload";
 import { RichBodyEditor } from "@/components/rich-body-editor";
+import { useSimpleMode } from "@/lib/simple-mode";
 
 type SitePage = {
   id: number;
@@ -2015,6 +2016,7 @@ export default function AdminPage() {
       {/* Tab content */}
       {activeTab === "content" && (
         <>
+          <AppModeCard />
           <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
             Configure the story, image, and quote shown in each metric's info modal. Users can open these by tapping the info icon on the Today page.
           </p>
@@ -2418,5 +2420,69 @@ function BookResourcesTab() {
         </div>
       )}
     </>
+  );
+}
+
+// ─── App Mode (Simple mode switch) ─────────────────────────────────────────────
+
+function AppModeCard() {
+  const { simpleMode, setSimpleMode } = useSimpleMode();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+
+  async function toggle(next: boolean) {
+    setSaving(true);
+    try {
+      const res = await apiRequest("PUT", "/api/admin/app-config", { simpleMode: next });
+      if (!res.ok) throw new Error((await res.json()).error || "Save failed");
+      setSimpleMode(next);
+      toast({
+        title: next ? "Simple mode is on" : "Simple mode is off",
+        description: next
+          ? "Members now see only Today, History, and Settings."
+          : "All pages and sections are back for every member.",
+      });
+    } catch (e: any) {
+      toast({ title: "Couldn't change app mode", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="border border-border rounded-lg p-4 mb-6" data-testid="card-app-mode">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="max-w-xl">
+          <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase mb-1">App Mode</p>
+          <p className="text-sm font-semibold">Simple mode {simpleMode ? "is on" : "is off"}</p>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            Trims the app to its core loop for every member: open on Today, score 6 metrics, see your streak.
+            Menu shows only Today, History, and Settings; signup is one step; Today hides the goal box, notes, day counters,
+            partners, and groups (notes sit behind "Add a note"); History gains the Day Quality breakdown; Settings shows
+            profile, timezone, and reminders only. Nothing is deleted. Turn it off to bring everything back instantly.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant={simpleMode ? "default" : "outline"}
+            disabled={saving || simpleMode}
+            onClick={() => toggle(true)}
+            data-testid="btn-simple-mode-on"
+          >
+            Simple
+          </Button>
+          <Button
+            size="sm"
+            variant={!simpleMode ? "default" : "outline"}
+            disabled={saving || !simpleMode}
+            onClick={() => toggle(false)}
+            data-testid="btn-simple-mode-off"
+          >
+            Full
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

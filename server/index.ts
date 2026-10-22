@@ -272,6 +272,12 @@ app.use((req, res, next) => {
       );
       CREATE UNIQUE INDEX IF NOT EXISTS "reminder_log_user_kind_date_unique" ON "reminder_log" ("user_id", "kind", "local_date");
       CREATE INDEX IF NOT EXISTS "reminder_log_created_at_idx" ON "reminder_log" ("created_at");
+
+      CREATE TABLE IF NOT EXISTS "app_settings" (
+        "key" text PRIMARY KEY NOT NULL,
+        "value" text NOT NULL,
+        "updated_at" timestamp DEFAULT now() NOT NULL
+      );
     `);
     console.log("[startup] Reminder columns + reminder_log ensured ✓");
   } catch (err: any) {

@@ -26,6 +26,7 @@ import InvitePage from "@/pages/invite";
 import { TermsPage, PrivacyPage, EulaPage } from "@/pages/legal";
 import CategoryPage from "@/pages/community";
 import AppLayout from "@/components/app-layout";
+import { SimpleModeProvider, useSimpleMode, isHiddenInSimpleMode } from "@/lib/simple-mode";
 
 function BillingSuccessPage() {
   const [, setLocation] = useLocation();
@@ -88,11 +89,12 @@ export const useAuth = () => useContext(AuthContext);
 
 function Router() {
   const { user, isLoading } = useAuth();
+  const { simpleMode, loaded: simpleModeLoaded } = useSimpleMode();
   const [location] = useLocation();
 
   // No redirect effect — all route protection is handled inline below
 
-  if (isLoading) {
+  if (isLoading || !simpleModeLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -127,9 +129,16 @@ function Router() {
     );
   }
 
-  // Redirect root to dashboard
+  // Redirect root to dashboard (Simple mode: straight to Today)
   if (location === "/" || location === "") {
-    hashNavigate("/dashboard");
+    hashNavigate(simpleMode ? "/today" : "/dashboard");
+    return null;
+  }
+
+  // Simple mode: only Today, History, Settings (plus billing/admin). Every other page,
+  // including the Dashboard, sends people to Today. Turning Simple mode off restores them.
+  if (simpleMode && isHiddenInSimpleMode(location)) {
+    hashNavigate("/today");
     return null;
   }
 
@@ -253,9 +262,11 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <SeoMetaTags />
-            <WouterRouter hook={useHashLocation}>
-              <Router />
-            </WouterRouter>
+            <SimpleModeProvider>
+              <WouterRouter hook={useHashLocation}>
+                <Router />
+              </WouterRouter>
+            </SimpleModeProvider>
             <Toaster />
           </TooltipProvider>
         </QueryClientProvider>

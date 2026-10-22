@@ -9,6 +9,7 @@ import { Link } from "wouter";
 import { useAuth } from "@/App";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useSimpleMode } from "@/lib/simple-mode";
 import { USER_CATEGORIES } from "@/lib/categories";
 import { MapPin, ArrowRight, SkipForward, MessageSquare, Bell } from "lucide-react";
 
@@ -25,6 +26,7 @@ export default function RegisterPage() {
   const { setUser } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { simpleMode } = useSimpleMode();
 
   function update(field: string, value: string) {
     setForm(f => ({ ...f, [field]: value }));
@@ -48,6 +50,9 @@ export default function RegisterPage() {
       if (phone.trim()) {
         await apiRequest("PATCH", "/api/auth/profile", { phone: phone.trim() }).catch(() => {});
       }
+      // Simple mode: one-step signup, straight to scoring the first day.
+      // Location, category, and phone can all be added later in Settings.
+      if (simpleMode) { setLocation("/today"); return; }
       // Move to optional location step
       setStep("location");
     } catch (err: any) {
@@ -197,8 +202,8 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                {/* Phone number — optional, collected early for SMS opt-in */}
-                <div className="space-y-1.5">
+                {/* Phone number — optional, collected early for SMS opt-in (hidden in Simple mode) */}
+                {!simpleMode && <div className="space-y-1.5">
                   <Label htmlFor="register-phone" className="flex items-center gap-1.5">
                     <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                     Mobile Number
@@ -217,7 +222,7 @@ export default function RegisterPage() {
                       ? "🔔 You'll be able to opt in to SMS alerts on the next step — score reminders, partner updates, and app notifications."
                       : "Add your number to enable optional SMS reminders. You can also do this later in Settings."}
                   </p>
-                </div>
+                </div>}
 
                 <Button type="submit" className="w-full" disabled={loading} data-testid="button-register">
                   {loading ? "Creating account..." : "Create Account"}

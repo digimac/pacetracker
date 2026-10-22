@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import type { CustomMetric, UserSchedule } from "@shared/schema";
 import { Plus, Trash2, Save, Clock, Lock, Zap, Globe, GripVertical, Users, Send, X, CheckCircle, RefreshCw, ChevronRight } from "lucide-react";
 import { useAuth } from "@/App";
+import { useSimpleMode } from "@/lib/simple-mode";
 import { TIMEZONE_OPTIONS, getBrowserTimezone } from "@/hooks/use-user-timezone";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -90,6 +91,7 @@ function SortableMetricRow({ metric, onDelete }: { metric: CustomMetric; onDelet
 
 export default function SettingsPage() {
   const { user, setUser } = useAuth();
+  const { simpleMode } = useSimpleMode();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -326,6 +328,8 @@ export default function SettingsPage() {
               />
             </div>
           </div>
+          {!simpleMode && (<>
+          {/* Hidden in Simple mode (Score Map only) */}
           {/* Location */}
           <div className="pt-2 border-t border-border space-y-3">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Location</p>
@@ -363,7 +367,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-
+          </>)}
           {/* Mobile Phone */}
           <div className="pt-2 border-t border-border space-y-1.5">
             <Label htmlFor="settings-phone" className="text-xs">Mobile Phone Number</Label>
@@ -399,6 +403,8 @@ export default function SettingsPage() {
           </div>
 
 
+          {!simpleMode && (<>
+          {/* Hidden in Simple mode */}
           {/* Community */}
           <div className="pt-2 border-t border-border space-y-3">
             <div>
@@ -442,7 +448,7 @@ export default function SettingsPage() {
               </button>
             )}
           </div>
-
+          </>)}
           <Button
             onClick={() => saveProfile.mutate()}
             disabled={saveProfile.isPending}
@@ -457,7 +463,9 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Core Metrics Reference */}
+      {!simpleMode && (<>
+          {/* Core + custom metrics cards: hidden in Simple mode */}
+          {/* Core Metrics Reference */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-bold uppercase tracking-wider">Core Metrics</CardTitle>
@@ -596,17 +604,19 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Daily Schedule */}
+          </>)}
+          {/* Daily Schedule */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
             <Clock className="w-4 h-4" />
-            Daily Schedule
+            {simpleMode ? "Reminder & Timezone" : "Daily Schedule"}
           </CardTitle>
-          <CardDescription className="text-xs">Configure your typical daily structure</CardDescription>
+          <CardDescription className="text-xs">{simpleMode ? "When and how we nudge you to score your day" : "Configure your typical daily structure"}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 overflow-hidden">
+          {!simpleMode && (<>
+          {/* Wake/sleep/work times: hidden in Simple mode */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ maxWidth: 'calc(100% - 1.5rem)' }}>
             <div className="space-y-1.5 min-w-0">
               <Label htmlFor="settings-wake-time" className="text-xs">Wake Time</Label>
@@ -653,6 +663,7 @@ export default function SettingsPage() {
               />
             </div>
           </div>
+          </>)}
           {/* Timezone */}
           <div className="space-y-1.5 col-span-2">
             <Label className="text-xs flex items-center gap-1.5">
@@ -690,6 +701,8 @@ export default function SettingsPage() {
             </p>
           </div>
 
+          {!simpleMode && (<>
+          {/* Daily goal statement: hidden in Simple mode */}
           <div className="space-y-1.5">
             <Label htmlFor="settings-daily-goal" className="text-xs">Daily Goal Statement</Label>
             <Textarea
@@ -702,8 +715,9 @@ export default function SettingsPage() {
               data-testid="textarea-daily-goal"
             />
           </div>
+          </>)}
           {/* Daily Score Reminder — one channel only (email OR text), never both */}
-          <div className="pt-3 border-t border-border space-y-3" data-testid="section-daily-reminder">
+          <div className={`${simpleMode ? "" : "pt-3 border-t border-border "}space-y-3`} data-testid="section-daily-reminder">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Daily Score Reminder</p>
@@ -784,7 +798,7 @@ export default function SettingsPage() {
                     >
                       Default (08:00)
                     </Button>
-                    <Button
+                    {!simpleMode && <><Button
                       type="button" size="sm" variant="outline" className="h-7 text-[10px] px-2"
                       onClick={() => setScheduleForm(f => ({ ...f, reminderTime: f.wakeTime }))}
                     >
@@ -795,7 +809,7 @@ export default function SettingsPage() {
                       onClick={() => setScheduleForm(f => ({ ...f, reminderTime: f.workStartTime }))}
                     >
                       Use work start ({scheduleForm.workStartTime})
-                    </Button>
+                    </Button></>}
                   </div>
                   <p className="text-[10px] text-muted-foreground/50">
                     Sent once a day in your timezone ({scheduleForm.timezone || "not set"}), only if you haven't scored yet.
@@ -818,14 +832,12 @@ export default function SettingsPage() {
       </Card>
 
       {/* ── Connections ─────────────────────────────────────────────────────── */}
-      {/* Day Counters */}
-      <DayCountersCard />
-
-      {/* Goal List */}
-      <GoalListCard />
-
-      {/* Connections */}
-      <ConnectionsCard />
+      {/* Day counters, goal list, connections — hidden in Simple mode */}
+      {!simpleMode && (<>
+        <DayCountersCard />
+        <GoalListCard />
+        <ConnectionsCard />
+      </>)}
     </div>
   );
 }

@@ -811,6 +811,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Public app config — read by the client before routing. Simple mode defaults to ON
+  // when no value has been saved yet; Admin → Content → App Mode turns it off.
+  app.get("/api/public/app-config", async (_req, res) => {
+    try {
+      const raw = await storage.getAppSetting("simple_mode");
+      res.json({ simpleMode: raw === undefined ? true : raw === "true" });
+    } catch (e: any) {
+      // If settings can't be read, fall back to the default rather than breaking the app.
+      res.json({ simpleMode: true });
+    }
+  });
+
+  app.put("/api/admin/app-config", requireAdmin, async (req, res) => {
+    try {
+      const { simpleMode } = z.object({ simpleMode: z.boolean() }).parse(req.body);
+      await storage.setAppSetting("simple_mode", String(simpleMode));
+      res.json({ simpleMode });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   // Public login page config — no auth required (used before user is logged in)
   app.get("/api/public/login-page", async (req, res) => {
     try {

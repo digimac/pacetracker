@@ -325,3 +325,11 @@ export const reminderLog = pgTable("reminder_log", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type ReminderLogEntry = typeof reminderLog.$inferSelect;
+
+// App-wide switches set from Admin (key/value). First use: "simple_mode".
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type AppSetting = typeof appSettings.$inferSelect;

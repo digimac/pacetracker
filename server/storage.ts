@@ -18,6 +18,7 @@ import {
   GroupMember, InsertGroupMember, groupMembers,
   BookResource, InsertBookResource, bookResources,
   ReminderLogEntry, reminderLog,
+  appSettings,
   users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections, emailTemplates,
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
@@ -142,6 +143,10 @@ export interface IStorage {
   claimReminderSend(claim: ReminderClaim): Promise<ReminderLogEntry | null>;
   updateReminderLog(id: number, updates: { status: string; providerId?: string | null; error?: string | null }): Promise<void>;
   getRecentReminderLog(limit: number): Promise<ReminderLogWithUser[]>;
+
+  // App-wide settings (Admin switches such as Simple mode)
+  getAppSetting(key: string): Promise<string | undefined>;
+  setAppSetting(key: string, value: string): Promise<void>;
 }
 
 // ─── Drizzle (PostgreSQL) implementation ────────────────────────────────────
@@ -702,6 +707,15 @@ export class DrizzleStorage implements IStorage {
       .limit(limit);
     return rows.map((r: any) => ({ ...r.log, userEmail: r.email ?? null, userDisplayName: r.displayName ?? null }));
   }
+
+  async getAppSetting(key: string): Promise<string | undefined> {
+    const rows = await this.db.select().from(appSettings).where(eq(appSettings.key, key)).limit(1);
+    return rows[0]?.value;
+  }
+  async setAppSetting(key: string, value: string): Promise<void> {
+    await this.db.insert(appSettings).values({ key, value, updatedAt: new Date() })
+      .onConflictDoUpdate({ target: appSettings.key, set: { value, updatedAt: new Date() } });
+  }
 }
 
 // ─── In-memory fallback (used in local dev without DATABASE_URL) ─────────────
@@ -1178,6 +1192,10 @@ export class MemStorage implements IStorage {
         return { ...r, userEmail: u?.email ?? null, userDisplayName: u?.displayName ?? null };
       });
   }
+
+  private appSettingsMap: Map<string, string> = new Map();
+  async getAppSetting(key: string): Promise<string | undefined> { return this.appSettingsMap.get(key); }
+  async setAppSetting(key: string, value: string): Promise<void> { this.appSettingsMap.set(key, value); }
 }
 
 // ─── Export the right implementation based on environment ────────────────────

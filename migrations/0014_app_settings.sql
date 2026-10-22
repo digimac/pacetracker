@@ -1,0 +1,6 @@
+-- App-wide Admin switches (first use: simple_mode). Applied at startup by server/index.ts.
+CREATE TABLE IF NOT EXISTS "app_settings" (
+  "key" text PRIMARY KEY NOT NULL,
+  "value" text NOT NULL,
+  "updated_at" timestamp DEFAULT now() NOT NULL
+);
