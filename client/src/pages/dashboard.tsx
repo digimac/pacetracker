@@ -144,8 +144,8 @@ export default function DashboardPage() {
     : 0;
 
   // Tiered breakdown: a single net-positive point (total > 0) can mean anything from
-  // "barely broke even" to "swept every metric," so split days into three honest bands
-  // instead of one binary win/loss number. Strong = clearly ahead, Solid = net positive
+  // "barely broke even" to "swept every metric," so split days into four honest bands
+  // instead of one binary win/loss number. Sweet = 6+ net, Strong = clearly ahead, Solid = net positive
   // but modest, Off = at or below even.
 
   const todayScore = todayData

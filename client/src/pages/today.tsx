@@ -16,7 +16,7 @@ import { GroupCard } from "@/components/group-card";
 import { useUserTimezone } from "@/hooks/use-user-timezone";
 import { useSimpleMode } from "@/lib/simple-mode";
 import { track, trackScore } from "@/lib/analytics";
-import { dayTier, DAY_TIER_LABEL, currentStreak } from "@/lib/day-quality";
+import { dayTier, DAY_TIER_LABEL, DAY_TIER_TEXT, currentStreak } from "@/lib/day-quality";
 import { format, subDays } from "date-fns";
 import { Flame, StickyNote } from "lucide-react";
 
@@ -398,7 +398,7 @@ export default function TodayPage() {
             </div>
             <div className="h-10 w-px bg-border" />
             <div>
-              <p className={`text-2xl font-black leading-none ${savedTier === "strong" ? "text-green-400" : savedTier === "solid" ? "text-primary" : "text-muted-foreground"}`}>
+              <p className={`text-2xl font-black leading-none ${DAY_TIER_TEXT[savedTier]}`}>
                 {DAY_TIER_LABEL[savedTier]}
               </p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">day quality · {savedTotal > 0 ? `+${savedTotal}` : savedTotal}</p>

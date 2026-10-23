@@ -1,14 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { countDayTiers } from "@/lib/day-quality";
 
-/** Strong / Solid / Off breakdown for a set of day totals. Used on Dashboard and History. */
+/** Sweet / Strong / Solid / Off breakdown for a set of day totals. Used on Dashboard and History. */
 export function DayQualityCard({ totals, label, className = "mb-6" }: { totals: number[]; label: string; className?: string }) {
   const totalDays = totals.length;
   if (totalDays === 0) return null;
   const dayTiers = countDayTiers(totals);
   const pct = (n: number) => Math.round((n / totalDays) * 100);
   const tiers = [
-    { key: "strong" as const, name: "Strong", dot: "bg-green-500", note: "4+ metrics net" },
+    { key: "sweet" as const, name: "Sweet", dot: "bg-[#85FF00]", note: "6+ metrics net" },
+    { key: "strong" as const, name: "Strong", dot: "bg-green-500", note: "4–5 metrics net" },
     { key: "solid" as const, name: "Solid", dot: "bg-primary", note: "1–3 metrics net" },
     { key: "off" as const, name: "Off", dot: "bg-muted-foreground/40", note: "even or below" },
   ];
@@ -23,7 +24,7 @@ export function DayQualityCard({ totals, label, className = "mb-6" }: { totals: 
             <div key={t.key} className={t.dot} style={{ width: `${pct(dayTiers[t.key])}%` }} />
           ))}
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {tiers.map(t => (
             <div key={t.key}>
               <div className="flex items-center gap-1.5 mb-1">
