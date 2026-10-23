@@ -206,6 +206,13 @@ export default function TodayPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { timezone, getTodayString } = useUserTimezone();
+  // Re-check the date every minute so a page left open past midnight rolls over to the
+  // new day instead of writing to yesterday (which is now locked).
+  const [, setClockTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setClockTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
   const today = getTodayString();
   const displayDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -282,6 +289,8 @@ export default function TodayPage() {
       const defaults: Record<string, Rating> = {};
       CORE_METRICS.forEach(m => defaults[m.key] = "skip");
       setRatings(defaults);
+      setNotes("");
+      setGoalText("");
     }
   }, [entryData]);
 
@@ -333,7 +342,14 @@ export default function TodayPage() {
       // Simple mode: bring the streak + Day Quality summary at the top into view
       if (simpleMode) document.getElementById("main-content")?.scrollTo({ top: 0, behavior: "smooth" });
     },
-    onError: () => toast({ title: "Error", description: "Could not save.", variant: "destructive" }),
+    onError: (e: any) => {
+      const dayLocked = String(e?.message || "").includes("DAY_LOCKED");
+      toast({
+        title: dayLocked ? "Day locked" : "Error",
+        description: dayLocked ? "That day has passed and can no longer be changed. Reload to score today." : "Could not save.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Calculate score

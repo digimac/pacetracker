@@ -12,6 +12,7 @@ import { getCoordsForTimezone } from "./timezone-coords";
 import { geocodeCity } from "./geocode";
 import { tickReminders, isValidTimeZone } from "./reminders";
 import { buildScoreAnalytics, getAnalyticsContext, getAppMode } from "./analytics";
+import { dayLockReason, DAY_LOCKED_CODE } from "./day-lock";
 
 // Admin email — the one account with full admin privileges
 const ADMIN_EMAIL = "track@sweetmo.io";
@@ -308,6 +309,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const userId = req.session!.userId!;
       const dateStr = req.params.date;
+      const lockReason = await dayLockReason(userId, dateStr);
+      if (lockReason) return res.status(403).json({ error: lockReason, code: DAY_LOCKED_CODE });
       const { scores, notes, goalText } = z.object({
         scores: z.array(z.object({
           metricKey: z.string(),
@@ -376,6 +379,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const userId = req.session!.userId!;
       const dateStr = req.params.date;
+      const lockReason = await dayLockReason(userId, dateStr);
+      if (lockReason) return res.status(403).json({ error: lockReason, code: DAY_LOCKED_CODE });
       const { metricKey, metricLabel, rating } = z.object({
         metricKey: z.string(),
         metricLabel: z.string(),

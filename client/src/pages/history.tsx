@@ -13,7 +13,7 @@ import {
 import { useState, useEffect } from "react";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, XCircle, Minus,
-  X, Save, CalendarDays, List, TrendingUp, Award, Target,
+  X, Save, CalendarDays, List, TrendingUp, Award, Target, Lock,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { MetricScore, CustomMetric } from "@shared/schema";
@@ -21,6 +21,7 @@ import { DaySparkline } from "@/components/day-sparkline";
 import { DayQualityCard } from "@/components/day-quality-card";
 import { useSimpleMode } from "@/lib/simple-mode";
 import { trackScore } from "@/lib/analytics";
+import { useUserTimezone } from "@/hooks/use-user-timezone";
 import type { TimelineEvent } from "@/components/day-sparkline";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -120,7 +121,11 @@ function DayDrawer({
 }) {
   const { toast } = useToast();
   const dateStr = format(date, "yyyy-MM-dd");
-  const isPast = !isToday(date);
+  // Only the member's current day (in their saved timezone) can be scored or changed.
+  // Every other day is read-only here, and the server rejects writes to it as well.
+  const { getTodayString } = useUserTimezone();
+  const isMemberToday = dateStr === getTodayString();
+  const locked = !isMemberToday;
 
   const [ratings, setRatings] = useState<Record<string, Rating>>(() => {
     const map: Record<string, Rating> = {};
@@ -174,7 +179,14 @@ function DayDrawer({
       toast({ title: "Saved", description: `${format(date, "MMM d")} score recorded.` });
       onClose();
     },
-    onError: () => toast({ title: "Error", description: "Could not save.", variant: "destructive" }),
+    onError: (e: any) => {
+      const dayLocked = String(e?.message || "").includes("DAY_LOCKED");
+      toast({
+        title: dayLocked ? "Day locked" : "Error",
+        description: dayLocked ? "This day has passed and can no longer be changed." : "Could not save.",
+        variant: "destructive",
+      });
+    },
   });
 
   const successCount = Object.values(ratings).filter(r => r === "success").length;
@@ -194,7 +206,7 @@ function DayDrawer({
         <div className="sticky top-0 bg-background/95 backdrop-blur border-b border-border px-5 py-4 flex items-center justify-between gap-4 z-10">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">
-              {isToday(date) ? "Today" : isPast ? "Past Day" : ""}
+              {isMemberToday ? "Today" : "Past Day · Locked"}
             </p>
             <h2 className="text-base font-black tracking-tight">
               {format(date, "EEEE, MMMM d, yyyy")}
@@ -234,7 +246,8 @@ function DayDrawer({
                   {(["success", "setback", "skip"] as Rating[]).map(val => (
                     <button
                       key={val}
-                      onClick={() => setRatings(prev => ({ ...prev, [m.key]: val }))}
+                      onClick={() => { if (!locked) setRatings(prev => ({ ...prev, [m.key]: val })); }}
+                      disabled={locked}
                       data-testid={`drawer-btn-${m.key.toLowerCase()}-${val}`}
                       className={`
                         flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-[9px] font-bold tracking-wider transition-all duration-150
@@ -242,6 +255,7 @@ function DayDrawer({
                           ? val === "success" ? "bg-green-500/20 border-green-500/40 text-green-400"
                             : val === "setback" ? "bg-red-500/20 border-red-500/40 text-red-400"
                             : "bg-muted border-muted-foreground/30 text-muted-foreground"
+                          : locked ? "border-border text-muted-foreground/30 cursor-default"
                           : "border-border text-muted-foreground/50 hover:border-muted-foreground/30 hover:bg-muted/50"
                         }
                       `}
@@ -274,14 +288,16 @@ function DayDrawer({
                       {(["success", "setback", "skip"] as Rating[]).map(val => (
                         <button
                           key={val}
-                          onClick={() => setRatings(prev => ({ ...prev, [key]: val }))}
+                          onClick={() => { if (!locked) setRatings(prev => ({ ...prev, [key]: val })); }}
+                          disabled={locked}
                           className={`
                             flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-[9px] font-bold tracking-wider transition-all duration-150
                             ${r === val
                               ? val === "success" ? "bg-green-500/20 border-green-500/40 text-green-400"
                                 : val === "setback" ? "bg-red-500/20 border-red-500/40 text-red-400"
                                 : "bg-muted border-muted-foreground/30 text-muted-foreground"
-                              : "border-border text-muted-foreground/50 hover:border-muted-foreground/30 hover:bg-muted/50"
+                              : locked ? "border-border text-muted-foreground/30 cursor-default"
+                          : "border-border text-muted-foreground/50 hover:border-muted-foreground/30 hover:bg-muted/50"
                             }
                           `}
                         >
@@ -306,7 +322,24 @@ function DayDrawer({
             </div>
           )}
 
-          {/* Notes */}
+{locked ? (
+            <>
+              {existingResult?.entry.notes && (
+                <div className="pt-1">
+                  <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-2">Notes</p>
+                  <p className="text-sm whitespace-pre-wrap rounded-lg border border-border bg-muted/30 px-3 py-2" data-testid="drawer-notes-readonly">{existingResult.entry.notes}</p>
+                </div>
+              )}
+              <div className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/30 px-3 py-3 mt-2" data-testid="drawer-locked-notice">
+                <Lock className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {existingResult ? "This day has passed, so its score is locked." : "This day wasn't scored, and it has now passed."} Scores can only be entered or changed on the day itself.
+                </p>
+              </div>
+            </>
+          ) : (
+          <>
+                    {/* Notes */}
           <div className="pt-1">
             <div className="flex items-baseline justify-between mb-2">
               <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Notes</p>
@@ -333,6 +366,8 @@ function DayDrawer({
             <Save className="w-4 h-4 mr-2" />
             {saveMutation.isPending ? "Saving..." : `Save ${format(date, "MMM d")} Score`}
           </Button>
+          </>
+          )}
         </div>
       </div>
     </div>
