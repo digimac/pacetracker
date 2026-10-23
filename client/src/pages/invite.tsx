@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { track } from "@/lib/analytics";
+import { useSimpleMode } from "@/lib/simple-mode";
 import { useLocation, useParams } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,7 @@ export default function InvitePage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { setUser } = useAuth();
+  const { simpleMode } = useSimpleMode();
 
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,6 +78,7 @@ export default function InvitePage() {
         toast({ title: "Account created, but invite issue", description: data.inviteError, variant: "destructive" });
       }
       if (data.user) setUser(data.user); // update auth context so Router doesn't redirect to login
+      if (data.user) track("sign_up", { method: "email", app_mode: simpleMode ? "simple" : "full", invited: "true" });
       setAccepted(true);
       setTimeout(() => setLocation("/dashboard"), 2000);
     } catch (e: any) {

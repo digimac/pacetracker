@@ -273,6 +273,19 @@ app.use((req, res, next) => {
       CREATE UNIQUE INDEX IF NOT EXISTS "reminder_log_user_kind_date_unique" ON "reminder_log" ("user_id", "kind", "local_date");
       CREATE INDEX IF NOT EXISTS "reminder_log_created_at_idx" ON "reminder_log" ("created_at");
 
+      -- Analytics: once-per-day marker + signup cohort. One-time backfill marks every
+      -- existing day as already counted so editing an old day never fires a "new day" event.
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'daily_entries' AND column_name = 'analytics_counted_at'
+        ) THEN
+          ALTER TABLE "daily_entries" ADD COLUMN "analytics_counted_at" timestamp;
+          UPDATE "daily_entries" SET "analytics_counted_at" = "created_at";
+        END IF;
+      END $$;
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "signup_app_mode" text;
+
       CREATE TABLE IF NOT EXISTS "app_settings" (
         "key" text PRIMARY KEY NOT NULL,
         "value" text NOT NULL,

@@ -15,6 +15,7 @@ import { DayCountersStrip } from "@/components/day-counters-strip";
 import { GroupCard } from "@/components/group-card";
 import { useUserTimezone } from "@/hooks/use-user-timezone";
 import { useSimpleMode } from "@/lib/simple-mode";
+import { track, trackScore } from "@/lib/analytics";
 import { dayTier, DAY_TIER_LABEL, currentStreak } from "@/lib/day-quality";
 import { format, subDays } from "date-fns";
 import { Flame, StickyNote } from "lucide-react";
@@ -295,8 +296,9 @@ export default function TodayPage() {
       metricKey: key,
       metricLabel: label,
       rating,
-    }).then(() => {
+    }).then(r => r.json()).then(d => {
       queryClient.invalidateQueries({ queryKey: ["/api/today/timeline"] });
+      trackScore(d?.analytics, "tap");
     }).catch(() => {}); // silent — batch save is the authoritative record
   }
 
@@ -313,11 +315,21 @@ export default function TodayPage() {
       }));
       return apiRequest("POST", `/api/entries/${today}/scores`, { scores, notes, goalText }).then(r => r.json());
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/entries", today] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/goal-history"] });
       toast({ title: "Saved", description: "Today's metrics have been recorded." });
+      // Analytics: new-day milestones (if this Save was the day's first rating) + the save itself
+      trackScore(data?.analytics, "save");
+      const savedRated = (data?.scores || []).filter((s: any) => s.rating !== "skip");
+      const savedNet = savedRated.filter((s: any) => s.rating === "success").length - savedRated.filter((s: any) => s.rating === "setback").length;
+      track("score_saved", {
+        app_mode: simpleMode ? "simple" : "full",
+        metrics_rated: savedRated.length,
+        day_total: savedNet,
+        day_quality: dayTier(savedNet),
+      });
       // Simple mode: bring the streak + Day Quality summary at the top into view
       if (simpleMode) document.getElementById("main-content")?.scrollTo({ top: 0, behavior: "smooth" });
     },

@@ -11,6 +11,7 @@ import { z } from "zod";
 import { getCoordsForTimezone } from "./timezone-coords";
 import { geocodeCity } from "./geocode";
 import { tickReminders, isValidTimeZone } from "./reminders";
+import { buildScoreAnalytics, getAnalyticsContext, getAppMode } from "./analytics";
 
 // Admin email — the one account with full admin privileges
 const ADMIN_EMAIL = "track@sweetmo.io";
@@ -74,7 +75,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const username = await deriveUsername(raw.email);
       const data = { ...raw, username };
 
-      const user = await storage.createUser({ ...data, password: hashPassword(data.password) });
+      const user = await storage.createUser({ ...data, password: hashPassword(data.password), signupAppMode: await getAppMode() } as any);
       req.session!.userId = user.id;
 
       // Create default schedule
@@ -191,6 +192,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
 
   // Auth: Me
+  // GA identity + cohort properties (numeric id only; no email or name is sent to GA)
+  app.get("/api/analytics/context", requireAuth, async (req, res) => {
+    try {
+      res.json(await getAnalyticsContext(req.session!.userId!));
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   app.get("/api/auth/me", async (req, res) => {
     if (!req.session?.userId) return res.status(401).json({ error: "Unauthorized" });
     const user = await storage.getUserById(req.session.userId);
@@ -331,7 +339,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       const saved = await storage.upsertMetricScores(entry.id, userId, scores);
-      res.json({ entry, scores: saved });
+      const analytics = saved.some(s => s.rating !== "skip") ? await buildScoreAnalytics(userId, entry.id, dateStr) : null;
+      res.json({ entry, scores: saved, analytics });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }
@@ -381,7 +390,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       // Upsert just this one metric with a fresh ratedAt
       await storage.upsertSingleMetricScore(entry.id, userId, { metricKey, metricLabel, rating });
-      res.json({ ok: true });
+      const analytics = rating !== "skip" ? await buildScoreAnalytics(userId, entry.id, dateStr) : null;
+      res.json({ ok: true, analytics });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }
@@ -1219,7 +1229,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const username = await deriveUsername(raw.email);
       const data = { ...raw, username };
 
-      const user = await storage.createUser({ ...data, password: hashPassword(data.password) });
+      const user = await storage.createUser({ ...data, password: hashPassword(data.password), signupAppMode: await getAppMode() } as any);
       req.session!.userId = user.id;
       await storage.upsertUserSchedule({
         userId: user.id, wakeTime: "06:00", sleepTime: "22:00",

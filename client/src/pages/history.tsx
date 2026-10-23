@@ -20,6 +20,7 @@ import type { MetricScore, CustomMetric } from "@shared/schema";
 import { DaySparkline } from "@/components/day-sparkline";
 import { DayQualityCard } from "@/components/day-quality-card";
 import { useSimpleMode } from "@/lib/simple-mode";
+import { trackScore } from "@/lib/analytics";
 import type { TimelineEvent } from "@/components/day-sparkline";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -165,7 +166,8 @@ function DayDrawer({
       }));
       return apiRequest("POST", `/api/entries/${dateStr}/scores`, { scores, notes }).then(r => r.json());
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      trackScore(data?.analytics, "history"); // back-filling a day from History
       // Invalidate all dashboard queries so calendar refreshes
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/entries", dateStr] });

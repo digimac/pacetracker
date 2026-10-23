@@ -27,6 +27,7 @@ import { TermsPage, PrivacyPage, EulaPage } from "@/pages/legal";
 import CategoryPage from "@/pages/community";
 import AppLayout from "@/components/app-layout";
 import { SimpleModeProvider, useSimpleMode, isHiddenInSimpleMode } from "@/lib/simple-mode";
+import { identifyAnalytics, resetAnalytics } from "@/lib/analytics";
 
 function BillingSuccessPage() {
   const [, setLocation] = useLocation();
@@ -255,6 +256,12 @@ export default function App() {
       })
       .catch(() => setIsLoading(false));
   }, []);
+
+  // GA identity: set on login / signup / page load with a session; cleared on logout.
+  useEffect(() => {
+    if (user?.id) identifyAnalytics(user.id);
+    else if (!isLoading) resetAnalytics();
+  }, [user?.id, isLoading]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme: () => setTheme(t => t === "dark" ? "light" : "dark") }}>

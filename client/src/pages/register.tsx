@@ -10,6 +10,7 @@ import { useAuth } from "@/App";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useSimpleMode } from "@/lib/simple-mode";
+import { track } from "@/lib/analytics";
 import { USER_CATEGORIES } from "@/lib/categories";
 import { MapPin, ArrowRight, SkipForward, MessageSquare, Bell } from "lucide-react";
 
@@ -46,6 +47,7 @@ export default function RegisterPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Registration failed");
       setUser(data.user);
+      track("sign_up", { method: "email", app_mode: simpleMode ? "simple" : "full", invited: "false" });
       // Save phone if provided
       if (phone.trim()) {
         await apiRequest("PATCH", "/api/auth/profile", { phone: phone.trim() }).catch(() => {});

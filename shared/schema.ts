@@ -19,6 +19,9 @@ export const users = pgTable("users", {
   smsOptIn: boolean("sms_opt_in").default(false).notNull(), // user opted in to SMS notifications
   trialEndsAt: timestamp("trial_ends_at"), // rolling 6-month free Pro trial, set at signup
   trialReminderSentAt: timestamp("trial_reminder_sent_at"), // when the day-45 trial-ending reminder was sent
+  // App mode at the moment this member signed up ("simple" | "full"). NULL = signed up
+  // before Simple mode existed. Used as the analytics cohort for comparing modes.
+  signupAppMode: text("signup_app_mode"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -48,6 +51,9 @@ export const dailyEntries = pgTable("daily_entries", {
   entryDate: date("entry_date").notNull(),
   notes: text("notes"),
   goalText: text("goal_text"),  // user's stated goal for this day
+  // Set the first time this day is counted for analytics (first tap or first Save).
+  // Guarantees the GA "score_day" event fires once per member per day.
+  analyticsCountedAt: timestamp("analytics_counted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -21,7 +21,7 @@ import {
   appSettings,
   users, customMetrics, dailyEntries, metricScores, userSchedule, subscriptions, metricContent, sitePages, passwordResetTokens, invites, connections, emailTemplates,
 } from "@shared/schema";
-import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
+import { eq, and, gte, lte, asc, desc, isNull } from "drizzle-orm";
 
 export type ReminderClaim = {
   userId: number;
@@ -143,6 +143,9 @@ export interface IStorage {
   claimReminderSend(claim: ReminderClaim): Promise<ReminderLogEntry | null>;
   updateReminderLog(id: number, updates: { status: string; providerId?: string | null; error?: string | null }): Promise<void>;
   getRecentReminderLog(limit: number): Promise<ReminderLogWithUser[]>;
+
+  /** Atomically mark a day as counted for analytics. True only for the first caller. */
+  claimEntryAnalytics(entryId: number): Promise<boolean>;
 
   // App-wide settings (Admin switches such as Simple mode)
   getAppSetting(key: string): Promise<string | undefined>;
@@ -708,6 +711,14 @@ export class DrizzleStorage implements IStorage {
     return rows.map((r: any) => ({ ...r.log, userEmail: r.email ?? null, userDisplayName: r.displayName ?? null }));
   }
 
+  async claimEntryAnalytics(entryId: number): Promise<boolean> {
+    const rows = await this.db.update(dailyEntries)
+      .set({ analyticsCountedAt: new Date() })
+      .where(and(eq(dailyEntries.id, entryId), isNull(dailyEntries.analyticsCountedAt)))
+      .returning({ id: dailyEntries.id });
+    return rows.length > 0;
+  }
+
   async getAppSetting(key: string): Promise<string | undefined> {
     const rows = await this.db.select().from(appSettings).where(eq(appSettings.key, key)).limit(1);
     return rows[0]?.value;
@@ -1191,6 +1202,13 @@ export class MemStorage implements IStorage {
         const u = this.usersMap.get(r.userId);
         return { ...r, userEmail: u?.email ?? null, userDisplayName: u?.displayName ?? null };
       });
+  }
+
+  async claimEntryAnalytics(entryId: number): Promise<boolean> {
+    const e = this.dailyEntries.get(entryId);
+    if (!e || (e as any).analyticsCountedAt) return false;
+    this.dailyEntries.set(entryId, { ...e, analyticsCountedAt: new Date() } as DailyEntry);
+    return true;
   }
 
   private appSettingsMap: Map<string, string> = new Map();
