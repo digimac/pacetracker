@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: October 23, 2026 (added GA events to measure Simple mode)_
+_Last updated: October 23, 2026 (added Sweet Day Quality tier)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `2ba717c` — GA4 events to measure Simple mode
+- **Last shipped commit**: `2e3ea91` — Sweet Day Quality tier
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -63,7 +63,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
   - **Today**: the 6 metrics are the screen. One Save button (bottom); goal box and notes sit behind **"Add a note"** (auto-opens if today already has one); day counters, Momentum Partners, Groups, and the "add custom metrics" link are hidden. Existing custom metrics still show so nobody loses data. After saving, a **streak + Day Quality** card appears at the top with a "See history" button.
   - **History**: the Dashboard's **Day Quality** breakdown (last 30 days) now sits under the stats strip; Goal History is hidden.
   - **Settings**: Profile (name, mobile number, SMS opt-in), **Reminder & Timezone** (timezone + daily reminder). Location, community, core/custom metrics, wake/sleep/work times, daily goal statement, day counters, goal list, and connections are hidden.
-  - Day Quality thresholds (Strong 4+, Solid 1–3, Off ≤0) now live in one shared helper used by Dashboard, History, and Today.
+  - Day Quality thresholds (Sweet 6+, Strong 4–5, Solid 1–3, Off ≤0) now live in one shared helper used by Dashboard, History, and Today.
   - Also fixed: on narrow phones the metric-card badges ran under the Win button; they now wrap, and the redundant SUCCESS/SETBACK badge hides below tablet width.
 - **GA events to measure Simple mode** (Oct 23, 2026, `2ba717c`) — GA4 property `G-6NZEK6QG6W` now gets custom events, so Simple-mode signups can be compared with earlier ones.
   - **Events**: `sign_up` (method, app_mode, invited); `score_day` (**once per member per scored day**, on the first Win/Loss tap or first Save: days_since_signup, is_today, total_days_scored, days_scored_last_7, source tap/save/history); `first_score` (once per member, same_day_as_signup); `retained_d7` (once per member, first scored day 7–13 days after signup); `score_saved` (every Save: metrics_rated, day_total, day_quality).
@@ -71,6 +71,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
   - The **server decides the facts** (it has full history + the member's timezone) and the browser only forwards them. A new `daily_entries.analytics_counted_at` marker is claimed atomically, so re-saves, extra taps, other tabs, and other devices never double-count. All days that existed before this release were marked as already counted. New `users.signup_app_mode` records the mode at signup.
   - No events from the admin account or dev builds. To check events live: in the browser console run `localStorage.setItem("sm_ga_debug","1")`, reload, then watch GA → Admin → DebugView.
   - GA caveat: ad blockers and privacy browsers drop some events, so treat GA as directional; the database is the source of truth for exact counts.
+- **"Sweet" Day Quality tier** (Oct 23, 2026) — new top tier for days with a net score of +6 or more. Tiers are now Sweet (6+), Strong (4–5), Solid (1–3), Off (≤0). Shown in lime on Today's summary and as a fourth segment on the History/Dashboard Day Quality card (2×2 grid on mobile, 4 across on desktop). GA `day_quality` can now also be `sweet`. With the 6 core metrics, Sweet means a perfect day.
 
 **Marketing pages**
 - `/start` — public marketing landing page
