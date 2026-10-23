@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: October 23, 2026 (added Sweet Day Quality tier)_
+_Last updated: October 23, 2026 (past days locked)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `2e3ea91` — Sweet Day Quality tier
+- **Last shipped commit**: `fd334a6` — past days locked
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -72,6 +72,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
   - No events from the admin account or dev builds. To check events live: in the browser console run `localStorage.setItem("sm_ga_debug","1")`, reload, then watch GA → Admin → DebugView.
   - GA caveat: ad blockers and privacy browsers drop some events, so treat GA as directional; the database is the source of truth for exact counts.
 - **"Sweet" Day Quality tier** (Oct 23, 2026) — new top tier for days with a net score of +6 or more. Tiers are now Sweet (6+), Strong (4–5), Solid (1–3), Off (≤0). Shown in lime on Today's summary and as a fourth segment on the History/Dashboard Day Quality card (2×2 grid on mobile, 4 across on desktop). GA `day_quality` can now also be `sweet`. With the 6 core metrics, Sweet means a perfect day.
+- **Past days locked** (Oct 23, 2026) — a day can only be scored or changed on that day itself, in the member's saved timezone. The server rejects writes to any other date (both Save and single-tap endpoints) with `403` / `DAY_LOCKED`, so past days can't be edited or back-filled and future days can't be pre-scored. History's day drawer is read-only for past days (labelled "Past Day · Locked", rating buttons disabled, notes shown read-only, no Save button, lock notice); today's drawer is still editable. Today re-checks the date every minute so a page left open past midnight rolls to the new day instead of writing to the locked one. Logic in `server/day-lock.ts`.
 
 **Marketing pages**
 - `/start` — public marketing landing page
