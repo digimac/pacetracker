@@ -18,6 +18,10 @@ import type { MetricContent } from "@shared/schema";
 import { CloudinaryUpload } from "@/components/cloudinary-upload";
 import { RichBodyEditor } from "@/components/rich-body-editor";
 import { useSimpleMode } from "@/lib/simple-mode";
+import {
+  DAILY_REMINDER_SMS_VARIABLES, DAILY_REMINDER_SMS_MAX_CHARS,
+  renderDailyReminderSms, dailyReminderSmsErrors, smsSegmentInfo,
+} from "@shared/sms-text";
 
 type SitePage = {
   id: number;
@@ -1587,6 +1591,8 @@ function EmailTemplatesTab() {
           )}
         </div>
 
+        <DailyReminderSmsCard />
+
         <div className="border border-border rounded-lg p-4 space-y-3 mb-3">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
@@ -2483,6 +2489,156 @@ function AppModeCard() {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+// ─── Daily reminder SMS text editor ──────────────────────────────────────────
+
+function DailyReminderSmsCard() {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const { data, isLoading } = useQuery<{ body: string; isDefault: boolean; defaultBody: string; appUrl: string }>({
+    queryKey: ["/api/admin/sms-templates/daily-reminder"],
+    queryFn: () => apiRequest("GET", "/api/admin/sms-templates/daily-reminder").then(r => r.json()),
+  });
+  const [draft, setDraft] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  useEffect(() => { if (data && draft === null) setDraft(data.body); }, [data]);
+
+  const body = draft ?? data?.body ?? "";
+  const appUrl = data?.appUrl || "https://sweetmo.io";
+  const preview = renderDailyReminderSms(body, {
+    displayName: (user as any)?.displayName || "Kevin",
+    todayUrl: `${appUrl}/#/today`,
+    settingsUrl: `${appUrl}/#/settings`,
+  });
+  const info = smsSegmentInfo(preview);
+  const errors = dailyReminderSmsErrors(body);
+  const dirty = data ? body !== data.body : false;
+  const isDefaultText = data ? body.trim() === data.defaultBody : false;
+
+  function insertToken(token: string) {
+    const el = document.getElementById("sms-reminder-text") as HTMLTextAreaElement | null;
+    if (!el) { setDraft(body + token); return; }
+    const start = el.selectionStart ?? body.length, end = el.selectionEnd ?? body.length;
+    const next = body.slice(0, start) + token + body.slice(end);
+    setDraft(next);
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(start + token.length, start + token.length); });
+  }
+
+  async function save(reset = false) {
+    setSaving(true);
+    try {
+      const res = await apiRequest("PUT", "/api/admin/sms-templates/daily-reminder", { body: reset ? null : body });
+      const out = await res.json();
+      setDraft(out.body);
+      queryClient.setQueryData(["/api/admin/sms-templates/daily-reminder"], { ...(data as any), body: out.body, isDefault: out.isDefault });
+      toast({ title: reset ? "Reminder text reset to default" : "Reminder text saved", description: "Tomorrow's text reminders will use it." });
+    } catch (e: any) {
+      const msg = String(e.message || "").replace(/^\d+:\s*/, "");
+      let detail = msg; try { detail = JSON.parse(msg).error; } catch {}
+      toast({ title: "Couldn't save", description: detail, variant: "destructive" });
+    } finally { setSaving(false); }
+  }
+
+  async function sendTest() {
+    setTesting(true);
+    try {
+      const res = await apiRequest("POST", "/api/admin/sms-templates/daily-reminder/test", { body });
+      const out = await res.json();
+      if (out.ok) toast({ title: "Test text sent", description: `Sent to ${out.to}. This is a test and doesn't count as today's reminder.` });
+      else toast({ title: "Test text failed", description: out.error || "Unknown error", variant: "destructive" });
+    } catch (e: any) {
+      const msg = String(e.message || "").replace(/^\d+:\s*/, "");
+      let detail = msg; try { detail = JSON.parse(msg).error; } catch {}
+      toast({ title: "Test text failed", description: detail, variant: "destructive" });
+    } finally { setTesting(false); }
+  }
+
+  return (
+    <div className="border border-border rounded-lg p-4 space-y-3 mb-3" data-testid="card-sms-reminder-text">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="max-w-xl">
+          <p className="text-sm font-semibold">
+            Daily Reminder Text (SMS)
+            {data && <span className="ml-2 text-[10px] font-bold tracking-widest uppercase text-muted-foreground">{data.isDefault ? "Default" : "Custom"}</span>}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            The text members get when their reminder method is Text message. Variables are filled in for each member when it sends.
+          </p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-1.5">
+            {DAILY_REMINDER_SMS_VARIABLES.map(v => (
+              <button
+                key={v.token}
+                type="button"
+                onClick={() => insertToken(v.token)}
+                title={v.description}
+                className="text-[11px] font-mono px-2 py-0.5 rounded border border-border hover:bg-muted/50"
+                data-testid={`sms-var-${v.token.replace(/[{}]/g, "")}`}
+              >
+                {v.token}
+              </button>
+            ))}
+            <span className="text-[11px] text-muted-foreground self-center">Click to insert</span>
+          </div>
+
+          <Textarea
+            id="sms-reminder-text"
+            value={body}
+            onChange={e => setDraft(e.target.value)}
+            rows={4}
+            maxLength={DAILY_REMINDER_SMS_MAX_CHARS + 50}
+            className="font-mono text-sm"
+            data-testid="sms-reminder-textarea"
+          />
+
+          <div>
+            <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-1">Preview</p>
+            <div className="rounded-2xl rounded-bl-sm bg-muted/60 px-3 py-2 text-sm whitespace-pre-wrap break-words max-w-sm" data-testid="sms-reminder-preview">
+              {preview}
+            </div>
+            <p className={`text-xs mt-1.5 ${info.segments > 1 ? "text-amber-400" : "text-muted-foreground"}`} data-testid="sms-reminder-count">
+              {info.characters} characters · {info.segments} text{info.segments === 1 ? "" : "s"} per send · {info.encoding === "GSM-7" ? "standard characters" : "Unicode"}
+              {info.segments > 1 && " (each extra part is billed as another text)"}
+            </p>
+            {info.nonGsmChars.length > 0 && (
+              <p className="text-xs text-amber-400 mt-1" data-testid="sms-reminder-unicode-warning">
+                {info.nonGsmChars.map(c => (c === "\u00a0" ? "non-breaking space" : `“${c}”`)).join(", ")} {info.nonGsmChars.length === 1 ? "forces" : "force"} Unicode,
+                which cuts each text to 70 characters. Replace {info.nonGsmChars.length === 1 ? "it" : "them"} with plain characters to fit more in one text.
+              </p>
+            )}
+            <p className="text-[11px] text-muted-foreground mt-1">Preview uses your name; names vary in length, so leave a little room.</p>
+          </div>
+
+          {errors.length > 0 && (
+            <ul className="text-xs text-red-400 space-y-0.5" data-testid="sms-reminder-errors">
+              {errors.map(e => <li key={e}>{e}</li>)}
+            </ul>
+          )}
+
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" disabled={saving || !dirty || errors.length > 0} onClick={() => save(false)} data-testid="sms-reminder-save">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save Text"}
+            </Button>
+            <Button size="sm" variant="outline" disabled={testing || errors.length > 0} onClick={sendTest} data-testid="sms-reminder-test">
+              {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send Test to My Phone"}
+            </Button>
+            <Button size="sm" variant="ghost" disabled={saving || (data?.isDefault && isDefaultText)} onClick={() => save(true)} data-testid="sms-reminder-reset">
+              Reset to Default
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

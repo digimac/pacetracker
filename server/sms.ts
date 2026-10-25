@@ -5,6 +5,8 @@
  * send fails, a warning is logged but no error is thrown.
  */
 import twilio from "twilio";
+import { storage } from "./storage";
+import { DAILY_REMINDER_SMS_KEY, DEFAULT_DAILY_REMINDER_SMS, renderDailyReminderSms } from "@shared/sms-text";
 
 const ACCOUNT_SID  = process.env.TWILIO_ACCOUNT_SID;
 const AUTH_TOKEN   = process.env.TWILIO_AUTH_TOKEN;
@@ -214,11 +216,31 @@ export async function sendDailyScoreReminderSms(opts: {
   to: string;
   displayName: string;
 }): Promise<{ ok: boolean; sid?: string; error?: string }> {
-  const body =
-    `Sweet Momentum: Good morning ${opts.displayName}, time to score your day → ${APP_URL}/#/today\n` +
-    `Reply STOP to unsubscribe.`;
+  const body = await buildDailyReminderSms(opts.displayName);
   return sendSmsDetailed(opts.to, body);
 }
+
+/** Saved Admin text (Admin → Emails → Daily Reminder Text), or the default if none saved. */
+export async function getDailyReminderSmsTemplate(): Promise<{ body: string; isDefault: boolean }> {
+  try {
+    const saved = await storage.getAppSetting(DAILY_REMINDER_SMS_KEY);
+    if (saved && saved.trim()) return { body: saved, isDefault: false };
+  } catch (e) {
+    console.warn("[sms] Could not load daily reminder text, using default:", e);
+  }
+  return { body: DEFAULT_DAILY_REMINDER_SMS, isDefault: true };
+}
+
+export async function buildDailyReminderSms(displayName: string, template?: string): Promise<string> {
+  const body = template ?? (await getDailyReminderSmsTemplate()).body;
+  return renderDailyReminderSms(body, {
+    displayName,
+    todayUrl: `${APP_URL}/#/today`,
+    settingsUrl: `${APP_URL}/#/settings`,
+  });
+}
+
+export const SMS_APP_URL = APP_URL;
 
 export async function sendWelcomeSms(opts: {
   to: string;

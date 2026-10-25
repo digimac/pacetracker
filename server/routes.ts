@@ -3,9 +3,11 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL, PRICE_GROUP_MONTHLY, PRICE_GROUP_ANNUAL } from "./billing";
 import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, sendTrialEndingEmail, createTransporter, checkSmtpStatus } from "./email";
+import { getDailyReminderSmsTemplate, buildDailyReminderSms, SMS_APP_URL } from "./sms";
 import { sendSms, sendSmsDetailed, sendDailyReminderSms, sendWelcomeSms, checkTwilioStatus, SMS_STATUS_CALLBACK_URL, recordSmsStatusEvent, getRecentSmsStatusEvents, KNOWN_ERROR_CODES } from "./sms";
 import { hubspotSyncNewUser, hubspotSyncPlanChange, hubspotSyncDeleteUser } from "./hubspot";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
+import { DAILY_REMINDER_SMS_KEY, DEFAULT_DAILY_REMINDER_SMS, dailyReminderSmsErrors } from "@shared/sms-text";
 import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, insertMetricScoreSchema, insertUserScheduleSchema, insertSitePageSchema, REMINDER_METHODS } from "@shared/schema";
 import { z } from "zod";
 import { getCoordsForTimezone } from "./timezone-coords";
@@ -1971,6 +1973,47 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }).parse(req.body);
       const result = await sendSmsDetailed(phone, message);
       res.json({ ok: result.ok, phone, sid: result.sid, error: result.error });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // Admin: daily reminder SMS text (stored in app_settings; empty = built-in default)
+  app.get("/api/admin/sms-templates/daily-reminder", requireAdmin, async (_req, res) => {
+    try {
+      const { body, isDefault } = await getDailyReminderSmsTemplate();
+      res.json({ body, isDefault, defaultBody: DEFAULT_DAILY_REMINDER_SMS, appUrl: SMS_APP_URL });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.put("/api/admin/sms-templates/daily-reminder", requireAdmin, async (req, res) => {
+    try {
+      const { body } = z.object({ body: z.string().nullable() }).parse(req.body);
+      // null (or the exact default) resets to the built-in text
+      if (body === null || body.trim() === DEFAULT_DAILY_REMINDER_SMS) {
+        await storage.setAppSetting(DAILY_REMINDER_SMS_KEY, "");
+        return res.json({ body: DEFAULT_DAILY_REMINDER_SMS, isDefault: true });
+      }
+      const errors = dailyReminderSmsErrors(body);
+      if (errors.length) return res.status(400).json({ error: errors.join(" "), errors });
+      await storage.setAppSetting(DAILY_REMINDER_SMS_KEY, body.trim());
+      res.json({ body: body.trim(), isDefault: false });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // Send the (unsaved or saved) reminder text to the admin's own phone, filled in with their name.
+  app.post("/api/admin/sms-templates/daily-reminder/test", requireAdmin, async (req, res) => {
+    try {
+      const { body } = z.object({ body: z.string().optional() }).parse(req.body ?? {});
+      const admin = await storage.getUserById((req as any).session.userId);
+      const phone = (admin as any)?.phone as string | undefined;
+      if (!phone) return res.status(400).json({ error: "Add a phone number to your own Settings first." });
+      if (body !== undefined) {
+        const errors = dailyReminderSmsErrors(body);
+        if (errors.length) return res.status(400).json({ error: errors.join(" "), errors });
+      }
+      const text = await buildDailyReminderSms(admin?.displayName || "there", body?.trim());
+      const result = await sendSmsDetailed(phone, text);
+      const masked = phone.replace(/\d(?=\d{4})/g, "•");
+      res.json({ ok: result.ok, to: masked, sid: result.sid, error: result.error });
     } catch (e: any) { res.status(400).json({ error: e.message }); }
   });
 
