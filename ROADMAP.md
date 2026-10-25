@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: October 23, 2026 (past days locked)_
+_Last updated: October 24, 2026 (admin account now receives daily reminders)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `fd334a6` — past days locked
+- **Last shipped commit**: `57b0f5e` — admin account now receives daily reminders
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -73,6 +73,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
   - GA caveat: ad blockers and privacy browsers drop some events, so treat GA as directional; the database is the source of truth for exact counts.
 - **"Sweet" Day Quality tier** (Oct 23, 2026) — new top tier for days with a net score of +6 or more. Tiers are now Sweet (6+), Strong (4–5), Solid (1–3), Off (≤0). Shown in lime on Today's summary and as a fourth segment on the History/Dashboard Day Quality card (2×2 grid on mobile, 4 across on desktop). GA `day_quality` can now also be `sweet`. With the 6 core metrics, Sweet means a perfect day.
 - **Past days locked** (Oct 23, 2026) — a day can only be scored or changed on that day itself, in the member's saved timezone. The server rejects writes to any other date (both Save and single-tap endpoints) with `403` / `DAY_LOCKED`, so past days can't be edited or back-filled and future days can't be pre-scored. History's day drawer is read-only for past days (labelled "Past Day · Locked", rating buttons disabled, notes shown read-only, no Save button, lock notice); today's drawer is still editable. Today re-checks the date every minute so a page left open past midnight rolls to the new day instead of writing to the locked one. Logic in `server/day-lock.ts`.
+- **Admin account receives daily reminders** (Oct 24, 2026) — removed the `admin_account` skip from the daily reminder job so track@sweetmo.io gets its reminder like any member (SMS at 8:00 AM Eastern), letting the owner verify reminders end to end. Admin is still excluded from Google Analytics. Diagnosis that led here: production scheduler runs fine on the Starter plan, but the admin account was the only one set up for SMS, 22 of 24 accounts are skipped as `no_timezone` (never opened the app since reminders shipped; left as-is by decision), and email has failed since Oct 23 with SMTP `535 Invalid login`.
 
 **Marketing pages**
 - `/start` — public marketing landing page
@@ -107,6 +108,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - [ ] Reduce signup friction: personalized onboarding questions, contextual tooltips, embedded instructional clips
 - [ ] Decide primary acquisition channel to build content around (paid social vs. organic vs. email)
 - [ ] Wire the candy icon into Dashboard and History views too (currently only shows on the Today page's MetricCard — Kevin is sourcing the actual icon artwork to upload via admin)
+- [ ] **Fix email delivery (Kevin, Monday)**: since Oct 23 every outgoing email (reminders, password resets, welcome) fails with SMTP `535 5.7.8 Invalid login`. Check the SMTP.com account, issue a new key/password, and update `SMTP_PASS` on the Render service.
 - [ ] **GA setup for Simple-mode reporting (Kevin, in GA Admin)**: register custom definitions (user-scoped `app_mode`, `signup_app_mode`, `signup_week`; event-scoped `source`, `is_today`, `day_quality`, `same_day_as_signup`; custom metrics `days_since_signup`, `days_scored_last_7`, `total_days_scored`, `metrics_rated`, `day_total`), mark `sign_up`, `first_score`, `retained_d7` as key events, then build the three explorations (first-day score rate, 7-day return, days scored per week) split by `signup_app_mode`. Give it 2–4 weeks of signups before judging.
 - [ ] **Daily reminder follow-ups**: (1) optional second reminder later in the day (log already supports a separate `kind`); (2) one-click unsubscribe link in reminder emails (they currently link to Settings); (3) confirm `APP_URL` on Render and verify the first real 8 AM sends in Admin → Emails → Reminder Send Log
 - [ ] Populate `/book/resources` with real content — page and admin manager are live but empty; add the actual illustrations/charts from the book and any downloadable resources via Admin → Resources
