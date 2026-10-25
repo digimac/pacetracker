@@ -27,7 +27,6 @@ export const DAILY_REMINDER_KIND = "daily_score";
 export const DEFAULT_REMINDER_TIME = "08:00";
 export const CATCH_UP_MINUTES = 60;
 const TICK_MS = 5 * 60 * 1000;
-const ADMIN_EMAIL = "track@sweetmo.io";
 
 export type SkipReason =
   | "admin_account"
@@ -120,7 +119,8 @@ export async function runDailyReminders(opts: { now?: Date; dryRun?: boolean } =
   for (const { user, schedule } of rows as { user: User; schedule: UserSchedule }[]) {
     summary.considered++;
     try {
-      if (user.email === ADMIN_EMAIL) { skip("admin_account"); continue; }
+      // The admin account (track@sweetmo.io) is reminded like any member so the owner can
+      // see reminders working end to end. It is still excluded from Google Analytics.
       if (!schedule.reminderEnabled) { skip("reminders_off"); continue; }
 
       // No saved timezone → skip (never guess; a wrong guess means a 5 AM text).
