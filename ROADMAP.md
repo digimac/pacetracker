@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: October 25, 2026 (Admin editor for the daily reminder text)_
+_Last updated: October 26, 2026 (activity timeline on Today)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `f1b5e61` — Admin editor for the daily reminder text
+- **Last shipped commit**: `eb13bc4` — activity timeline on Today
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -75,6 +75,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **Past days locked** (Oct 23, 2026) — a day can only be scored or changed on that day itself, in the member's saved timezone. The server rejects writes to any other date (both Save and single-tap endpoints) with `403` / `DAY_LOCKED`, so past days can't be edited or back-filled and future days can't be pre-scored. History's day drawer is read-only for past days (labelled "Past Day · Locked", rating buttons disabled, notes shown read-only, no Save button, lock notice); today's drawer is still editable. Today re-checks the date every minute so a page left open past midnight rolls to the new day instead of writing to the locked one. Logic in `server/day-lock.ts`.
 - **Admin account receives daily reminders** (Oct 24, 2026) — removed the `admin_account` skip from the daily reminder job so track@sweetmo.io gets its reminder like any member (SMS at 8:00 AM Eastern), letting the owner verify reminders end to end. Admin is still excluded from Google Analytics. Diagnosis that led here: production scheduler runs fine on the Starter plan, but the admin account was the only one set up for SMS, 22 of 24 accounts are skipped as `no_timezone` (never opened the app since reminders shipped; left as-is by decision), and email has failed since Oct 23 with SMTP `535 Invalid login`.
 - **Admin editor for the daily reminder text** (Oct 25, 2026) — Admin → Emails → Daily Score Reminders now has a "Daily Reminder Text (SMS)" card. Edit the wording with `{{displayName}}`, `{{todayUrl}}`, `{{settingsUrl}}` (click-to-insert), see a live preview with a character count and how many texts each send bills as, get a warning for characters that force Unicode (e.g. the default text's "→" makes it 2 texts), send a test to your own phone, or reset to the default. Saving requires "Sweet Momentum" and STOP wording (promised in /sms-terms) and no unknown variables, checked in the browser and on the server. Stored in `app_settings` (`sms_daily_reminder`; empty = default); shared logic in `shared/sms-text.ts`. Default wording unchanged until edited.
+- **Activity timeline on Today** (Oct 26, 2026) — the dot timeline ("Today's Activity Timeline") now shows on Today, between the score/summary and Core Metrics, in both Simple and Full mode, as a quick view of the day's scoring. Hidden until the first Win/Loss tap so a fresh day goes straight to the buttons; updates on every tap and Save. Extracted into a shared `TodayTimelineCard` (also used by the Dashboard, unchanged there, including the Admin background image). Fixes to the shared `DaySparkline`: it now draws at the container's real width, so on phones dots and time labels stay full size instead of shrinking to about half, and the stem lines no longer block taps on stacked dots.
 
 **Marketing pages**
 - `/start` — public marketing landing page
