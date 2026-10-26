@@ -16,6 +16,7 @@ import { GroupCard } from "@/components/group-card";
 import { useUserTimezone } from "@/hooks/use-user-timezone";
 import { useSimpleMode } from "@/lib/simple-mode";
 import { track, trackScore } from "@/lib/analytics";
+import { TodayTimelineCard } from "@/components/today-timeline-card";
 import { dayTier, DAY_TIER_LABEL, DAY_TIER_TEXT, currentStreak } from "@/lib/day-quality";
 import { format, subDays } from "date-fns";
 import { Flame, StickyNote } from "lucide-react";
@@ -328,6 +329,7 @@ export default function TodayPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/entries", today] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/goal-history"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/today/timeline"] });
       toast({ title: "Saved", description: "Today's metrics have been recorded." });
       // Analytics: new-day milestones (if this Save was the day's first rating) + the save itself
       trackScore(data?.analytics, "save");
@@ -425,6 +427,9 @@ export default function TodayPage() {
           </Button>
         </div>
       )}
+
+      {/* Quick view of today's scoring: each tap plotted by time of day (hidden until the first tap) */}
+      <TodayTimelineCard className="mb-6" />
 
       {/* Save button — top (duplicate of bottom button; hidden in Simple mode) */}
       {!simpleMode && <Button

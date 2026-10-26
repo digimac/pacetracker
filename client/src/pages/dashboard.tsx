@@ -13,7 +13,7 @@ import { TrendingUp, TrendingDown, Minus, Calendar, Target, Zap } from "lucide-r
 import { useLocation } from "wouter";
 import PerplexityAttribution from "@/components/PerplexityAttribution";
 import { useUserTimezone, getTodayInTimezone } from "@/hooks/use-user-timezone";
-import { DaySparkline, TimelineEvent, CORE_METRIC_COLORS, getMetricColor } from "@/components/day-sparkline";
+import { TodayTimelineCard } from "@/components/today-timeline-card";
 import { DayCountersStrip } from "@/components/day-counters-strip";
 import { Sparkles } from "lucide-react";
 import { DayQualityCard } from "@/components/day-quality-card";
@@ -107,19 +107,6 @@ export default function DashboardPage() {
     queryFn: () => apiRequest("GET", `/api/entries/${today}`).then(r => r.json()),
   });
 
-  const { data: timeline = [] } = useQuery<TimelineEvent[]>({
-    queryKey: ["/api/today/timeline"],
-    queryFn: () => apiRequest("GET", "/api/today/timeline").then(r => r.json()),
-    refetchInterval: 30_000,
-    refetchOnWindowFocus: true,
-  });
-
-  const { data: timelineBg } = useQuery<{ heroImageUrl: string | null } | null>({
-    queryKey: ["/api/pages", "timeline"],
-    queryFn: () => apiRequest("GET", "/api/pages/timeline").then(r => r.ok ? r.json() : null).catch(() => null),
-    staleTime: 5 * 60 * 1000,
-  });
-  const timelineBgUrl = timelineBg?.heroImageUrl?.trim() || null;
 
   const { data: streaks = {} } = useQuery<Record<string, number>>({
     queryKey: ["/api/metrics/streaks"],
@@ -252,40 +239,7 @@ export default function DashboardPage() {
       )}
 
       {/* Today's Metric Timeline Sparkline */}
-      {timeline.length > 0 && (
-        <Card className="mb-6 relative overflow-hidden">
-          {/* Admin-configured background image at 30% opacity */}
-          {timelineBgUrl && (
-            <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none"
-              style={{ backgroundImage: `url(${timelineBgUrl})`, opacity: 0.18 }}
-            />
-          )}
-          <CardHeader className="pb-1 pt-4 px-4 relative">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">Today's Activity Timeline</CardTitle>
-            <p className="text-[10px] text-foreground/70 mt-0.5">Metric scores plotted across the day · hover a dot for details</p>
-          </CardHeader>
-          <CardContent className="px-3 pb-2 relative">
-            <DaySparkline events={timeline} />
-            {/* Legend — all events present in today's timeline */}
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 px-1">
-              {(() => {
-                let customIdx = 0;
-                return timeline.map((ev, i) => {
-                  const isCustom = !CORE_METRIC_COLORS[ev.metricKey];
-                  const color = getMetricColor(ev.metricKey, isCustom ? customIdx++ : 0);
-                  return (
-                    <div key={ev.metricKey} className="flex items-center gap-1">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                      <span className="text-[9px] font-bold tracking-widest text-foreground/80">{ev.metricLabel}</span>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <TodayTimelineCard className="mb-6" />
 
       {/* Day Counters */}
       <DayCountersStrip />

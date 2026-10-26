@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export type TimelineEvent = {
   metricKey: string;
@@ -27,8 +27,20 @@ export function getMetricColor(metricKey: string, customIndex: number): string {
 export function DaySparkline({ events }: { events: TimelineEvent[] }) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string; time: string; rating: string } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
-  const W        = 600;
+  // Draw at the container's real pixel width so dots and labels keep their size on
+  // phones (a fixed 600-wide viewBox shrank everything to about half size at 375px).
+  const [W, setW] = useState(600);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const update = () => { const w = Math.round(el.clientWidth); if (w > 0) setW(Math.max(260, w)); };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const H        = 96;       // taller to give vertical stacking room
   const PAD_X    = 28;
   const MID_Y    = H / 2;
@@ -105,7 +117,7 @@ export function DaySparkline({ events }: { events: TimelineEvent[] }) {
   });
 
   return (
-    <div className="relative" onClick={e => { if ((e.target as SVGElement).tagName !== "circle") setTooltip(null); }}>
+    <div ref={wrapRef} className="relative" onClick={e => { if ((e.target as SVGElement).tagName !== "circle") setTooltip(null); }}>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
@@ -134,7 +146,7 @@ export function DaySparkline({ events }: { events: TimelineEvent[] }) {
         {/* Events — stacked if same time */}
         {dotPositions.map(({ x, y: dotY, color, event: e }, i) => (
           <g key={i}>
-            <line x1={x} y1={MID_Y} x2={x} y2={dotY} stroke={color} strokeWidth={1} strokeOpacity={0.35} />
+            <line x1={x} y1={MID_Y} x2={x} y2={dotY} stroke={color} strokeWidth={1} strokeOpacity={0.35} style={{ pointerEvents: "none" }} />
             {/* Invisible hit area */}
             <circle
               cx={x} cy={dotY} r={DOT_R + 6}
