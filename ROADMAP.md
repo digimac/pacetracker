@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: October 26, 2026 (activity timeline on Today)_
+_Last updated: October 28, 2026 (email delivery restored)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -110,7 +110,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - [ ] Reduce signup friction: personalized onboarding questions, contextual tooltips, embedded instructional clips
 - [ ] Decide primary acquisition channel to build content around (paid social vs. organic vs. email)
 - [ ] Wire the candy icon into Dashboard and History views too (currently only shows on the Today page's MetricCard — Kevin is sourcing the actual icon artwork to upload via admin)
-- [ ] **Fix email delivery (Kevin, Monday)**: since Oct 23 every outgoing email (reminders, password resets, welcome) fails with SMTP `535 5.7.8 Invalid login`. Check the SMTP.com account, issue a new key/password, and update `SMTP_PASS` on the Render service.
+- [x] **Fix email delivery** — resolved Oct 28, 2026: SMTP.com account reactivated and credentials updated on Render; emails confirmed sending again (first successful sends 12:27 PM ET). Outage ran Oct 23–28 with SMTP `535 Invalid login`.
 - [ ] **GA setup for Simple-mode reporting (Kevin, in GA Admin)**: register custom definitions (user-scoped `app_mode`, `signup_app_mode`, `signup_week`; event-scoped `source`, `is_today`, `day_quality`, `same_day_as_signup`; custom metrics `days_since_signup`, `days_scored_last_7`, `total_days_scored`, `metrics_rated`, `day_total`), mark `sign_up`, `first_score`, `retained_d7` as key events, then build the three explorations (first-day score rate, 7-day return, days scored per week) split by `signup_app_mode`. Give it 2–4 weeks of signups before judging.
 - [ ] **Daily reminder follow-ups**: (1) optional second reminder later in the day (log already supports a separate `kind`); (2) one-click unsubscribe link in reminder emails (they currently link to Settings); (3) confirm `APP_URL` on Render and verify the first real 8 AM sends in Admin → Emails → Reminder Send Log
 - [ ] Populate `/book/resources` with real content — page and admin manager are live but empty; add the actual illustrations/charts from the book and any downloadable resources via Admin → Resources
