@@ -832,9 +832,9 @@ export default function SettingsPage() {
       </Card>
 
       {/* ── Connections ─────────────────────────────────────────────────────── */}
-      {/* Day counters, goal list, connections — hidden in Simple mode */}
+      {/* Day counters show in both modes (they appear on Today); goal list and connections are Full mode only */}
+      <DayCountersCard />
       {!simpleMode && (<>
-        <DayCountersCard />
         <GoalListCard />
         <ConnectionsCard />
       </>)}
@@ -845,6 +845,7 @@ export default function SettingsPage() {
 // ─── Day Counters Card ──────────────────────────────────────────────────────────────────
 
 function DayCountersCard() {
+  const { simpleMode } = useSimpleMode();
   const { toast } = useToast();
   const [newLabel, setNewLabel] = useState("");
   const [newType, setNewType] = useState<"since" | "until">("since");
@@ -889,7 +890,7 @@ function DayCountersCard() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-sm font-bold uppercase tracking-wider">Day Counters</CardTitle>
-            <CardDescription className="text-xs mt-0.5">Track days since an event or days until a date. Up to 4 counters. Shown on Dashboard and Today.</CardDescription>
+            <CardDescription className="text-xs mt-0.5">Track days since an event or days until a date. Up to 4 counters. Shown on {simpleMode ? "Today" : "Dashboard and Today"}.</CardDescription>
           </div>
           <span className="text-xs text-muted-foreground">{counters.length}/4</span>
         </div>

@@ -516,8 +516,10 @@ export default function TodayPage() {
         </div>
       )}
 
-      {/* Day Counters, partners, groups — hidden in Simple mode */}
-      {!simpleMode && <DayCountersStrip />}
+      {/* Day Counters show in both modes (hidden until the member adds one in Settings) */}
+      <DayCountersStrip />
+
+      {/* Partners and groups — hidden in Simple mode */}
 
       {/* Momentum Partners */}
       {!simpleMode && partners.length > 0 && (
