@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: October 28, 2026 (Day Counters in Simple mode)_
+_Last updated: October 31, 2026 (more reminder text variables)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `fadb41d` — Day Counters in Simple mode
+- **Last shipped commit**: `4bb1a38` — more reminder text variables
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -77,6 +77,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **Admin editor for the daily reminder text** (Oct 25, 2026) — Admin → Emails → Daily Score Reminders now has a "Daily Reminder Text (SMS)" card. Edit the wording with `{{displayName}}`, `{{todayUrl}}`, `{{settingsUrl}}` (click-to-insert), see a live preview with a character count and how many texts each send bills as, get a warning for characters that force Unicode (e.g. the default text's "→" makes it 2 texts), send a test to your own phone, or reset to the default. Saving requires "Sweet Momentum" and STOP wording (promised in /sms-terms) and no unknown variables, checked in the browser and on the server. Stored in `app_settings` (`sms_daily_reminder`; empty = default); shared logic in `shared/sms-text.ts`. Default wording unchanged until edited.
 - **Activity timeline on Today** (Oct 26, 2026) — the dot timeline ("Today's Activity Timeline") now shows on Today, between the score/summary and Core Metrics, in both Simple and Full mode, as a quick view of the day's scoring. Hidden until the first Win/Loss tap so a fresh day goes straight to the buttons; updates on every tap and Save. Extracted into a shared `TodayTimelineCard` (also used by the Dashboard, unchanged there, including the Admin background image). Fixes to the shared `DaySparkline`: it now draws at the container's real width, so on phones dots and time labels stay full size instead of shrinking to about half, and the stem lines no longer block taps on stacked dots.
 - **Day Counters in Simple mode** (Oct 28, 2026) — the Days Since / Days Until countdown widgets now show on Today in Simple mode too (same spot as Full mode, below Core Metrics; hidden until the member adds one), and the Day Counters card is back in Simple-mode Settings so members can create them (up to 4). Its description reads "Shown on Today" in Simple mode. Partners, groups, goal list, and connections stay Full-mode only.
+- **More reminder text variables** (Oct 31, 2026) — the Admin reminder text editor now supports `{{firstName}}` (saved first name, else the first word of the display name, else "there"), `{{yesterdayScore}}` (yesterday's net score like +4, or "no score"), `{{lastScore}}` and `{{lastScoredDate}}` (net score and date, e.g. Oct 30, of the most recent scored day before today; "no score" / "never" if none), alongside `{{displayName}}`, `{{todayUrl}}`, `{{settingsUrl}}`. Scores are computed in the member's own timezone at send time. Variable names are case-insensitive. The editor lists what each variable does, and the preview and test send use the admin's own real values. Default text now greets by `{{firstName}}` (only 3 of 24 accounts have a first name saved, so most fall back to the first word of their name).
 
 **Marketing pages**
 - `/start` — public marketing landing page
