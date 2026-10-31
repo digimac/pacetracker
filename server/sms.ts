@@ -6,7 +6,7 @@
  */
 import twilio from "twilio";
 import { storage } from "./storage";
-import { DAILY_REMINDER_SMS_KEY, DEFAULT_DAILY_REMINDER_SMS, renderDailyReminderSms } from "@shared/sms-text";
+import { DAILY_REMINDER_SMS_KEY, DEFAULT_DAILY_REMINDER_SMS, renderDailyReminderSms, type DailyReminderSmsVars } from "@shared/sms-text";
 
 const ACCOUNT_SID  = process.env.TWILIO_ACCOUNT_SID;
 const AUTH_TOKEN   = process.env.TWILIO_AUTH_TOKEN;
@@ -214,11 +214,14 @@ export async function sendDailyReminderSms(opts: {
  */
 export async function sendDailyScoreReminderSms(opts: {
   to: string;
-  displayName: string;
+  vars: ReminderMemberVars;
 }): Promise<{ ok: boolean; sid?: string; error?: string }> {
-  const body = await buildDailyReminderSms(opts.displayName);
+  const body = await buildDailyReminderSms(opts.vars);
   return sendSmsDetailed(opts.to, body);
 }
+
+/** Member-specific values for the reminder text (links are added by buildDailyReminderSms). */
+export type ReminderMemberVars = Omit<DailyReminderSmsVars, "todayUrl" | "settingsUrl">;
 
 /** Saved Admin text (Admin → Emails → Daily Reminder Text), or the default if none saved. */
 export async function getDailyReminderSmsTemplate(): Promise<{ body: string; isDefault: boolean }> {
@@ -231,10 +234,10 @@ export async function getDailyReminderSmsTemplate(): Promise<{ body: string; isD
   return { body: DEFAULT_DAILY_REMINDER_SMS, isDefault: true };
 }
 
-export async function buildDailyReminderSms(displayName: string, template?: string): Promise<string> {
+export async function buildDailyReminderSms(vars: ReminderMemberVars, template?: string): Promise<string> {
   const body = template ?? (await getDailyReminderSmsTemplate()).body;
   return renderDailyReminderSms(body, {
-    displayName,
+    ...vars,
     todayUrl: `${APP_URL}/#/today`,
     settingsUrl: `${APP_URL}/#/settings`,
   });

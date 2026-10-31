@@ -6,26 +6,47 @@
 
 export const DAILY_REMINDER_SMS_KEY = "sms_daily_reminder";
 
-/** Used whenever no custom text has been saved in Admin. Matches the original hard-coded text. */
+/** Used whenever no custom text has been saved in Admin. Original wording, greeting by first name. */
 export const DEFAULT_DAILY_REMINDER_SMS =
-  "Sweet Momentum: Good morning {{displayName}}, time to score your day → {{todayUrl}}\nReply STOP to unsubscribe.";
+  "Sweet Momentum: Good morning {{firstName}}, time to score your day → {{todayUrl}}\nReply STOP to unsubscribe.";
 
 export const DAILY_REMINDER_SMS_VARIABLES = [
-  { token: "{{displayName}}", description: "Member's name" },
-  { token: "{{todayUrl}}", description: "Link to Today" },
-  { token: "{{settingsUrl}}", description: "Link to Settings (reminder time/method)" },
+  { token: "{{firstName}}", name: "firstName", description: "First name (first word of the name if no first name is saved)" },
+  { token: "{{displayName}}", name: "displayName", description: "Full name as shown in the app" },
+  { token: "{{yesterdayScore}}", name: "yesterdayScore", description: "Yesterday's net score, e.g. +4 (\"no score\" if not scored)" },
+  { token: "{{lastScore}}", name: "lastScore", description: "Net score on the last day they scored, e.g. +4 (\"no score\" if never)" },
+  { token: "{{lastScoredDate}}", name: "lastScoredDate", description: "Last day they scored, e.g. Oct 30 (\"never\" if never)" },
+  { token: "{{todayUrl}}", name: "todayUrl", description: "Link to Today" },
+  { token: "{{settingsUrl}}", name: "settingsUrl", description: "Link to Settings (reminder time/method)" },
 ] as const;
+
+export type DailyReminderSmsVars = {
+  firstName: string;
+  displayName: string;
+  yesterdayScore: string;
+  lastScore: string;
+  lastScoredDate: string;
+  todayUrl: string;
+  settingsUrl: string;
+};
+
+const VAR_NAMES: Record<string, keyof DailyReminderSmsVars> = Object.fromEntries(
+  DAILY_REMINDER_SMS_VARIABLES.map(v => [v.name.toLowerCase(), v.name as keyof DailyReminderSmsVars]),
+);
 
 export const DAILY_REMINDER_SMS_MAX_CHARS = 480;
 
-export function renderDailyReminderSms(
-  template: string,
-  vars: { displayName: string; todayUrl: string; settingsUrl: string },
-): string {
-  return template
-    .replace(/\{\{\s*displayName\s*\}\}/g, vars.displayName)
-    .replace(/\{\{\s*todayUrl\s*\}\}/g, vars.todayUrl)
-    .replace(/\{\{\s*settingsUrl\s*\}\}/g, vars.settingsUrl);
+/** Fills {{variables}}. Names are case-insensitive, so {{displayname}} and {{FirstName}} work too. */
+export function renderDailyReminderSms(template: string, vars: DailyReminderSmsVars): string {
+  return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (whole, name: string) => {
+    const key = VAR_NAMES[name.toLowerCase()];
+    return key ? vars[key] : whole;
+  });
+}
+
+/** Net score formatted for a text: +4, 0, -2. */
+export function formatNetScore(n: number): string {
+  return n > 0 ? `+${n}` : String(n);
 }
 
 /** Problems that block saving. Brand name + STOP wording are promised in /sms-terms and expected by carriers. */
@@ -38,7 +59,7 @@ export function dailyReminderSmsErrors(template: string): string[] {
   if (t.length > DAILY_REMINDER_SMS_MAX_CHARS) errors.push(`Keep it under ${DAILY_REMINDER_SMS_MAX_CHARS} characters.`);
   const unknown = Array.from(t.matchAll(/\{\{\s*(\w+)\s*\}\}/g))
     .map(m => m[1])
-    .filter(n => !["displayName", "todayUrl", "settingsUrl"].includes(n));
+    .filter(n => !VAR_NAMES[n.toLowerCase()]);
   if (unknown.length) errors.push(`Unknown variable: ${Array.from(new Set(unknown)).map(n => `{{${n}}}`).join(", ")}`);
   return errors;
 }

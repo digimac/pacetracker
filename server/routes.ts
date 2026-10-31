@@ -12,7 +12,7 @@ import { insertUserSchema, insertCustomMetricSchema, insertDailyEntrySchema, ins
 import { z } from "zod";
 import { getCoordsForTimezone } from "./timezone-coords";
 import { geocodeCity } from "./geocode";
-import { tickReminders, isValidTimeZone } from "./reminders";
+import { tickReminders, isValidTimeZone, getLocalClock, getReminderMemberVars } from "./reminders";
 import { buildScoreAnalytics, getAnalyticsContext, getAppMode } from "./analytics";
 import { dayLockReason, DAY_LOCKED_CODE } from "./day-lock";
 
@@ -1980,7 +1980,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.get("/api/admin/sms-templates/daily-reminder", requireAdmin, async (_req, res) => {
     try {
       const { body, isDefault } = await getDailyReminderSmsTemplate();
-      res.json({ body, isDefault, defaultBody: DEFAULT_DAILY_REMINDER_SMS, appUrl: SMS_APP_URL });
+      // Preview values come from the admin's own account so the preview matches a real send.
+      const admin = await storage.getUserById((_req as any).session.userId);
+      const sched = admin ? await storage.getUserSchedule(admin.id) : undefined;
+      const tz = isValidTimeZone(sched?.timezone) ? sched!.timezone! : "America/New_York";
+      const sampleVars = admin ? await getReminderMemberVars(admin, getLocalClock(tz, new Date()).date) : null;
+      res.json({ body, isDefault, defaultBody: DEFAULT_DAILY_REMINDER_SMS, appUrl: SMS_APP_URL, sampleVars });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -2010,7 +2015,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const errors = dailyReminderSmsErrors(body);
         if (errors.length) return res.status(400).json({ error: errors.join(" "), errors });
       }
-      const text = await buildDailyReminderSms(admin?.displayName || "there", body?.trim());
+      const sched = await storage.getUserSchedule(admin!.id);
+      const tz = isValidTimeZone(sched?.timezone) ? sched!.timezone! : "America/New_York";
+      const vars = await getReminderMemberVars(admin!, getLocalClock(tz, new Date()).date);
+      const text = await buildDailyReminderSms(vars, body?.trim());
       const result = await sendSmsDetailed(phone, text);
       const masked = phone.replace(/\d(?=\d{4})/g, "•");
       res.json({ ok: result.ok, to: masked, sid: result.sid, error: result.error });

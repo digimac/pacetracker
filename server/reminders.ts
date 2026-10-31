@@ -20,7 +20,8 @@
  */
 import { storage } from "./storage";
 import { sendDailyScoreReminderEmail } from "./email";
-import { sendDailyScoreReminderSms } from "./sms";
+import { sendDailyScoreReminderSms, type ReminderMemberVars } from "./sms";
+import { formatNetScore } from "@shared/sms-text";
 import type { User, UserSchedule } from "@shared/schema";
 
 export const DAILY_REMINDER_KIND = "daily_score";
@@ -103,6 +104,55 @@ async function hasScoredOn(userId: number, localDate: string): Promise<boolean> 
   return scores.length > 0;
 }
 
+function shiftDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function shortDate(dateStr: string): string {
+  return new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+/** First name for texts: saved first name, else the first word of the display name, else "there". */
+export function reminderFirstName(user: Pick<User, "firstName" | "displayName">): string {
+  const saved = (user.firstName || "").trim();
+  if (saved) return saved;
+  const first = (user.displayName || "").trim().split(/\s+/)[0] || "";
+  return first && !first.includes("@") ? first : "there";
+}
+
+/**
+ * Values for the reminder text variables, computed in the member's own timezone:
+ * yesterday's net score and the most recent scored day before today.
+ */
+export async function getReminderMemberVars(user: User, todayLocal: string): Promise<ReminderMemberVars> {
+  const yesterday = shiftDate(todayLocal, -1);
+  const entries = await storage.getDailyEntriesByRange(user.id, shiftDate(todayLocal, -730), yesterday);
+  const dateOf = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10));
+  entries.sort((a, b) => dateOf(b.entryDate).localeCompare(dateOf(a.entryDate)));
+  let yesterdayScore = "no score";
+  let lastScore = "no score";
+  let lastScoredDate = "never";
+  for (const entry of entries) {
+    const scores = await storage.getMetricScoresByEntry(entry.id);
+    if (scores.length === 0) continue;
+    const net = scores.filter(s => s.rating === "success").length - scores.filter(s => s.rating === "setback").length;
+    const date = dateOf(entry.entryDate);
+    if (date === yesterday) yesterdayScore = formatNetScore(net);
+    lastScore = formatNetScore(net);
+    lastScoredDate = shortDate(date);
+    break;
+  }
+  return {
+    firstName: reminderFirstName(user),
+    displayName: user.firstName || user.displayName || user.email,
+    yesterdayScore,
+    lastScore,
+    lastScoredDate,
+  };
+}
+
 /**
  * Evaluate every user once and send any reminders that are due right now.
  * `dryRun` reports who would be reminded without sending or logging anything.
@@ -158,7 +208,7 @@ export async function runDailyReminders(opts: { now?: Date; dryRun?: boolean } =
 
       const displayName = user.firstName || user.displayName || user.email;
       const result = channel === "sms"
-        ? await sendDailyScoreReminderSms({ to: user.phone!, displayName })
+        ? await sendDailyScoreReminderSms({ to: user.phone!, vars: await getReminderMemberVars(user, clock.date) })
         : await sendDailyScoreReminderEmail({ toEmail: user.email, displayName });
 
       // A failed attempt still counts as "reminded" for the day — we don't retry, to avoid spamming.

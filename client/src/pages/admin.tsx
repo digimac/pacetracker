@@ -2499,7 +2499,10 @@ function AppModeCard() {
 function DailyReminderSmsCard() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { data, isLoading } = useQuery<{ body: string; isDefault: boolean; defaultBody: string; appUrl: string }>({
+  const { data, isLoading } = useQuery<{
+    body: string; isDefault: boolean; defaultBody: string; appUrl: string;
+    sampleVars: { firstName: string; displayName: string; yesterdayScore: string; lastScore: string; lastScoredDate: string } | null;
+  }>({
     queryKey: ["/api/admin/sms-templates/daily-reminder"],
     queryFn: () => apiRequest("GET", "/api/admin/sms-templates/daily-reminder").then(r => r.json()),
   });
@@ -2510,8 +2513,13 @@ function DailyReminderSmsCard() {
 
   const body = draft ?? data?.body ?? "";
   const appUrl = data?.appUrl || "https://sweetmo.io";
+  const fallbackName = (user as any)?.displayName || "Kevin";
+  const sample = data?.sampleVars ?? {
+    firstName: fallbackName.split(/\s+/)[0], displayName: fallbackName,
+    yesterdayScore: "+4", lastScore: "+4", lastScoredDate: "Oct 30",
+  };
   const preview = renderDailyReminderSms(body, {
-    displayName: (user as any)?.displayName || "Kevin",
+    ...sample,
     todayUrl: `${appUrl}/#/today`,
     settingsUrl: `${appUrl}/#/settings`,
   });
@@ -2584,13 +2592,18 @@ function DailyReminderSmsCard() {
                 onClick={() => insertToken(v.token)}
                 title={v.description}
                 className="text-[11px] font-mono px-2 py-0.5 rounded border border-border hover:bg-muted/50"
-                data-testid={`sms-var-${v.token.replace(/[{}]/g, "")}`}
+                data-testid={`sms-var-${v.name}`}
               >
                 {v.token}
               </button>
             ))}
             <span className="text-[11px] text-muted-foreground self-center">Click to insert</span>
           </div>
+          <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-0.5 text-[11px] text-muted-foreground" data-testid="sms-var-legend">
+            {DAILY_REMINDER_SMS_VARIABLES.map(v => (
+              <li key={v.name}><span className="font-mono text-foreground/80">{v.token}</span> · {v.description}</li>
+            ))}
+          </ul>
 
           <Textarea
             id="sms-reminder-text"
@@ -2617,7 +2630,7 @@ function DailyReminderSmsCard() {
                 which cuts each text to 70 characters. Replace {info.nonGsmChars.length === 1 ? "it" : "them"} with plain characters to fit more in one text.
               </p>
             )}
-            <p className="text-[11px] text-muted-foreground mt-1">Preview uses your name; names vary in length, so leave a little room.</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Preview uses your own name and scores. Names and scores vary, so leave a little room.</p>
           </div>
 
           {errors.length > 0 && (
