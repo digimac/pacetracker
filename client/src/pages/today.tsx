@@ -285,7 +285,7 @@ export default function TodayPage() {
       setRatings(scoreMap);
       setNotes(entryData.entry?.notes || "");
       setGoalText((entryData.entry as any)?.goalText || "");
-      if (entryData.entry?.notes || (entryData.entry as any)?.goalText) setNoteOpen(true);
+      if (entryData.entry?.notes) setNoteOpen(true);
     } else {
       const defaults: Record<string, Rating> = {};
       CORE_METRICS.forEach(m => defaults[m.key] = "skip");
@@ -464,7 +464,7 @@ export default function TodayPage() {
                 streak={streaks[m.key]}
                 candyIconUrl={(metricContentMap[m.key] as any)?.candyIconUrl}
               />
-              {m.key === "GOAL" && !simpleMode && (
+              {m.key === "GOAL" && (
                 <div className="mt-1.5 ml-1">
                   <Input
                     placeholder="What is your goal for today?"
@@ -571,7 +571,7 @@ export default function TodayPage() {
       {/* Momentum Groups */}
       {user && !simpleMode && <GroupCard userId={user.id} />}
 
-      {/* Simple mode: goal + notes tucked behind "Add a note" */}
+      {/* Simple mode: notes tucked behind "Add a note" (the goal field lives on the GOAL card in both modes) */}
       {simpleMode && !noteOpen && (
         <button
           type="button"
@@ -582,19 +582,6 @@ export default function TodayPage() {
           <StickyNote className="w-3.5 h-3.5" /> Add a note
         </button>
       )}
-      {simpleMode && noteOpen && (
-        <div className="mb-3">
-          <Input
-            placeholder="What is your goal for today? (optional)"
-            value={goalText}
-            onChange={e => setGoalText(e.target.value)}
-            className="text-sm h-9 bg-muted/30 border-border/50 placeholder:text-muted-foreground/50"
-            data-testid="input-goal-text"
-            maxLength={300}
-          />
-        </div>
-      )}
-
       {/* Notes */}
       {(!simpleMode || noteOpen) && <section className="mb-6">
         <div className="flex items-baseline justify-between mb-2">
