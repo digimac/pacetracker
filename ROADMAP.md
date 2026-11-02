@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: October 31, 2026 (more reminder text variables)_
+_Last updated: November 2, 2026 (goal field back on Simple-mode Today)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `4bb1a38` — more reminder text variables
+- **Last shipped commit**: `aeda2f4` — goal field back on Simple-mode Today
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -78,6 +78,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **Activity timeline on Today** (Oct 26, 2026) — the dot timeline ("Today's Activity Timeline") now shows on Today, between the score/summary and Core Metrics, in both Simple and Full mode, as a quick view of the day's scoring. Hidden until the first Win/Loss tap so a fresh day goes straight to the buttons; updates on every tap and Save. Extracted into a shared `TodayTimelineCard` (also used by the Dashboard, unchanged there, including the Admin background image). Fixes to the shared `DaySparkline`: it now draws at the container's real width, so on phones dots and time labels stay full size instead of shrinking to about half, and the stem lines no longer block taps on stacked dots.
 - **Day Counters in Simple mode** (Oct 28, 2026) — the Days Since / Days Until countdown widgets now show on Today in Simple mode too (same spot as Full mode, below Core Metrics; hidden until the member adds one), and the Day Counters card is back in Simple-mode Settings so members can create them (up to 4). Its description reads "Shown on Today" in Simple mode. Partners, groups, goal list, and connections stay Full-mode only.
 - **More reminder text variables** (Oct 31, 2026) — the Admin reminder text editor now supports `{{firstName}}` (saved first name, else the first word of the display name, else "there"), `{{yesterdayScore}}` (yesterday's net score like +4, or "no score"), `{{lastScore}}` and `{{lastScoredDate}}` (net score and date, e.g. Oct 30, of the most recent scored day before today; "no score" / "never" if none), alongside `{{displayName}}`, `{{todayUrl}}`, `{{settingsUrl}}`. Scores are computed in the member's own timezone at send time. Variable names are case-insensitive. The editor lists what each variable does, and the preview and test send use the admin's own real values. Default text now greets by `{{firstName}}` (only 3 of 24 accounts have a first name saved, so most fall back to the first word of their name).
+- **Goal field back on Simple-mode Today** (Nov 2, 2026) — the "What is your goal for today?" field is shown under the GOAL card again in Simple mode (same as Full mode) instead of being tucked behind "Add a note". "Add a note" now opens only the notes box, and a saved goal no longer auto-opens it. The goal still saves with the Save button.
 
 **Marketing pages**
 - `/start` — public marketing landing page
