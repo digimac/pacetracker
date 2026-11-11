@@ -14,13 +14,22 @@
  *
  * Privacy: GA gets the internal numeric user id only (no email or name). The admin
  * account sends no events. Nothing is sent from dev builds.
+ *
+ * Meta Pixel (1420020006532502, loaded in client/index.html and the public pages)
+ * gets the same moments as standard/custom events, with no user id, email, or name:
+ *   sign_up      → CompleteRegistration + StartTrial (every new account starts the 6-month Pro trial)
+ *   first_score  → trackCustom FirstScore
+ *   retained_d7  → trackCustom RetainedD7
+ *   paid upgrade → Subscribe (from the billing success page, once per checkout)
+ *   PageView fires on load and on every /# route change (see index.html).
+ *
  * Debug: run localStorage.setItem("sm_ga_debug","1") in the browser console, then
  * reload. Events show up in GA → Admin → DebugView.
  */
 import { apiRequest } from "@/lib/queryClient";
 
 declare global {
-  interface Window { gtag?: (...args: any[]) => void }
+  interface Window { gtag?: (...args: any[]) => void; fbq?: (...args: any[]) => void }
 }
 
 export type ScoreAnalytics = {
@@ -41,6 +50,38 @@ let resolveReady: () => void = () => {};
 let ready = new Promise<void>(r => { resolveReady = r; });
 
 const debug = () => { try { return localStorage.getItem("sm_ga_debug") === "1"; } catch { return false; } };
+const canSendMeta = () => typeof window !== "undefined" && typeof window.fbq === "function" && (import.meta.env.PROD || debug());
+
+/** GA event name → Meta Pixel event. Anything not listed stays GA-only. */
+const META_EVENTS: Record<string, { std?: string[]; custom?: string }> = {
+  sign_up: { std: ["CompleteRegistration", "StartTrial"] },
+  first_score: { custom: "FirstScore" },
+  retained_d7: { custom: "RetainedD7" },
+};
+
+function sendMeta(name: string, params: Record<string, string | number>) {
+  if (!canSendMeta() || internalUser) return;
+  try {
+    const m = META_EVENTS[name];
+    if (!m) return;
+    m.std?.forEach(ev => window.fbq!("track", ev, params));
+    if (m.custom) window.fbq!("trackCustom", m.custom, params);
+  } catch { /* never break the app */ }
+}
+
+/** Paid upgrade finished (Stripe redirected back). Fires once per checkout session. */
+export async function trackSubscribe(plan: string | null) {
+  await Promise.race([ready, new Promise(r => setTimeout(r, 3000))]);
+  if (!plan || plan === "free" || !canSendMeta() || internalUser) return;
+  try {
+    const sid = new URLSearchParams(window.location.hash.split("?")[1] || "").get("session_id") || plan;
+    const key = `sm_meta_sub_${sid}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    window.fbq!("track", "Subscribe", { content_name: plan });
+  } catch { /* never break the app */ }
+}
+
 const canSend = () => typeof window !== "undefined" && typeof window.gtag === "function" && (import.meta.env.PROD || debug());
 
 /** Call when a member is known (login, signup, page load with a session). */
@@ -76,6 +117,7 @@ export function resetAnalytics() {
 export async function track(name: string, params: Record<string, string | number> = {}) {
   // Wait (briefly) for identity so the event carries user_id + user properties.
   await Promise.race([ready, new Promise(r => setTimeout(r, 3000))]);
+  sendMeta(name, params);
   if (!canSend() || internalUser) return;
   window.gtag!("event", name, debug() ? { ...params, debug_mode: true } : params);
 }

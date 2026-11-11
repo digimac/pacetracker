@@ -70,8 +70,8 @@ You have the right to access, correct, or delete your personal information. You 
 SMS AND TEXT MESSAGING
 If you provide a mobile phone number and opt in to SMS notifications — either during account registration or later from your Settings page — Sweet Momentum will send you text messages related to your account, including daily score reminders, a one-time welcome message, and momentum partner activity alerts. Message frequency varies based on your activity and preferences (typically 0-7 messages per week). Message and data rates may apply. Your mobile phone number is never sold or shared with third parties for marketing purposes. You can opt out of SMS at any time by replying STOP to any message, or by disabling SMS notifications in Settings. Reply HELP for assistance or contact track@sweetmo.io.
 
-COOKIES
-We use cookies and similar tracking technologies to operate and improve the service. You can control cookie settings through your browser.
+COOKIES AND ANALYTICS
+We use cookies and similar tracking technologies to operate and improve the service. We use Google Analytics to understand how the app is used, and the Meta Pixel to measure the results of our advertising on Facebook and Instagram. These tools may collect information such as the pages you visit, actions like signing up or subscribing, and your browser and device details. We do not send your name, email address, phone number, or the scores you enter to Meta or Google. You can control cookie settings through your browser, and manage how Meta uses your information for ads in your Facebook or Instagram ad preferences.
 
 CHILDREN'S PRIVACY
 Sweet Momentum is not intended for users under 13 years of age. We do not knowingly collect information from children under 13.

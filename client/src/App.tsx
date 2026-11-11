@@ -27,7 +27,7 @@ import { TermsPage, PrivacyPage, EulaPage } from "@/pages/legal";
 import CategoryPage from "@/pages/community";
 import AppLayout from "@/components/app-layout";
 import { SimpleModeProvider, useSimpleMode, isHiddenInSimpleMode } from "@/lib/simple-mode";
-import { identifyAnalytics, resetAnalytics } from "@/lib/analytics";
+import { identifyAnalytics, resetAnalytics, trackSubscribe } from "@/lib/analytics";
 
 function BillingSuccessPage() {
   const [, setLocation] = useLocation();
@@ -40,6 +40,7 @@ function BillingSuccessPage() {
       .then(r => r.json())
       .then(d => {
         setPlan(d.plan || null);
+        trackSubscribe(d.plan || null);
         const isGroup = d.plan === "group_monthly" || d.plan === "group_annual";
         setTimeout(() => setLocation(isGroup ? "/groups" : "/dashboard"), 3000);
       })
