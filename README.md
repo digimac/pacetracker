@@ -17,7 +17,7 @@ A daily performance metrics app built as a companion to the **6 Daily Metrics** 
 
 - **Success** = +1 point
 - **Setback** = -1 point  
-- **Skip** = 0 points (neutral)
+- **Shift** = 0 points (neutral)
 - **Max score per day** = 6 points (10 with all custom metrics)
 - Users can add up to **4 custom metrics** (exercise, nutrition, reading, etc.)
 

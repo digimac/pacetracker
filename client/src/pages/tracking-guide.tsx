@@ -23,7 +23,7 @@ type Section = { heading: string; text: string; imageUrl?: string; isPro?: boole
 const DEFAULT_SECTIONS: Section[] = [
   {
     heading: "Score Your Day",
-    text: "Each day, open the Today page and rate each of the six core metrics: TIME, GOAL, TEAM, TASK, VIEW, and PACE. Mark each one as a Success (WIN), Setback (LOSS), or Skip. Your daily score is the sum of wins minus losses.",
+    text: "Each day, open the Today page and rate each of the six core metrics: TIME, GOAL, TEAM, TASK, VIEW, and PACE. Mark each one as a Success (WIN), Setback (LOSS), or Shift. Your daily score is the sum of wins minus losses.",
   },
   {
     heading: "Build Your History",

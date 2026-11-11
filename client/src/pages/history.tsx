@@ -261,7 +261,7 @@ function DayDrawer({
                       `}
                     >
                       {val === "success" ? <CheckCircle2 className="w-4 h-4 mb-0.5" /> : val === "setback" ? <XCircle className="w-4 h-4 mb-0.5" /> : <Minus className="w-4 h-4 mb-0.5" />}
-                      {val === "success" ? "WIN" : val === "setback" ? "LOSS" : "SKIP"}
+                      {val === "success" ? "WIN" : val === "setback" ? "LOSS" : "SHIFT"}
                     </button>
                   ))}
                 </div>
@@ -302,7 +302,7 @@ function DayDrawer({
                           `}
                         >
                           {val === "success" ? <CheckCircle2 className="w-4 h-4 mb-0.5" /> : val === "setback" ? <XCircle className="w-4 h-4 mb-0.5" /> : <Minus className="w-4 h-4 mb-0.5" />}
-                          {val === "success" ? "WIN" : val === "setback" ? "LOSS" : "SKIP"}
+                          {val === "success" ? "WIN" : val === "setback" ? "LOSS" : "SHIFT"}
                         </button>
                       ))}
                     </div>

@@ -25,7 +25,7 @@ type BillingStatus = {
 
 const FREE_FEATURES = [
   "All 6 core daily metrics (TIME, GOAL, TEAM, TASK, VIEW, PACE)",
-  "Daily scoring with WIN / LOSS / SKIP",
+  "Daily scoring with WIN / LOSS / SHIFT",
   "7-day performance dashboard",
   "Daily notes",
 ];

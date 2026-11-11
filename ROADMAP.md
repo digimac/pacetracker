@@ -18,7 +18,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 ## Shipped
 
 **Core app**
-- Daily scoring across 6 metrics (TIME, GOAL, TEAM, TASK, VIEW, PACE) — WIN/LOSS/SKIP, plus up to 4 custom metrics for Pro
+- Daily scoring across 6 metrics (TIME, GOAL, TEAM, TASK, VIEW, PACE) — WIN/LOSS/SHIFT, plus up to 4 custom metrics for Pro
 - Momentum Dashboard (last-7-days view, sparklines, activity timeline)
 - History page with calendar view, per-day sparkline recap, Goal History
 - Daily notes ("Today's notes for tomorrow's goal")
