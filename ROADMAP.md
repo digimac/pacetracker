@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: November 2, 2026 (goal field back on Simple-mode Today)_
+_Last updated: November 10, 2026 (SKIP renamed to SHIFT on Today)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `aeda2f4` — goal field back on Simple-mode Today
+- **Last shipped commit**: `66eb34f` — SKIP button renamed to SHIFT on Today
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -79,6 +79,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **Day Counters in Simple mode** (Oct 28, 2026) — the Days Since / Days Until countdown widgets now show on Today in Simple mode too (same spot as Full mode, below Core Metrics; hidden until the member adds one), and the Day Counters card is back in Simple-mode Settings so members can create them (up to 4). Its description reads "Shown on Today" in Simple mode. Partners, groups, goal list, and connections stay Full-mode only.
 - **More reminder text variables** (Oct 31, 2026) — the Admin reminder text editor now supports `{{firstName}}` (saved first name, else the first word of the display name, else "there"), `{{yesterdayScore}}` (yesterday's net score like +4, or "no score"), `{{lastScore}}` and `{{lastScoredDate}}` (net score and date, e.g. Oct 30, of the most recent scored day before today; "no score" / "never" if none), alongside `{{displayName}}`, `{{todayUrl}}`, `{{settingsUrl}}`. Scores are computed in the member's own timezone at send time. Variable names are case-insensitive. The editor lists what each variable does, and the preview and test send use the admin's own real values. Default text now greets by `{{firstName}}` (only 3 of 24 accounts have a first name saved, so most fall back to the first word of their name).
 - **Goal field back on Simple-mode Today** (Nov 2, 2026) — the "What is your goal for today?" field is shown under the GOAL card again in Simple mode (same as Full mode) instead of being tucked behind "Add a note". "Add a note" now opens only the notes box, and a saved goal no longer auto-opens it. The goal still saves with the Save button.
+- **SKIP renamed to SHIFT on Today** (Nov 10, 2026) — the third rating button on each metric card on Today now reads SHIFT. This is a label change only: the stored rating value is still `skip`, so saved scores and scoring math are unchanged. History, the Tracking Guide, and the Billing feature list still say SKIP.
 
 **Marketing pages**
 - `/start` — public marketing landing page
