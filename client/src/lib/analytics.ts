@@ -17,7 +17,7 @@
  *
  * Meta Pixel (1420020006532502, loaded in client/index.html and the public pages)
  * gets the same moments as standard/custom events, with no user id, email, or name:
- *   sign_up      → CompleteRegistration + StartTrial (every new account starts the 6-month Pro trial)
+ *   sign_up      → CompleteRegistration + StartTrial (every new account starts a free month of Pro)
  *   first_score  → trackCustom FirstScore
  *   retained_d7  → trackCustom RetainedD7
  *   paid upgrade → Subscribe (from the billing success page, once per checkout)

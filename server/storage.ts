@@ -23,6 +23,9 @@ import {
 } from "@shared/schema";
 import { eq, and, gte, lte, asc, desc, isNull } from "drizzle-orm";
 
+/** New accounts get this many months of Pro free (was 6 before Nov 2026; existing trials keep their end date). */
+export const FREE_TRIAL_MONTHS = 1;
+
 export type ReminderClaim = {
   userId: number;
   kind: string;
@@ -185,7 +188,7 @@ export class DrizzleStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     const trialEndsAt = new Date();
-    trialEndsAt.setMonth(trialEndsAt.getMonth() + 6);
+    trialEndsAt.setMonth(trialEndsAt.getMonth() + FREE_TRIAL_MONTHS);
     const rows = await this.db.insert(users).values({
       ...user,
       email: user.email.toLowerCase(),
@@ -821,7 +824,7 @@ export class MemStorage implements IStorage {
   }
   async createUser(user: InsertUser): Promise<User> {
     const trialEndsAt = new Date();
-    trialEndsAt.setMonth(trialEndsAt.getMonth() + 6);
+    trialEndsAt.setMonth(trialEndsAt.getMonth() + FREE_TRIAL_MONTHS);
     const newUser: User = { ...user, id: this.userIdCounter++, createdAt: new Date(), trialEndsAt } as User;
     this.usersMap.set(newUser.id, newUser);
     return newUser;

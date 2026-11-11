@@ -994,7 +994,7 @@ Questions? Reply to this email.`,
   {
     key: "trial_ending",
     label: "Trial Ending Reminder",
-    description: "Sent to members on the free 6-month Pro trial when it is about 45 days from ending. Available variables: {{displayName}}, {{daysLabel}} (e.g. \"45 days\").",
+    description: "Sent to members on the free Pro trial when it is close to ending (new accounts get one free month). Available variables: {{displayName}}, {{daysLabel}} (e.g. \"45 days\").",
     defaultSubject: "Your free Pro trial ends in {{daysLabel}}",
     defaultBodyHtml: `<body style="margin:0;padding:0;background:#0f0f0f;font-family:sans-serif;">
   <div style="max-width:540px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;">
@@ -1004,14 +1004,14 @@ Questions? Reply to this email.`,
     </div>
     <div style="padding:32px;">
       <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey {{displayName}},</p>
-      <p style="color:#e0e0e0;font-size:15px;margin:0 0 16px;">Your free 6-month Pro trial ends in <strong style="color:#85FF00;">{{daysLabel}}</strong>. After that, you'll move to the Free plan unless you subscribe.</p>
+      <p style="color:#e0e0e0;font-size:15px;margin:0 0 16px;">Your free Pro trial ends in <strong style="color:#85FF00;">{{daysLabel}}</strong>. After that, you'll move to the Free plan unless you subscribe.</p>
       <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">Keep your Score Map, Momentum Network, Groups, custom metrics, and coaching sessions by locking in your plan now.</p>
       <div style="text-align:center;margin:32px 0;"><a href="https://sweetmo.io/#/billing" style="display:inline-block;background:#FF6E00;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;">View Plans &amp; Subscribe \u2192</a></div>
       <p style="color:#666;font-size:12px;text-align:center;margin:0;">You're receiving this because you have a Sweet Momentum account on a free trial.</p>
     </div>
   </div>
 </body>`,
-    defaultBodyText: `Hey {{displayName}},\n\nYour free 6-month Pro trial ends in {{daysLabel}}. After that, you'll move to the Free plan unless you subscribe.\n\nKeep your Score Map, Momentum Network, Groups, custom metrics, and coaching sessions by locking in your plan now.\n\nView plans: https://sweetmo.io/#/billing`,
+    defaultBodyText: `Hey {{displayName}},\n\nYour free Pro trial ends in {{daysLabel}}. After that, you'll move to the Free plan unless you subscribe.\n\nKeep your Score Map, Momentum Network, Groups, custom metrics, and coaching sessions by locking in your plan now.\n\nView plans: https://sweetmo.io/#/billing`,
   },
 ];
 
@@ -1224,7 +1224,7 @@ function EmailTemplatesTab() {
   const [sendingReminder, setSendingReminder] = useState(false);
   const [sendingTrialReminder, setSendingTrialReminder] = useState(false);
   const [trialReminderTestId, setTrialReminderTestId] = useState("");
-  const [trialReminderDays, setTrialReminderDays] = useState("45");
+  const [trialReminderDays, setTrialReminderDays] = useState("7");
   const [reminderTestId, setReminderTestId] = useState("");
   const [reminderDays, setReminderDays] = useState("3");
   const [smsTestPhone, setSmsTestPhone] = useState("");
@@ -1486,7 +1486,7 @@ function EmailTemplatesTab() {
       <div className="border border-border rounded-lg p-4 space-y-3">
         <div>
           <p className="text-sm font-semibold">Send Trial-Ending Reminders</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Emails members on the free 6-month Pro trial whose trial is within the given number of days of ending. Skips users with an active paid subscription and the admin account.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Emails members on the free Pro trial whose trial is within the given number of days of ending. Skips users with an active paid subscription and the admin account.</p>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
           <Input
@@ -1515,7 +1515,7 @@ function EmailTemplatesTab() {
             onClick={async () => {
               setSendingTrialReminder(true);
               try {
-                const res = await apiRequest("POST", "/api/admin/send-trial-reminders", { userId: trialReminderTestId, thresholdDays: Number(trialReminderDays) || 45 });
+                const res = await apiRequest("POST", "/api/admin/send-trial-reminders", { userId: trialReminderTestId, thresholdDays: Number(trialReminderDays) || 7 });
                 const data = await res.json();
                 toast({ title: "Test trial reminder sent", description: `Sent: ${data.sent}, Skipped: ${data.skipped}` });
               } catch (e: any) {
@@ -1533,7 +1533,7 @@ function EmailTemplatesTab() {
             onClick={async () => {
               setSendingTrialReminder(true);
               try {
-                const res = await apiRequest("POST", "/api/admin/send-trial-reminders", { thresholdDays: Number(trialReminderDays) || 45 });
+                const res = await apiRequest("POST", "/api/admin/send-trial-reminders", { thresholdDays: Number(trialReminderDays) || 7 });
                 const data = await res.json();
                 toast({ title: `Trial reminders sent to ${data.sent} member(s)`, description: `Skipped: ${data.skipped}${data.errors ? ` · ${data.errors} error(s)` : ""}` });
               } catch (e: any) {

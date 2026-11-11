@@ -846,7 +846,7 @@ export async function sendTrialEndingEmail(opts: {
         <div style="padding:32px;">
           <p style="color:#e0e0e0;font-size:16px;margin:0 0 16px;">Hey {{displayName}},</p>
           <p style="color:#e0e0e0;font-size:15px;margin:0 0 16px;">
-            Your free 6-month Pro trial ends in <strong style="color:#85FF00;">{{daysLabel}}</strong>. After that, you'll move to the Free plan unless you subscribe.
+            Your free Pro trial ends in <strong style="color:#85FF00;">{{daysLabel}}</strong>. After that, you'll move to the Free plan unless you subscribe.
           </p>
           <p style="color:#e0e0e0;font-size:15px;margin:0 0 24px;">
             Keep your Score Map, Momentum Network, Groups, custom metrics, and coaching sessions by locking in your plan now.
@@ -863,7 +863,7 @@ export async function sendTrialEndingEmail(opts: {
       </div>
     </body>
   `;
-  const defaultText = `Hey {{displayName}},\n\nYour free 6-month Pro trial ends in {{daysLabel}}. After that, you'll move to the Free plan unless you subscribe.\n\nKeep your Score Map, Momentum Network, Groups, custom metrics, and coaching sessions by locking in your plan now.\n\nView plans: ${APP_URL}/#/billing`;
+  const defaultText = `Hey {{displayName}},\n\nYour free Pro trial ends in {{daysLabel}}. After that, you'll move to the Free plan unless you subscribe.\n\nKeep your Score Map, Momentum Network, Groups, custom metrics, and coaching sessions by locking in your plan now.\n\nView plans: ${APP_URL}/#/billing`;
 
   let subject = defaultSubject;
   let html    = defaultHtml;

@@ -1814,11 +1814,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // Admin: send trial-ending reminders to users whose free 6-month trial is within N days of expiring
+  // Admin: send trial-ending reminders to users whose free Pro trial is within N days of expiring
   app.post("/api/admin/send-trial-reminders", requireAdmin, async (req, res) => {
     try {
       const { userId: targetUserId, thresholdDays: rawThreshold } = req.body;
-      const thresholdDays = Number(rawThreshold) || 45; // send when 45 (or fewer) days remain
+      const thresholdDays = Number(rawThreshold) || 7; // send when 7 (or fewer) days remain
 
       const now = new Date();
       const allUsers = targetUserId

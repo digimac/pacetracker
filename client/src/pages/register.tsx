@@ -162,7 +162,7 @@ export default function RegisterPage() {
           <Card className={bgImage ? "bg-card/90 backdrop-blur-sm border-white/10" : ""}>
             <CardHeader className="pb-4">
               <CardTitle className="text-lg">Create Account</CardTitle>
-              <CardDescription>Set up your Sweet Momentum profile</CardDescription>
+              <CardDescription>Set up your Sweet Momentum profile. Your first month of Pro is free, no credit card needed.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">

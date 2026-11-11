@@ -17,7 +17,7 @@ export const users = pgTable("users", {
   category: text("category"),   // athlete | graduate | recovery | veteran | caregiver | entrepreneur | writer | musician
   phone: text("phone"),          // mobile phone number for SMS notifications (optional)
   smsOptIn: boolean("sms_opt_in").default(false).notNull(), // user opted in to SMS notifications
-  trialEndsAt: timestamp("trial_ends_at"), // rolling 6-month free Pro trial, set at signup
+  trialEndsAt: timestamp("trial_ends_at"), // free Pro trial end, set at signup (1 month for new accounts; older accounts had 6)
   trialReminderSentAt: timestamp("trial_reminder_sent_at"), // when the day-45 trial-ending reminder was sent
   // App mode at the moment this member signed up ("simple" | "full"). NULL = signed up
   // before Simple mode existed. Used as the analytics cohort for comparing modes.
