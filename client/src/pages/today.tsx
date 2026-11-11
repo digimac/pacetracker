@@ -194,7 +194,7 @@ function MetricCard({
             `}
           >
             <Minus className="w-5 h-5" />
-            <span className="text-[9px] font-bold tracking-wider">SKIP</span>
+            <span className="text-[9px] font-bold tracking-wider">SHIFT</span>
           </button>
         </div>
       </div>
