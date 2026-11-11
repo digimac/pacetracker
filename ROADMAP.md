@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: November 11, 2026 (SKIP renamed to SHIFT app-wide)_
+_Last updated: November 11, 2026 (Meta Pixel added)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `ea34fab` — SKIP renamed to SHIFT app-wide
+- **Last shipped commit**: `0502cc6` — Meta Pixel added
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -81,6 +81,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **Goal field back on Simple-mode Today** (Nov 2, 2026) — the "What is your goal for today?" field is shown under the GOAL card again in Simple mode (same as Full mode) instead of being tucked behind "Add a note". "Add a note" now opens only the notes box, and a saved goal no longer auto-opens it. The goal still saves with the Save button.
 - **SKIP renamed to SHIFT on Today** (Nov 10, 2026) — the third rating button on each metric card on Today now reads SHIFT. This is a label change only: the stored rating value is still `skip`, so saved scores and scoring math are unchanged. Completed app-wide on Nov 11 (see below).
 - **SKIP renamed to SHIFT app-wide** (Nov 11, 2026) — finished the rename everywhere the rating is shown: the History day editor buttons, the Tracking Guide, the Billing feature list, the public start, book, and communities pages, and the README. Label change only; the stored rating value is still `skip`.
+- **Meta Pixel** (Nov 11, 2026) — pixel 1420020006532502 loads on the app and every public page (start, book, book-resources, communities, metrics, reasons, stuck, sms-terms). PageView fires on load and on each /# route change. Conversions mirror the GA events in `client/src/lib/analytics.ts`: sign_up sends CompleteRegistration + StartTrial (every account starts the 6-month Pro trial), first_score sends custom FirstScore, retained_d7 sends custom RetainedD7, and a finished Stripe checkout sends Subscribe (once per checkout session). No user id, email, or name is sent; the admin account sends no conversion events. Default privacy text updated; the live policy is a saved Admin override and needs the same paragraph pasted in.
 
 **Marketing pages**
 - `/start` — public marketing landing page
