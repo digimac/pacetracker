@@ -22,6 +22,7 @@ import {
   DAILY_REMINDER_SMS_VARIABLES, DAILY_REMINDER_SMS_MAX_CHARS,
   renderDailyReminderSms, dailyReminderSmsErrors, smsSegmentInfo,
 } from "@shared/sms-text";
+import { START_TIER_FIXED, START_TIERS_DEFAULTS, START_TIERS_PAGE_KEY, type StartTierKey } from "@shared/start-tiers";
 
 type SitePage = {
   id: number;
@@ -318,6 +319,172 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
               Last saved {new Date(existing.updatedAt).toLocaleString()}
             </p>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Start Page: Day Quality explainer ───────────────────────────────────────
+// Ranges and tier names are fixed to match the app's scoring; the copy is editable.
+
+type TierCopy = Record<StartTierKey, { description: string; example: string }>;
+
+function tierCopyFrom(existing: SitePage | undefined): TierCopy {
+  const out: TierCopy = JSON.parse(JSON.stringify(START_TIERS_DEFAULTS.cards));
+  try {
+    const arr = existing?.sections ? JSON.parse(existing.sections) : [];
+    (Array.isArray(arr) ? arr : []).forEach((c: any) => {
+      if (c && out[c.tier as StartTierKey]) {
+        if (c.description) out[c.tier as StartTierKey].description = c.description;
+        if (c.example) out[c.tier as StartTierKey].example = c.example;
+      }
+    });
+  } catch { /* fall back to defaults */ }
+  return out;
+}
+
+const TIER_ACCENT: Record<StartTierKey, string> = {
+  off: "text-muted-foreground", solid: "text-primary", strong: "text-green-400", sweet: "text-[#85FF00]",
+};
+
+function StartTiersEditor({ existing, onSave, isSaving }: {
+  existing: SitePage | undefined;
+  onSave: (data: any) => void;
+  isSaving: boolean;
+}) {
+  const D = START_TIERS_DEFAULTS;
+  const [expanded, setExpanded] = useState(false);
+  const [tag, setTag] = useState(existing?.ctaLabel || D.tag);
+  const [headline, setHeadline] = useState(existing?.title || D.headline);
+  const [intro, setIntro] = useState(existing?.subtitle || D.intro);
+  const [note, setNote] = useState(existing?.body || D.note);
+  const [cards, setCards] = useState<TierCopy>(() => tierCopyFrom(existing));
+
+  useEffect(() => {
+    setTag(existing?.ctaLabel || D.tag);
+    setHeadline(existing?.title || D.headline);
+    setIntro(existing?.subtitle || D.intro);
+    setNote(existing?.body || D.note);
+    setCards(tierCopyFrom(existing));
+  }, [existing]);
+
+  function updateCard(tier: StartTierKey, field: "description" | "example", value: string) {
+    setCards(c => ({ ...c, [tier]: { ...c[tier], [field]: value } }));
+  }
+  function resetToDefault() {
+    setTag(D.tag); setHeadline(D.headline); setIntro(D.intro); setNote(D.note);
+    setCards(JSON.parse(JSON.stringify(D.cards)));
+  }
+  function handleSave() {
+    onSave({
+      pageKey: START_TIERS_PAGE_KEY,
+      title: headline.trim() || D.headline,
+      subtitle: intro.trim(),
+      body: note.trim(),
+      ctaLabel: tag.trim(),
+      sections: JSON.stringify(START_TIER_FIXED.map(({ tier }) => ({
+        tier, description: cards[tier].description.trim(), example: cards[tier].example.trim(),
+      }))),
+    });
+  }
+
+  const label = "Start Page: Day Quality";
+  const words = (headline.trim() || D.headline).split(/\s+/);
+  const lastWord = words.pop();
+
+  return (
+    <div className="rounded-xl border-2 border-lime-500/30 bg-gradient-to-b from-lime-500/10 to-lime-600/5 overflow-hidden transition-all duration-200">
+      <button
+        className="w-full flex items-center justify-between px-5 py-4 text-left"
+        onClick={() => setExpanded(e => !e)}
+        data-testid="admin-page-start_tiers"
+      >
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-4 h-4 text-lime-400" />
+          <span className="text-base font-black tracking-tight text-lime-400">{label}</span>
+          {existing && (
+            <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-white/10 text-white/60">
+              Configured
+            </span>
+          )}
+        </div>
+        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
+
+      {expanded && (
+        <div className="px-5 pb-5 border-t border-white/5 pt-4 space-y-5">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            The Solid / Strong / Sweet section on the start page. Score ranges and tier names are locked so they always match how the app labels a day. The WIN / LOSS / SHIFT chips are fixed too. Any field left blank uses the built-in copy.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
+            <div>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Tag</label>
+              <Input value={tag} onChange={e => setTag(e.target.value)} placeholder={D.tag} data-testid="input-tiers-tag" />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Headline</label>
+              <Input value={headline} onChange={e => setHeadline(e.target.value)} placeholder={D.headline} data-testid="input-tiers-headline" />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Preview: <span className="font-bold text-foreground">{words.join(" ")} </span><span className="font-bold text-[#85FF00]">{lastWord}</span> (last word is highlighted green)
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Intro</label>
+            <Textarea value={intro} onChange={e => setIntro(e.target.value)} placeholder={D.intro} rows={3} data-testid="input-tiers-intro" />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase block">Tier Cards</label>
+            {START_TIER_FIXED.map(({ tier, range, name }) => (
+              <div key={tier} className="rounded-lg border border-border bg-background/40 p-3 space-y-2" data-testid={`tiers-card-${tier}`}>
+                <div className="flex items-baseline gap-3">
+                  <span className={`text-lg font-black ${TIER_ACCENT[tier]}`}>{range}</span>
+                  <span className={`text-[11px] font-black tracking-widest uppercase ${TIER_ACCENT[tier]}`}>{name}</span>
+                  <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">Range and name locked</span>
+                </div>
+                <Textarea
+                  value={cards[tier].description}
+                  onChange={e => updateCard(tier, "description", e.target.value)}
+                  placeholder={D.cards[tier].description}
+                  rows={2}
+                  data-testid={`input-tiers-${tier}-desc`}
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-muted-foreground shrink-0">Example:</span>
+                  <Input
+                    value={cards[tier].example}
+                    onChange={e => updateCard(tier, "example", e.target.value)}
+                    placeholder={D.cards[tier].example}
+                    className="text-sm"
+                    data-testid={`input-tiers-${tier}-example`}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1.5 block">Closing Note</label>
+            <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder={D.note} rows={3} data-testid="input-tiers-note" />
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={resetToDefault} className="shrink-0" data-testid="btn-reset-tiers">
+              Reset to default
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving} className="flex-1" data-testid="btn-save-page-start_tiers">
+              {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              Save {label}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground/60 text-center">
+            {existing?.updatedAt ? `Last saved ${new Date(existing.updatedAt).toLocaleString()} · ` : ""}
+            <a href="/start#layout-tiers" target="_blank" rel="noopener" className="underline">View on start page</a>
+          </p>
         </div>
       )}
     </div>
@@ -2061,7 +2228,7 @@ export default function AdminPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {PAGE_DEFS.map(p => (
+              {PAGE_DEFS.flatMap(p => [
                 <PageEditor
                   key={p.key}
                   pageKey={p.key}
@@ -2073,8 +2240,16 @@ export default function AdminPage() {
                   existing={pagesMap[p.key]}
                   onSave={data => savePageMutation.mutate(data)}
                   isSaving={savingPageKey === p.key && savePageMutation.isPending}
-                />
-              ))}
+                />,
+                ...(p.key === "start" ? [
+                  <StartTiersEditor
+                    key={START_TIERS_PAGE_KEY}
+                    existing={pagesMap[START_TIERS_PAGE_KEY]}
+                    onSave={data => savePageMutation.mutate(data)}
+                    isSaving={savingPageKey === START_TIERS_PAGE_KEY && savePageMutation.isPending}
+                  />,
+                ] : []),
+              ])}
             </div>
           )}
         </>

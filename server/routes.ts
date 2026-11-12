@@ -827,6 +827,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Public Day Quality explainer copy for /start (null = use the built-in defaults in start.html)
+  app.get("/api/public/start-tiers", async (_req, res) => {
+    try {
+      const page = await storage.getSitePage("start_tiers");
+      res.json(page || null);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Public SEO config — no auth required (injected into <head> on every page)
   app.get("/api/public/seo", async (req, res) => {
     try {
@@ -1095,7 +1105,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const pageKey = req.params.pageKey;
       const CATEGORY_KEYS = ["cat_athlete","cat_graduate","cat_recovery","cat_veteran","cat_caregiver","cat_entrepreneur","cat_writer","cat_musician"];
-      if (!["story", "tracking", "connect", "login", "register", "terms", "privacy", "eula", "timeline", "seo", "start", "reasons", "stuck", ...CATEGORY_KEYS].includes(pageKey)) {
+      if (!["story", "tracking", "connect", "login", "register", "terms", "privacy", "eula", "timeline", "seo", "start", "reasons", "stuck", "start_tiers", ...CATEGORY_KEYS].includes(pageKey)) {
         return res.status(400).json({ error: "Invalid page key" });
       }
       const data = insertSitePageSchema.parse({ ...req.body, pageKey });

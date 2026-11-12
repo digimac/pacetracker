@@ -700,9 +700,9 @@
   <section id="layout-tiers">
     <div class="container">
       <div class="section-header fade-in">
-        <div class="tag">Day Quality</div>
-        <h2>Solid. Strong. <em style="font-style:normal;color:var(--accent2);">Sweet.</em></h2>
-        <p>Every metric gets a Win, a Loss, or a Shift. Your daily score is your wins minus your losses, and that number sets the quality of your day.</p>
+        <div class="tag" id="tiers-tag">Day Quality</div>
+        <h2 id="tiers-headline">Solid. Strong. <em style="font-style:normal;color:var(--accent2);">Sweet.</em></h2>
+        <p id="tiers-intro">Every metric gets a Win, a Loss, or a Shift. Your daily score is your wins minus your losses, and that number sets the quality of your day.</p>
       </div>
       <div class="tiers-math fade-in">
         <span style="color:#4ade80;">WIN = +1</span>
@@ -713,29 +713,29 @@
         <div class="tier-card off fade-in">
           <div class="tier-range">0 or less</div>
           <div class="tier-name">Off Day</div>
-          <p>Losses matched or outweighed wins. It happens. You still scored it, and showing up keeps your streak alive.</p>
-          <div class="tier-example"><strong>Example:</strong> 2 wins, 2 losses, 2 shifts = 0</div>
+          <p id="tier-off-desc">Losses matched or outweighed wins. It happens. You still scored it, and showing up keeps your streak alive.</p>
+          <div class="tier-example"><strong>Example:</strong> <span id="tier-off-example">2 wins, 2 losses, 2 shifts = 0</span></div>
         </div>
         <div class="tier-card solid fade-in">
           <div class="tier-range">+1 to +3</div>
           <div class="tier-name">Solid Day</div>
-          <p>You came out ahead. A +3 means more went right than wrong, with room left on the table.</p>
-          <div class="tier-example"><strong>Example:</strong> 4 wins, 1 loss, 1 shift = +3</div>
+          <p id="tier-solid-desc">You came out ahead. A +3 means more went right than wrong, with room left on the table.</p>
+          <div class="tier-example"><strong>Example:</strong> <span id="tier-solid-example">4 wins, 1 loss, 1 shift = +3</span></div>
         </div>
         <div class="tier-card strong fade-in">
           <div class="tier-range">+4 to +5</div>
           <div class="tier-name">Strong Day</div>
-          <p>Nearly everything moved forward. A +5 is one metric away from a perfect core day.</p>
-          <div class="tier-example"><strong>Example:</strong> 5 wins, 1 shift = +5</div>
+          <p id="tier-strong-desc">Nearly everything moved forward. A +5 is one metric away from a perfect core day.</p>
+          <div class="tier-example"><strong>Example:</strong> <span id="tier-strong-example">5 wins, 1 shift = +5</span></div>
         </div>
         <div class="tier-card sweet fade-in">
           <div class="tier-range">+6 or more</div>
           <div class="tier-name">Sweet Day</div>
-          <p>The top of the scale. A +6 means a win on all six core metrics, the kind of day momentum is built on.</p>
-          <div class="tier-example"><strong>Example:</strong> 6 wins across TIME, GOAL, TEAM, TASK, VIEW, and PACE = +6</div>
+          <p id="tier-sweet-desc">The top of the scale. A +6 means a win on all six core metrics, the kind of day momentum is built on.</p>
+          <div class="tier-example"><strong>Example:</strong> <span id="tier-sweet-example">6 wins across TIME, GOAL, TEAM, TASK, VIEW, and PACE = +6</span></div>
         </div>
       </div>
-      <p class="tiers-note fade-in">So the difference between a +3, a +5, and a +6 is the difference between Solid, Strong, and Sweet. Custom metrics count toward your score too, so they can help you reach Sweet even when one core metric is a Shift. Your History shows how many of each kind of day you've stacked up.</p>
+      <p class="tiers-note fade-in" id="tiers-note">So the difference between a +3, a +5, and a +6 is the difference between Solid, Strong, and Sweet. Custom metrics count toward your score too, so they can help you reach Sweet even when one core metric is a Shift. Your History shows how many of each kind of day you've stacked up.</p>
     </div>
   </section>
 
@@ -875,6 +875,37 @@
 
   <script>
     document.getElementById('yr').textContent = new Date().getFullYear();
+
+    // ── Day Quality explainer copy (Admin → Pages → Start Page: Day Quality) ──
+    // Empty fields keep the built-in copy above. Ranges and tier names are fixed in the markup.
+    fetch('/api/public/start-tiers')
+      .then(r => r.ok ? r.json() : null)
+      .then(page => {
+        if (!page) return;
+        const set = (id, v) => { const el = document.getElementById(id); if (el && v && String(v).trim()) el.textContent = String(v).trim(); };
+        set('tiers-tag', page.ctaLabel);
+        set('tiers-intro', page.subtitle);
+        set('tiers-note', page.body);
+        if (page.title && page.title.trim()) {
+          // Last word of the headline gets the Sweet green accent
+          const h = document.getElementById('tiers-headline');
+          const words = page.title.trim().split(/\s+/);
+          const last = words.pop();
+          h.textContent = words.length ? words.join(' ') + ' ' : '';
+          const em = document.createElement('em');
+          em.style.fontStyle = 'normal'; em.style.color = 'var(--accent2)';
+          em.textContent = last;
+          h.appendChild(em);
+        }
+        let cards = [];
+        try { cards = page.sections ? JSON.parse(page.sections) : []; } catch (e) { cards = []; }
+        (Array.isArray(cards) ? cards : []).forEach(c => {
+          if (!c || !['off','solid','strong','sweet'].includes(c.tier)) return;
+          set('tier-' + c.tier + '-desc', c.description);
+          set('tier-' + c.tier + '-example', c.example);
+        });
+      })
+      .catch(() => {});
 
     // ── Hydrate from admin config ──────────────────────────────────────────
     fetch('/api/public/start')
