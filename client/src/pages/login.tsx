@@ -24,7 +24,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { setUser } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
   // Fetch admin-configured login page content (public endpoint, no auth needed)
   const { data: config } = useQuery<LoginPageConfig>({
@@ -45,7 +45,8 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
       setUser(data.user);
-      setLocation("/dashboard");
+      // Signed out mid-session on a specific screen (e.g. Admin)? Return there instead of the dashboard.
+      if (!location || location === "/" || location === "/login") setLocation("/dashboard");
     } catch (err: any) {
       toast({ title: "Login failed", description: err.message, variant: "destructive" });
     } finally {

@@ -2,6 +2,16 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
 
+/** Fired when an API call comes back 401, meaning the sign-in session has ended (expired or signed out elsewhere). */
+export const SESSION_EXPIRED_EVENT = "sm:session-expired";
+
+function noteUnauthorized(res: Response, url: string) {
+  // Auth endpoints answer 401 for wrong passwords / logged-out checks; those aren't expiries.
+  if (res.status === 401 && !url.includes("/api/auth/") && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -21,6 +31,7 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  noteUnauthorized(res, url);
   await throwIfResNotOk(res);
   return res;
 }
@@ -36,6 +47,7 @@ export const getQueryFn: <T>(options: {
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
       return null;
     }
+    noteUnauthorized(res, queryKey.join("/"));
 
     await throwIfResNotOk(res);
     return await res.json();

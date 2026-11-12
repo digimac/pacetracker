@@ -1,6 +1,7 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { useHashLocation, navigate as hashNavigate } from "wouter/use-hash-location";
-import { queryClient } from "./lib/queryClient";
+import { queryClient, SESSION_EXPIRED_EVENT } from "./lib/queryClient";
+import { toast } from "@/hooks/use-toast";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -256,6 +257,27 @@ export default function App() {
         setIsLoading(false);
       })
       .catch(() => setIsLoading(false));
+  }, []);
+
+  // Session ended while the app was open (7 days idle, or signed out on another tab/device).
+  // Drop to the sign-in screen with a clear message instead of letting saves fail silently.
+  // The current screen is kept, so signing back in returns here.
+  useEffect(() => {
+    function onExpired() {
+      setUser(prev => {
+        if (!prev) return prev;
+        setTimeout(() => {
+          queryClient.clear();
+          toast({
+            title: "You've been signed out",
+            description: "Your session ended. Sign in again to pick up where you left off. Unsaved Admin page edits are kept.",
+          });
+        }, 0);
+        return null;
+      });
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   }, []);
 
   // GA identity: set on login / signup / page load with a session; cleared on logout.

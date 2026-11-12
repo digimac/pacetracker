@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
-import { Mail, MessageSquare, Twitter, Instagram, Linkedin, Globe, ArrowRight, Lightbulb, Star, Send, X, CheckCircle2, Loader2, Video, Lock, Clock } from "lucide-react";
+import { Mail, MessageSquare, Twitter, Instagram, Linkedin, Facebook, Youtube, Globe, ArrowRight, Lightbulb, Star, Send, X, CheckCircle2, Loader2, Video, Lock, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,7 +30,10 @@ type SocialLink = { platform: string; url: string; label?: string };
 
 const PLATFORM_ICONS: Record<string, typeof Mail> = {
   twitter: Twitter,
+  x: Twitter,
   instagram: Instagram,
+  facebook: Facebook,
+  youtube: Youtube,
   linkedin: Linkedin,
   website: Globe,
   email: Mail,
@@ -499,7 +502,7 @@ export default function ConnectPage() {
             <h2 className="text-sm font-black tracking-widest uppercase text-muted-foreground mb-4">Follow Along</h2>
             <div className="flex flex-wrap gap-3">
               {socialLinks.map((link, i) => {
-                const Icon = PLATFORM_ICONS[link.platform.toLowerCase()] || PLATFORM_ICONS.default;
+                const Icon = PLATFORM_ICONS[(link.platform || "").trim().toLowerCase()] || PLATFORM_ICONS.default;
                 return (
                   <Button
                     key={i}

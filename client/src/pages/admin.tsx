@@ -66,6 +66,39 @@ const PAGE_DEFS = [
   { key: "cat_musician",     label: "Musician",      icon: Users, accent: "text-orange-400", border: "border-orange-500/30", color: "from-orange-500/10 to-orange-600/5" },
 ];
 
+// ─── Unsaved-edit drafts ─────────────────────────────────────────────────────
+// Each page save is stashed in sessionStorage before the request and cleared on success.
+// If the save fails (e.g. the sign-in session ended), the edits come back after signing in again.
+const DRAFT_PREFIX = "sm-admin-page-draft:";
+function readPageDraft(pageKey: string): any | null {
+  try { const raw = sessionStorage.getItem(DRAFT_PREFIX + pageKey); return raw ? JSON.parse(raw) : null; } catch { return null; }
+}
+function writePageDraft(pageKey: string, data: any) {
+  try { sessionStorage.setItem(DRAFT_PREFIX + pageKey, JSON.stringify(data)); } catch { /* storage unavailable */ }
+}
+function clearPageDraft(pageKey: string) {
+  try { sessionStorage.removeItem(DRAFT_PREFIX + pageKey); } catch { /* storage unavailable */ }
+}
+function hasAnyPageDraft(): boolean {
+  try { return Object.keys(sessionStorage).some(k => k.startsWith(DRAFT_PREFIX)); } catch { return false; }
+}
+
+/** "instagram.com/x" → "https://instagram.com/x" so the link doesn't open as a path on sweetmo.io. */
+function normalizeLinkUrl(url: string): string {
+  const u = url.trim();
+  if (!u || /^(https?:|mailto:|sms:|tel:)/i.test(u) || u === "#") return u;
+  if (u.includes("@") && !u.includes("/")) return `mailto:${u}`;
+  return `https://${u.replace(/^\/+/, "")}`;
+}
+
+function DraftRestoredNote() {
+  return (
+    <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200 [.light_&]:text-amber-800" data-testid="note-draft-restored">
+      Restored your unsaved changes from before you were signed out. Review them and save to keep them.
+    </div>
+  );
+}
+
 // ─── Page Editor ─────────────────────────────────────────────────────────────
 
 function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existing, onSave, isSaving }: {
@@ -80,6 +113,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
   isSaving: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
   const [title, setTitle] = useState(existing?.title || "");
   const [subtitle, setSubtitle] = useState(existing?.subtitle || "");
   const [heroImageUrl, setHeroImageUrl] = useState(existing?.heroImageUrl || "");
@@ -104,6 +138,14 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
     setContactEmail(existing?.contactEmail || "");
     try { setSections(existing?.sections ? JSON.parse(existing.sections) : []); } catch { setSections([]); }
     try { setSocialLinks(existing?.socialLinks ? JSON.parse(existing.socialLinks) : []); } catch { setSocialLinks([]); }
+    const d = readPageDraft(pageKey);
+    if (d) {
+      setTitle(d.title || ""); setSubtitle(d.subtitle || ""); setHeroImageUrl(d.heroImageUrl || "");
+      setBody(d.body || ""); setCtaLabel(d.ctaLabel || ""); setCtaUrl(d.ctaUrl || ""); setContactEmail(d.contactEmail || "");
+      try { setSections(d.sections ? JSON.parse(d.sections) : []); } catch { /* keep */ }
+      try { setSocialLinks(d.socialLinks ? JSON.parse(d.socialLinks) : []); } catch { /* keep */ }
+      setDraftRestored(true); setExpanded(true);
+    } else setDraftRestored(false);
   }, [existing]);
 
   function addSection() {
@@ -136,7 +178,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
       ctaLabel,
       ctaUrl,
       contactEmail,
-      socialLinks: JSON.stringify(socialLinks.filter(s => s.platform && s.url)),
+      socialLinks: JSON.stringify(socialLinks.filter(s => s.url.trim()).map(s => ({ ...s, platform: s.platform.trim() || "website", url: normalizeLinkUrl(s.url) }))),
     });
   }
 
@@ -163,6 +205,7 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
 
       {expanded && (
         <div className="px-5 pb-5 border-t border-white/5 pt-4 space-y-5">
+          {draftRestored && <DraftRestoredNote />}
           {/* Title + Subtitle */}
           {pageKey !== "timeline" && (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -289,6 +332,12 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
                     <Plus className="w-3 h-3" /> Add Link
                   </Button>
                 </div>
+                <p className="text-[11px] text-muted-foreground mb-2">
+                  Shown under "Follow Along" on the Connect page, in this order. Platform names with an icon: instagram, facebook, x (or twitter), linkedin, youtube, website, email. A link needs a URL to be saved; "instagram.com/sweetmo.io" is fine, https:// is added for you.
+                </p>
+                {socialLinks.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic mb-2">No links saved yet. Until you save at least one, the Connect page shows the built-in Instagram, X, and website links.</p>
+                )}
                 <div className="space-y-3">
                   {socialLinks.map((link, i) => (
                     <div key={i} className="rounded-lg border border-white/10 bg-black/20 p-3 space-y-2">
@@ -296,10 +345,13 @@ function PageEditor({ pageKey, label, icon: Icon, accent, border, color, existin
                         <span className="text-xs text-muted-foreground uppercase tracking-widest">Link {i + 1}</span>
                         <button onClick={() => removeSocial(i)} className="text-muted-foreground hover:text-destructive"><Trash2 className="w-3 h-3" /></button>
                       </div>
+                      <div className="grid grid-cols-3 gap-2 text-[10px] uppercase tracking-wider text-muted-foreground -mb-1">
+                        <span>Platform</span><span>Button label</span><span>URL</span>
+                      </div>
                       <div className="grid grid-cols-3 gap-2">
-                        <Input value={link.platform} onChange={e => updateSocial(i, "platform", e.target.value)} placeholder="twitter" className="text-sm" />
-                        <Input value={link.label || ""} onChange={e => updateSocial(i, "label", e.target.value)} placeholder="@handle" className="text-sm" />
-                        <Input value={link.url} onChange={e => updateSocial(i, "url", e.target.value)} placeholder="https://..." className="text-sm font-mono" />
+                        <Input value={link.platform} onChange={e => updateSocial(i, "platform", e.target.value)} placeholder="instagram" className="text-sm" data-testid={`input-social-platform-${i}`} />
+                        <Input value={link.label || ""} onChange={e => updateSocial(i, "label", e.target.value)} placeholder="@handle" className="text-sm" data-testid={`input-social-label-${i}`} />
+                        <Input value={link.url} onChange={e => updateSocial(i, "url", e.target.value)} placeholder="https://..." className="text-sm font-mono" data-testid={`input-social-url-${i}`} />
                       </div>
                     </div>
                   ))}
@@ -355,6 +407,7 @@ function StartTiersEditor({ existing, onSave, isSaving }: {
 }) {
   const D = START_TIERS_DEFAULTS;
   const [expanded, setExpanded] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
   const [tag, setTag] = useState(existing?.ctaLabel || D.tag);
   const [headline, setHeadline] = useState(existing?.title || D.headline);
   const [intro, setIntro] = useState(existing?.subtitle || D.intro);
@@ -367,6 +420,12 @@ function StartTiersEditor({ existing, onSave, isSaving }: {
     setIntro(existing?.subtitle || D.intro);
     setNote(existing?.body || D.note);
     setCards(tierCopyFrom(existing));
+    const d = readPageDraft(START_TIERS_PAGE_KEY);
+    if (d) {
+      setTag(d.ctaLabel || D.tag); setHeadline(d.title || D.headline); setIntro(d.subtitle || D.intro); setNote(d.body || D.note);
+      setCards(tierCopyFrom({ ...(existing || {}), sections: d.sections } as SitePage));
+      setDraftRestored(true); setExpanded(true);
+    } else setDraftRestored(false);
   }, [existing]);
 
   function updateCard(tier: StartTierKey, field: "description" | "example", value: string) {
@@ -414,6 +473,7 @@ function StartTiersEditor({ existing, onSave, isSaving }: {
 
       {expanded && (
         <div className="px-5 pb-5 border-t border-white/5 pt-4 space-y-5">
+          {draftRestored && <DraftRestoredNote />}
           <p className="text-xs text-muted-foreground leading-relaxed">
             The Solid / Strong / Sweet section on the start page. Score ranges and tier names are locked so they always match how the app labels a day. The WIN / LOSS / SHIFT chips are fixed too. Any field left blank uses the built-in copy.
           </p>
@@ -2088,7 +2148,7 @@ export default function AdminPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"content" | "members" | "pages" | "emails" | "seo" | "resources">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "members" | "pages" | "emails" | "seo" | "resources">(() => hasAnyPageDraft() ? "pages" : "content");
   const [savingPageKey, setSavingPageKey] = useState<string | null>(null);
 
   // Redirect if not admin
@@ -2106,16 +2166,20 @@ export default function AdminPage() {
   const savePageMutation = useMutation({
     mutationFn: (data: any) => {
       setSavingPageKey(data.pageKey);
+      writePageDraft(data.pageKey, data);
       return apiRequest("PUT", `/api/admin/pages/${data.pageKey}`, data).then(r => r.json());
     },
     onSuccess: (_, vars) => {
+      clearPageDraft(vars.pageKey);
       setSavingPageKey(null);
       queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
       toast({ title: "Saved", description: `${vars.pageKey} page updated.` });
     },
     onError: (e: any) => {
       setSavingPageKey(null);
-      toast({ title: "Error", description: e.message || "Save failed", variant: "destructive" });
+      const msg = String(e?.message || "");
+      if (msg.startsWith("401")) return; // signed out: the app shows its own notice and the edits are kept as a draft
+      toast({ title: "Not saved", description: msg.replace(/^\d{3}: /, "").replace(/^\{"error":"(.*)"\}$/, "$1") || "Save failed", variant: "destructive" });
     },
   });
 
