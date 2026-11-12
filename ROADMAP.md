@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: November 12, 2026 (Founder's Story hidden; book release moved to January 2027)_
+_Last updated: November 12, 2026 (App Support number is now text-only)_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `02257e0` — book release date moved to January 2027
+- **Last shipped commit**: `087c0ec` — App Support number is now text-only
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -86,6 +86,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **Card now, charge when the free month ends** (Nov 11, 2026) — members who subscribe during their free month add a card in Stripe Checkout but are not charged until their trial date (`subscription_data.trial_end`; Stripe needs at least 48 hours, so with under ~2 days left the charge happens at checkout). Stripe `trialing` subscriptions count as Pro and as subscribed. Billing shows "you won't be charged until <date>" before checkout and "Card on file. Free until <date>" after. A second checkout is blocked when a subscription already exists (plan changes go through Manage Subscription). Also fixed two webhook bugs that would have kept paid subscriptions from being recorded: the signature check got the parsed body instead of the raw bytes, and the period end was read from a field the current Stripe API no longer has.
 - **Founder's Story temporarily hidden** (Nov 12, 2026, `623492d`) — /stuck and /stuck.html send a temporary (302) redirect to /start; the "Founder's Story" links in the public nav and footers, the book author bio, and the Dashboard site links are commented out, and /stuck is out of the sitemap. The page file and its Admin editor are untouched. To restore: set `FOUNDER_STORY_HIDDEN = false` in `server/static.ts` and remove the `founder-story-hidden` comment wrappers.
 - **Book release moved to January 2027** (Nov 12, 2026, `02257e0`) — the three "Available" badges and the social preview text on /book, plus the free Chapter 1 confirmation email, now say January 2027 instead of June 2026.
+- **App Support number is now text-only** (Nov 12, 2026) — the App Support card on Connect shows 502.890.9111 (was (502) 890-0321). Tapping it opens a text message (`sms:+15028909111`) instead of a call, the icon is a chat bubble, and a note says "Text only (SMS). This number doesn't take voice calls." Hours unchanged.
 
 **Marketing pages**
 - `/start` — public marketing landing page
