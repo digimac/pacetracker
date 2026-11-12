@@ -10,6 +10,14 @@ export function serveStatic(app: Express) {
     );
   }
 
+  // Founder's Story (/stuck) is temporarily hidden. To bring it back: set this to
+  // false and remove the "founder-story-hidden" comment wrappers (client/public/*.html,
+  // sitemap.xml, client/src/pages/dashboard.tsx). 302 = temporary, so search engines keep it.
+  const FOUNDER_STORY_HIDDEN = true;
+  if (FOUNDER_STORY_HIDDEN) {
+    app.get(["/stuck", "/stuck.html"], (_req, res) => res.redirect(302, "/start"));
+  }
+
   app.use(express.static(distPath));
 
   // Marketing landing page — clean URL, no hash routing

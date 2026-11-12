@@ -374,7 +374,7 @@ export default function DashboardPage() {
           { href: "/start", label: "Home" },
           { href: "/book", label: "The Book" },
           { href: "/book/resources", label: "Resources" },
-          { href: "/stuck", label: "Founder's Story" },
+          // founder-story-hidden: { href: "/stuck", label: "Founder's Story" },
           { href: "/communities", label: "Communities" },
           { href: "/reasons", label: "Reasons" },
           { href: "/metrics/time", label: "The 6 Metrics" },
