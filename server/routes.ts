@@ -1045,7 +1045,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
     <div style="background:rgba(133,255,0,0.06);border:1px solid rgba(133,255,0,0.15);border-radius:12px;padding:20px;margin-bottom:28px;">
       <div style="font-size:13px;font-weight:800;color:#85FF00;margin-bottom:8px;">📖 Your PDF is on its way.</div>
-      <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;">The full Chapter 1 PDF will land in your inbox as soon as the book launches in <strong style="color:#fff;">June 2026</strong>. You’re on the early access list — you’ll be the first to receive it, no action needed on your end.</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;">The full Chapter 1 PDF will land in your inbox as soon as the book launches in <strong style="color:#fff;">January 2027</strong>. You’re on the early access list — you’ll be the first to receive it, no action needed on your end.</div>
     </div>
 
     <div style="text-align:center;margin-bottom:32px;">
