@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: November 12, 2026 (Day Quality tiers in Full mode)_
+_Last updated: November 12, 2026_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `1a7d329` — Day Quality tiers in Full mode
+- **Last shipped commit**: `634e8a4` — Day Quality explainer on the start page
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -88,6 +88,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **Book release moved to January 2027** (Nov 12, 2026, `02257e0`) — the three "Available" badges and the social preview text on /book, plus the free Chapter 1 confirmation email, now say January 2027 instead of June 2026.
 - **App Support number is now text-only** (Nov 12, 2026) — the App Support card on Connect shows 502.890.9111 (was (502) 890-0321). Tapping it opens a text message (`sms:+15028909111`) instead of a call, the icon is a chat bubble, and a note says "Text only (SMS). This number doesn't take voice calls." Hours unchanged.
 - **Day Quality tiers in Full mode** (Nov 12, 2026) — the streak + Day Quality summary on Today ("Sweet · +6", shown after saving) and the "Day Quality — Last 30 Days" breakdown on History were Simple-mode only; both now show in Full mode too. The Dashboard breakdown was already in both.
+- **Day Quality explainer on /start** (`634e8a4`): new section after the six-metrics showcase explains Win (+1) / Loss (−1) / Shift (0), the net daily score, and the four tiers — Off (0 or less), Solid (+1 to +3), Strong (+4 to +5), Sweet (+6 or more) — with an example for each. Thresholds match `client/src/lib/day-quality.ts`.
 
 **Marketing pages**
 - `/start` — public marketing landing page
