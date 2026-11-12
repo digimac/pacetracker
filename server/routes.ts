@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { stripe, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL, PRICE_GROUP_MONTHLY, PRICE_GROUP_ANNUAL } from "./billing";
+import { stripe, firstChargeDate, createCheckoutSession, createBillingPortalSession, handleWebhook, PRICE_MONTHLY, PRICE_ANNUAL, PRICE_GROUP_MONTHLY, PRICE_GROUP_ANNUAL } from "./billing";
 import { sendPasswordResetEmail, sendFeedbackEmail, sendInviteEmail, sendUpgradeEmail, sendCoachingRequestEmail, sendWelcomeEmail, sendWeeklyDigestEmail, sendReminderEmail, sendTrialEndingEmail, createTransporter, checkSmtpStatus } from "./email";
 import { getDailyReminderSmsTemplate, buildDailyReminderSms, SMS_APP_URL } from "./sms";
 import { sendSms, sendSmsDetailed, sendDailyReminderSms, sendWelcomeSms, checkTwilioStatus, SMS_STATUS_CALLBACK_URL, recordSmsStatusEvent, getRecentSmsStatusEvents, KNOWN_ERROR_CODES } from "./sms";
@@ -481,7 +481,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const user = await storage.getUserById(req.session!.userId!);
     const isAdminUser = user?.email === ADMIN_EMAIL;
     const isPro = isAdminUser || await storage.isPro(req.session!.userId!);
-    const hasActiveSub = sub?.status === "active" && sub.plan !== "free";
+    const hasActiveSub = (sub?.status === "active" || sub?.status === "trialing") && sub.plan !== "free";
     const trialActive = !isAdminUser && !hasActiveSub && !!user?.trialEndsAt && new Date(user.trialEndsAt).getTime() > Date.now();
     const trialDaysRemaining = trialActive
       ? Math.max(0, Math.ceil((new Date(user!.trialEndsAt!).getTime() - Date.now()) / 86400000))
@@ -494,6 +494,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       plan: isAdminUser && !sub?.plan ? "pro_annual" : (sub?.plan || "free"),
       status: isAdminUser ? "active" : (sub?.status || "inactive"),
       currentPeriodEnd: sub?.currentPeriodEnd || null,
+      // If they subscribe right now, when Stripe would first charge (null = today).
+      firstChargeAt: trialActive ? firstChargeDate(user?.trialEndsAt) : null,
       prices: {
         monthly: PRICE_MONTHLY,
         annual: PRICE_ANNUAL,
@@ -515,8 +517,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!user) return res.status(404).json({ error: "User not found" });
       if (!stripe) return res.status(503).json({ error: "Stripe is not configured on the server. Check STRIPE_SECRET_KEY." });
       if (!priceId.startsWith("price_")) return res.status(400).json({ error: "Invalid price ID. Check STRIPE_PRICE_MONTHLY / STRIPE_PRICE_ANNUAL env vars." });
-      const url = await createCheckoutSession(req.session!.userId!, priceId, user.email);
-      res.json({ url });
+      const existing = await storage.getSubscription(user.id);
+      if (existing?.stripeSubscriptionId && (existing.status === "active" || existing.status === "trialing") && existing.plan !== "free") {
+        return res.status(409).json({ error: "You already have a subscription. Use Manage Subscription to change plans or update your card." });
+      }
+      const { url, firstChargeAt } = await createCheckoutSession(user.id, priceId, user.email, user.trialEndsAt);
+      res.json({ url, firstChargeAt });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }
@@ -539,7 +545,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     async (req, res) => {
       const sig = req.headers["stripe-signature"] as string;
       try {
-        await handleWebhook(req.body as Buffer, sig);
+        // express.json() (server/index.ts) runs first and keeps the untouched bytes on
+        // req.rawBody; Stripe's signature check needs those exact bytes.
+        const payload = Buffer.isBuffer(req.body) ? req.body : (req as any).rawBody;
+        await handleWebhook(payload as Buffer, sig);
         res.json({ received: true });
       } catch (e: any) {
         console.error("Webhook error:", e.message);
@@ -605,7 +614,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             storage.getUserSchedule(u.id),
             storage.getLatestDailyEntry(u.id),
           ]);
-          const hasActiveSub = sub?.status === "active" && !!sub.currentPeriodEnd && sub.currentPeriodEnd > new Date();
+          const hasActiveSub = (sub?.status === "active" || sub?.status === "trialing") && !!sub.currentPeriodEnd && sub.currentPeriodEnd > new Date();
           const onTrial = !!u.trialEndsAt && new Date(u.trialEndsAt).getTime() > Date.now();
           const isPro = hasActiveSub || onTrial;
           const trialDaysRemaining = onTrial
@@ -1845,7 +1854,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
           // Skip users who already have an active paid subscription — trial is moot for them
           const sub = await storage.getSubscription(u.id);
-          if (!isForcedTest && sub?.status === "active" && sub.plan !== "free") { skipped++; continue; }
+          if (!isForcedTest && (sub?.status === "active" || sub?.status === "trialing") && sub.plan !== "free") { skipped++; continue; }
 
           // Only send once per user, unless explicitly re-triggered for a single userId
           if (!isForcedTest && u.trialReminderSentAt) { skipped++; continue; }

@@ -406,7 +406,7 @@ export class DrizzleStorage implements IStorage {
     if (user?.trialEndsAt && new Date(user.trialEndsAt).getTime() > Date.now()) return true;
     const sub = await this.getSubscription(userId);
     if (!sub) return false;
-    return sub.status === "active" && sub.plan !== "free";
+    return (sub.status === "active" || sub.status === "trialing") && sub.plan !== "free";
   }
 
   async markTrialReminderSent(userId: number): Promise<void> {
@@ -952,7 +952,7 @@ export class MemStorage implements IStorage {
     if (user?.trialEndsAt && new Date(user.trialEndsAt).getTime() > Date.now()) return true;
     const sub = this.subscriptionsMap.get(userId);
     if (!sub) return false;
-    return sub.status === "active" && sub.plan !== "free";
+    return (sub.status === "active" || sub.status === "trialing") && sub.plan !== "free";
   }
 
   async markTrialReminderSent(userId: number): Promise<void> {

@@ -15,6 +15,7 @@ type BillingStatus = {
   plan: string;
   status: string;
   currentPeriodEnd: string | null;
+  firstChargeAt: string | null;
   prices: {
     monthly: string;
     annual: string;
@@ -110,7 +111,11 @@ export default function BillingPage() {
                     {billing.trialDaysRemaining === 1 ? "1 day left" : `${billing.trialDaysRemaining} days left`}
                   </span>
                 </p>
-                <p className="text-xs text-muted-foreground">All Pro features are unlocked. Subscribe below to keep them after your trial ends.</p>
+                <p className="text-xs text-muted-foreground" data-testid="text-trial-charge-note">
+                  {billing.firstChargeAt
+                    ? <>All Pro features are unlocked. Add your card now and you won't be charged until <strong className="text-foreground">{format(new Date(billing.firstChargeAt), "MMMM d")}</strong>, when your free month ends. Cancel before then and you pay nothing.</>
+                    : <>All Pro features are unlocked. Your free month ends very soon, so subscribing now starts your paid plan today.</>}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -128,8 +133,10 @@ export default function BillingPage() {
                   Sweet Momentum Pro — {billing.plan === "pro_annual" ? "Annual" : "Monthly"}
                 </p>
                 {billing.currentPeriodEnd && (
-                  <p className="text-xs text-muted-foreground">
-                    Renews {format(new Date(billing.currentPeriodEnd), "MMMM d, yyyy")}
+                  <p className="text-xs text-muted-foreground" data-testid="text-renews">
+                    {billing.status === "trialing"
+                      ? <>Card on file. Free until {format(new Date(billing.currentPeriodEnd), "MMMM d, yyyy")}, then your first charge.</>
+                      : <>Renews {format(new Date(billing.currentPeriodEnd), "MMMM d, yyyy")}</>}
                   </p>
                 )}
               </div>
