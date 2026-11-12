@@ -259,12 +259,11 @@ export default function TodayPage() {
     enabled: !simpleMode, // partners are hidden in Simple mode
   });
 
-  // Simple mode: scored-day history for the streak shown after saving
+  // Scored-day history for the streak shown after saving (both modes)
   const streakStart = format(subDays(new Date(today + "T12:00:00"), 400), "yyyy-MM-dd");
   const { data: recentDays = [] } = useQuery<{ entry: { entryDate: string }; total: number }[]>({
     queryKey: ["/api/dashboard", streakStart, today],
     queryFn: () => apiRequest("GET", `/api/dashboard?startDate=${streakStart}&endDate=${today}`).then(r => r.json()),
-    enabled: simpleMode,
     staleTime: 60_000,
   });
 
@@ -341,8 +340,8 @@ export default function TodayPage() {
         day_total: savedNet,
         day_quality: dayTier(savedNet),
       });
-      // Simple mode: bring the streak + Day Quality summary at the top into view
-      if (simpleMode) document.getElementById("main-content")?.scrollTo({ top: 0, behavior: "smooth" });
+      // Bring the streak + Day Quality summary at the top into view
+      document.getElementById("main-content")?.scrollTo({ top: 0, behavior: "smooth" });
     },
     onError: (e: any) => {
       const dayLocked = String(e?.message || "").includes("DAY_LOCKED");
@@ -365,7 +364,7 @@ export default function TodayPage() {
   const scoreColor = totalScore > 0 ? "text-green-400" : totalScore < 0 ? "text-red-400" : "text-muted-foreground";
   const scorePct = maxScore > 0 ? Math.max(0, Math.round((totalScore / maxScore) * 100)) : 0;
 
-  // Simple mode summary uses what's SAVED, not unsaved taps
+  // Streak + Day Quality summary uses what's SAVED, not unsaved taps
   const savedScores: MetricScore[] = (entryData as any)?.scores || [];
   const savedToday = savedScores.length > 0;
   const savedTotal = savedScores.filter(s => s.rating === "success").length - savedScores.filter(s => s.rating === "setback").length;
@@ -403,8 +402,8 @@ export default function TodayPage() {
         </div>
       </div>
 
-      {/* Simple mode: streak + Day Quality once today is saved */}
-      {simpleMode && savedToday && (
+      {/* Streak + Day Quality (Sweet / Strong / Solid / Off) once today is saved — both modes */}
+      {savedToday && (
         <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between gap-4" data-testid="simple-day-summary">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">

@@ -656,8 +656,8 @@ export default function HistoryPage() {
         ))}
       </div>
 
-      {/* Simple mode: Dashboard's Day Quality breakdown lives here (last 30 days) */}
-      {simpleMode && (() => {
+      {/* Day Quality breakdown (Sweet / Strong / Solid / Off), last 30 days — both modes */}
+      {(() => {
         const cutoff = format(subDays(new Date(), 29), "yyyy-MM-dd");
         const last30 = calResults.filter(r => r.entry.entryDate >= cutoff).map(r => r.total);
         return <DayQualityCard totals={last30} label="Last 30 Days" className="mb-5" />;
