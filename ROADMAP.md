@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `fc66010` — Goal History achieved / not-achieved icons
+- **Last shipped commit**: `c0b91ce` — Meta Pixel paragraph in the live Privacy Policy
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -92,6 +92,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **Day Quality section editable in Admin** (`98cd53e`): Admin → Pages → "Start Page: Day Quality" (site page `start_tiers`) edits the tag, headline (last word highlighted green), intro, each tier's description and example, and the closing note, with Reset to default. Score ranges and tier names stay locked to `day-quality.ts`. Public read via `/api/public/start-tiers`; blank fields keep the built-in copy (defaults in `shared/start-tiers.ts`).
 - **Expired sign-in handling + Connect social links** (`c28aa4c`): Connect social-link saves were failing with 401 because the admin session had ended while the app still looked signed in (auth is only checked at load). Now any non-auth 401 signs the app out with a notice, sign-in returns to the same screen, and Admin page saves are kept as a sessionStorage draft until they succeed (restored with a notice). Social links: URL-only rows kept (platform defaults to website), https:// auto-added, column labels + platform hint, Facebook/YouTube/X icons.
 - **Goal History achieved icons** (`fc66010`): each goal in History's Goal History list shows a green check when that day's GOAL metric was a Win, and a red X for Loss, Shift, or unrated. Today's goal shows a neutral dot until GOAL is a Win or Loss. `/api/goal-history` now returns `goalRating`.
+- **Privacy Policy: Meta Pixel paragraph** (`c0b91ce`): the Admin-saved policy (live at /privacy) now has COOKIES AND ANALYTICS in place of the short COOKIES paragraph, disclosing Google Analytics and the Meta Pixel. Applied by a one-time, idempotent startup update in `server/index.ts` (production DB access from tooling is read-only); further edits go through Admin as usual.
 
 **Marketing pages**
 - `/start` — public marketing landing page
