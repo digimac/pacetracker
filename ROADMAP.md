@@ -1,6 +1,6 @@
 # Sweet Momentum — Roadmap & Enhancement Log
 
-_Last updated: November 12, 2026_
+_Last updated: November 25, 2026_
 
 This document tracks what's shipped, what's in progress, and what's planned for the Sweet Momentum app (sweetmo.io) and its companion book. Keep it updated whenever a feature is discussed or shipped so context isn't lost between sessions.
 
@@ -10,7 +10,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 
 - **Live at**: sweetmo.io (hosted on Render)
 - **Repo**: [digimac/pacetracker](https://github.com/digimac/pacetracker)
-- **Last shipped commit**: `c28aa4c` — expired sign-in handling + Connect social links fixes
+- **Last shipped commit**: `fc66010` — Goal History achieved / not-achieved icons
 - **Twilio SMS**: A2P 10DLC campaign approved Aug 18, 2026, live-tested and confirmed working Aug 20, 2026 (HELP keyword replies instantly)
 
 ---
@@ -91,6 +91,7 @@ This document tracks what's shipped, what's in progress, and what's planned for 
 - **Day Quality explainer on /start** (`634e8a4`): new section after the six-metrics showcase explains Win (+1) / Loss (−1) / Shift (0), the net daily score, and the four tiers — Off (0 or less), Solid (+1 to +3), Strong (+4 to +5), Sweet (+6 or more) — with an example for each. Thresholds match `client/src/lib/day-quality.ts`.
 - **Day Quality section editable in Admin** (`98cd53e`): Admin → Pages → "Start Page: Day Quality" (site page `start_tiers`) edits the tag, headline (last word highlighted green), intro, each tier's description and example, and the closing note, with Reset to default. Score ranges and tier names stay locked to `day-quality.ts`. Public read via `/api/public/start-tiers`; blank fields keep the built-in copy (defaults in `shared/start-tiers.ts`).
 - **Expired sign-in handling + Connect social links** (`c28aa4c`): Connect social-link saves were failing with 401 because the admin session had ended while the app still looked signed in (auth is only checked at load). Now any non-auth 401 signs the app out with a notice, sign-in returns to the same screen, and Admin page saves are kept as a sessionStorage draft until they succeed (restored with a notice). Social links: URL-only rows kept (platform defaults to website), https:// auto-added, column labels + platform hint, Facebook/YouTube/X icons.
+- **Goal History achieved icons** (`fc66010`): each goal in History's Goal History list shows a green check when that day's GOAL metric was a Win, and a red X for Loss, Shift, or unrated. Today's goal shows a neutral dot until GOAL is a Win or Loss. `/api/goal-history` now returns `goalRating`.
 
 **Marketing pages**
 - `/start` — public marketing landing page
