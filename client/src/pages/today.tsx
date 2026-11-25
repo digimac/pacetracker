@@ -306,6 +306,7 @@ export default function TodayPage() {
       metricLabel: label,
       rating,
     }).then(r => r.json()).then(d => {
+      queryClient.invalidateQueries({ queryKey: ["/api/goal-history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/today/timeline"] });
       trackScore(d?.analytics, "tap");
     }).catch(() => {}); // silent — batch save is the authoritative record

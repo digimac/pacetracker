@@ -363,11 +363,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       startDate.setFullYear(startDate.getFullYear() - 2);
       const start = startDate.toLocaleDateString("en-CA", { timeZone: tz });
       const entries = await storage.getDailyEntriesByRange(userId, start, end);
-      const goals = entries
-        .filter(e => (e as any).goalText)
-        .map(e => ({
+      const withGoal = entries.filter(e => (e as any).goalText);
+      // How the GOAL metric was scored that day: "success" | "setback" | "skip" | null (not rated)
+      const goalRatings = await Promise.all(withGoal.map(async e => {
+        const scores = await storage.getMetricScoresByEntry(e.id);
+        return scores.find(s => s.metricKey === "GOAL")?.rating ?? null;
+      }));
+      const goals = withGoal
+        .map((e, i) => ({
           entryDate: e.entryDate,
           goalText: (e as any).goalText as string,
+          goalRating: goalRatings[i],
         }))
         .sort((a, b) => b.entryDate.localeCompare(a.entryDate));
       res.json(goals);

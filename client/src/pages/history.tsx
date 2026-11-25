@@ -26,7 +26,7 @@ import type { TimelineEvent } from "@/components/day-sparkline";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type GoalEntry = { entryDate: string; goalText: string };
+type GoalEntry = { entryDate: string; goalText: string; goalRating?: "success" | "setback" | "skip" | null };
 
 type DayResult = {
   entry: { id: number; entryDate: string; notes?: string | null };
@@ -176,6 +176,7 @@ function DayDrawer({
       // Invalidate all dashboard queries so calendar refreshes
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/entries", dateStr] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goal-history"] });
       toast({ title: "Saved", description: `${format(date, "MMM d")} score recorded.` });
       onClose();
     },
@@ -732,6 +733,7 @@ function GoalList() {
 
   if (isLoading) return null;
   if (goals.length === 0) return null;
+  const todayStr = format(new Date(), "yyyy-MM-dd");
 
   return (
     <div className="mt-8">
@@ -751,8 +753,18 @@ function GoalList() {
               className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors"
               data-testid={`goal-row-${g.entryDate}`}
             >
-              <div className="flex-shrink-0 mt-0.5">
-                <div className="w-2 h-2 rounded-full bg-primary mt-1" />
+              {/* GOAL metric result: Win = achieved (green check); Loss, Shift, or never rated = not achieved (red X).
+                  Today's goal stays neutral until it's a Win or Loss, since the day isn't over (unrated metrics save as Shift). */}
+              <div className="flex-shrink-0 mt-0.5" data-testid={`goal-status-${g.entryDate}`}>
+                {g.goalRating === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 text-green-400 [.light_&]:text-green-600" aria-label="Goal achieved" data-status="achieved" />
+                ) : g.entryDate === todayStr && g.goalRating !== "setback" ? (
+                  <div className="w-4 h-4 flex items-center justify-center" aria-label="Goal not scored yet" data-status="pending">
+                    <div className="w-2 h-2 rounded-full bg-muted-foreground/50" />
+                  </div>
+                ) : (
+                  <XCircle className="w-4 h-4 text-red-400 [.light_&]:text-red-600" aria-label="Goal not achieved" data-status="missed" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-foreground leading-snug">{g.goalText}</p>
