@@ -297,6 +297,22 @@ app.use((req, res, next) => {
     console.error("[startup] Could not ensure reminder tables:", err?.message);
   }
 
+  // 2c. One-time content update (Nov 2026): the Privacy Policy saved in Admin predates the Meta Pixel,
+  // so swap its short COOKIES paragraph for the COOKIES AND ANALYTICS paragraph. Only replaces that
+  // exact paragraph, so it's a no-op once applied or if the policy has been edited by hand since.
+  try {
+    const OLD_COOKIES = "<p>COOKIES<br>We use cookies and similar tracking technologies to operate and improve the service. You can control cookie settings through your browser.</p>";
+    const NEW_COOKIES = "<p>COOKIES AND ANALYTICS<br>We use cookies and similar tracking technologies to operate and improve the service. We use Google Analytics to understand how the app is used, and the Meta Pixel to measure the results of our advertising on Facebook and Instagram. These tools may collect information such as the pages you visit, actions like signing up or subscribing, and your browser and device details. We do not send your name, email address, phone number, or the scores you enter to Meta or Google. You can control cookie settings through your browser, and manage how Meta uses your information for ads in your Facebook or Instagram ad preferences.</p>";
+    const r = await pool.query(
+      `UPDATE "site_pages" SET "body" = replace("body", $1, $2), "updated_at" = now()
+        WHERE "page_key" = 'privacy' AND position($1 in "body") > 0`,
+      [OLD_COOKIES, NEW_COOKIES],
+    );
+    if (r.rowCount) console.log("[startup] Privacy Policy: added Meta Pixel / analytics paragraph ✓");
+  } catch (err: any) {
+    console.error("[startup] Could not update Privacy Policy cookies paragraph:", err?.message);
+  }
+
   // 3. NOW set up session middleware, after the session table is guaranteed to exist
   function buildSessionStore() {
     if (process.env.DATABASE_URL) {
